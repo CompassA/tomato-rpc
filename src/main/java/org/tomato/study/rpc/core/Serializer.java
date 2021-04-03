@@ -24,9 +24,8 @@ public interface Serializer {
     <T> T deserialize(byte[] data);
 
     /**
-     * serializer instance type
-     * @param <T> serializer type
+     * describe the serializer index of serializer in command
      * @return serializer class
      */
-    <T extends Serializer> Class<T> getType();
+    byte serializerIndex();
 }

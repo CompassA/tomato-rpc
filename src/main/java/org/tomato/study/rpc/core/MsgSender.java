@@ -1,6 +1,6 @@
 package org.tomato.study.rpc.core;
 
-import org.tomato.study.rpc.data.Command;
+import org.tomato.study.rpc.core.protocol.Command;
 
 import java.util.concurrent.CompletableFuture;
 
