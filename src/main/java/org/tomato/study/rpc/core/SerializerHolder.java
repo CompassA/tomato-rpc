@@ -1,6 +1,6 @@
 package org.tomato.study.rpc.core;
 
-import org.tomato.study.rpc.impl.serialize.ProtostuffSerializer;
+import org.tomato.study.rpc.impl.serializer.ProtostuffSerializer;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;

@@ -1,5 +1,6 @@
 package org.tomato.study.rpc.data;
 
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -12,6 +13,7 @@ import java.util.Arrays;
  */
 @Setter
 @Getter
+@Builder
 @NoArgsConstructor
 public class MethodContext {
 

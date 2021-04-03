@@ -1,6 +1,7 @@
 package org.tomato.study.rpc.core.protocol;
 
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -12,6 +13,7 @@ import lombok.Setter;
  */
 @Getter
 @Setter
+@Builder
 @NoArgsConstructor
 @AllArgsConstructor
 public class Header {
@@ -22,6 +24,11 @@ public class Header {
     private byte magicNumber;
 
     /**
+     * tomato rpc protocol version
+     */
+    private int version;
+
+    /**
      * the length of header and parameters
      */
     private int headerLength;
@@ -30,11 +37,6 @@ public class Header {
      * the length of command payload body
      */
     private int bodyLength;
-
-    /**
-     * tomato rpc protocol version
-     */
-    private short version;
 
     /**
      * related the command to the handler of server/client

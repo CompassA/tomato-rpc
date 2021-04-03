@@ -6,8 +6,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.List;
-
 /**
  * rpc protocol frame
  * every rpc request/response will send a command to server/client
@@ -29,7 +27,7 @@ public class Command {
     /**
      * frame extension header, dynamic length
      */
-    private List<Parameter> extension;
+    private byte[] extension;
 
     /**
      * frame payload data which has been serialized

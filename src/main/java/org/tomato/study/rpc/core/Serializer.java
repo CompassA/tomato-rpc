@@ -1,5 +1,7 @@
 package org.tomato.study.rpc.core;
 
+import java.util.List;
+
 /**
  * serialization core method
  * @author Tomato
@@ -18,14 +20,38 @@ public interface Serializer {
     /**
      * deserialize
      * @param data serialized data
+     * @param clazz target type class instance
      * @param <T> target type
      * @return deserialized object
      */
-    <T> T deserialize(byte[] data);
+    <T> T deserialize(byte[] data, Class<T> clazz);
 
     /**
      * describe the serializer index of serializer in command
      * @return serializer class
      */
     byte serializerIndex();
+
+    /**
+     * serialize list values
+     * @param list list data
+     * @param memberType list member type
+     * @param <T> list member class instance
+     * @return the serialized list data
+     */
+    default <T> byte[] serializeList(List<T> list, Class<T> memberType) {
+        return serialize(list);
+    }
+
+    /**
+     * deserialize list values
+     * @param listData serialized list data
+     * @param memberType list member type
+     * @param <T> list member class instance
+     * @return the deserialized list data
+     */
+    @SuppressWarnings("unchecked")
+    default <T> List<T> deserializeList(byte[] listData, Class<T> memberType) {
+        return (List<T>) deserialize(listData, List.class);
+    }
 }
