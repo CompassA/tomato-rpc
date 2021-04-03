@@ -6,6 +6,7 @@ import org.tomato.study.rpc.core.MsgSender;
 import org.tomato.study.rpc.core.StubFactory;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.stream.Stream;
 
@@ -53,11 +54,12 @@ public class RawStubFactory implements StubFactory {
         try {
             Class<?> stubClass = compiler.loadClass(
                     classFullName, compiler.compile(classFileName, stubSourceCode));
-            T stubInstance = (T) stubClass.newInstance();
+            T stubInstance = (T) stubClass.getConstructor().newInstance();
             ((AbstractStub) stubInstance).setMsgSender(msgSender);
             return stubInstance;
         } catch (IOException | ClassNotFoundException |
-                IllegalAccessException | InstantiationException e) {
+                IllegalAccessException | InstantiationException |
+                NoSuchMethodException | InvocationTargetException e) {
             e.printStackTrace();
         }
         return null;
