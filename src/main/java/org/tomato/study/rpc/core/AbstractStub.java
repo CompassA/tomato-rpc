@@ -17,7 +17,7 @@ public abstract class AbstractStub {
     @Setter
     protected MsgSender msgSender;
 
-    protected byte[] invokeRemote(MethodContext methodContext) {
+    protected Object invokeRemote(MethodContext methodContext) {
         if (methodContext == null) {
             throw new RuntimeException("rpc methodContext is null");
         }

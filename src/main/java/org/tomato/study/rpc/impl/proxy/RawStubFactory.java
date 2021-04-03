@@ -29,7 +29,7 @@ public class RawStubFactory implements StubFactory {
             "}\n";
 
     private static final String METHOD_TEMPLATE = "\npublic %s %s(%s) {\n" +
-            "return serializer.deserialize(invokeRemote(new MethodContext(\"%s\", \"%s\", %s)));}\n";
+            "return (%s) invokeRemote(new MethodContext(\"%s\", \"%s\", %s, %s));}\n";
 
     private static final String VOID_METHOD_TEMPLATE = "\npublic %s %s(%s) {return;}\n";
 
@@ -85,6 +85,7 @@ public class RawStubFactory implements StubFactory {
 
     private String createMethodTemplate(String interfaceName, Method method) {
         String methodName = createMethodName(method);
+        String returnType = createReturnType(method);
         return void.class.equals(method.getReturnType())
                 ? String.format(
                         VOID_METHOD_TEMPLATE,
@@ -93,11 +94,13 @@ public class RawStubFactory implements StubFactory {
                         createArgs(method))
                 : String.format(
                         METHOD_TEMPLATE,
-                        createReturnType(method),
+                        returnType,
                         methodName,
                         createArgs(method),
+                        returnType,
                         interfaceName,
                         methodName,
+                        returnType + ".class",
                         createArgsWithOutType(method));
     }
 
