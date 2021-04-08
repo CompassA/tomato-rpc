@@ -15,7 +15,7 @@ public abstract class AbstractStub {
     protected final Serializer serializer = SerializerHolder.getSerializer((byte) 0);
 
     @Setter
-    protected MsgSender msgSender;
+    protected MessageSender messageSender;
 
     protected Object invokeRemote(MethodContext methodContext) {
         if (methodContext == null) {

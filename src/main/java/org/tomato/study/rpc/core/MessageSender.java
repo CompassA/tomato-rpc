@@ -9,7 +9,7 @@ import java.util.concurrent.CompletableFuture;
  * @author Tomato
  * Created on 2021.03.31
  */
-public interface MsgSender {
+public interface MessageSender {
 
     /**
      * send rpc request

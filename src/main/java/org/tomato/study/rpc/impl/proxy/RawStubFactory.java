@@ -2,7 +2,7 @@ package org.tomato.study.rpc.impl.proxy;
 
 import com.itranswarp.compiler.JavaStringCompiler;
 import org.tomato.study.rpc.core.AbstractStub;
-import org.tomato.study.rpc.core.MsgSender;
+import org.tomato.study.rpc.core.MessageSender;
 import org.tomato.study.rpc.core.StubFactory;
 
 import java.io.IOException;
@@ -29,23 +29,27 @@ public class RawStubFactory implements StubFactory {
             "%s" +
             "}\n";
 
-    private static final String METHOD_TEMPLATE = "\npublic %s %s(%s) {\n" +
+    private static final String METHOD_TEMPLATE = "\n" +
+            "@Override\n" +
+            "public %s %s(%s) {\n" +
             "return (%s) invokeRemote(new MethodContext(\"%s\", \"%s\", %s, %s));}\n";
 
-    private static final String VOID_METHOD_TEMPLATE = "\npublic %s %s(%s) {return;}\n";
+    private static final String VOID_METHOD_TEMPLATE = "\n" +
+            "@Override\n" +
+            "public %s %s(%s) {return;}\n";
 
     private static final String STUB_NAME_SUFFIX = "$tomato$stub$";
 
     /**
      * create client stub instance by raw string
-     * @param msgSender net
+     * @param messageSender net
      * @param serviceInterface api interface
      * @param <T> api interface class
      * @return stub instance
      */
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T createStub(MsgSender msgSender, Class<T> serviceInterface) {
+    public <T> T createStub(MessageSender messageSender, Class<T> serviceInterface) {
         String classSimpleName = createSimpleClassName(serviceInterface);
         String classFileName = classSimpleName + ".java";
         String classFullName = STUB_PACKAGE + "." + classSimpleName;
@@ -55,7 +59,7 @@ public class RawStubFactory implements StubFactory {
             Class<?> stubClass = compiler.loadClass(
                     classFullName, compiler.compile(classFileName, stubSourceCode));
             T stubInstance = (T) stubClass.getConstructor().newInstance();
-            ((AbstractStub) stubInstance).setMsgSender(msgSender);
+            ((AbstractStub) stubInstance).setMessageSender(messageSender);
             return stubInstance;
         } catch (IOException | ClassNotFoundException |
                 IllegalAccessException | InstantiationException |
