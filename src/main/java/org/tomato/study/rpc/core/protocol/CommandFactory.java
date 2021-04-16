@@ -48,8 +48,8 @@ public enum CommandFactory {
                 .id(ID_GENERATOR.incrementAndGet())
                 .messageType(type.getId())
                 .serializeType(serializer.serializerIndex())
-                .headerLength(headLength)
-                .bodyLength(bodyLength)
+                .extensionLength(headLength)
+                .length(bodyLength)
                 .build();
     }
 

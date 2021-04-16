@@ -13,7 +13,7 @@ import java.util.List;
  * @author Tomato
  * Created on 2021.04.09
  */
-public class PacketDecoder extends ByteToMessageDecoder {
+public class RawFrameDecoder extends ByteToMessageDecoder {
 
     @Override
     protected void decode(ChannelHandlerContext channelHandlerContext,
@@ -26,20 +26,20 @@ public class PacketDecoder extends ByteToMessageDecoder {
         }
         Header header = Header.builder()
                 .magicNumber(ProtoConstants.MAGIC_NUMBER)
+                .length(byteBuf.readInt())
                 .version(byteBuf.readInt())
-                .headerLength(byteBuf.readInt())
-                .bodyLength(byteBuf.readInt())
+                .extensionLength(byteBuf.readInt())
                 .messageType(byteBuf.readShort())
                 .serializeType(byteBuf.readByte())
                 .id(byteBuf.readLong())
                 .build();
 
-        int extensionLength = header.getHeaderLength() - ProtoConstants.HEAD_FIX_LENGTH;
-        if (!byteBuf.isReadable(header.getBodyLength() + extensionLength)) {
+        if (!byteBuf.isReadable(header.getLength() - ProtoConstants.HEAD_FIX_LENGTH)) {
             byteBuf.resetReaderIndex();
             return;
         }
 
+        int extensionLength = header.getExtensionLength();
         byte[] extension;
         if (extensionLength > 0) {
             extension = new byte[extensionLength];
@@ -48,7 +48,7 @@ public class PacketDecoder extends ByteToMessageDecoder {
             extension = new byte[0];
         }
 
-        byte[] body = new byte[header.getBodyLength()];
+        byte[] body = new byte[header.getLength() - header.getExtensionLength() - ProtoConstants.HEAD_FIX_LENGTH];
         byteBuf.readBytes(body);
 
         list.add(Command.builder().header(header).extension(extension).body(body).build());

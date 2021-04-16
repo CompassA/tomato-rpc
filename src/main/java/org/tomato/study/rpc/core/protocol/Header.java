@@ -18,25 +18,27 @@ import lombok.Setter;
 @AllArgsConstructor
 public class Header {
 
+    //========================frame boundary======================
     /**
      * a constants
      */
     private byte magicNumber;
 
     /**
+     * the length of the frame exclude `magicNumber` and `length`
+     */
+    private int length;
+
+    //============================================================
+    /**
      * tomato rpc protocol version
      */
     private int version;
 
     /**
-     * the length of header and parameters
+     * the length of parameters
      */
-    private int headerLength;
-
-    /**
-     * the length of command payload body
-     */
-    private int bodyLength;
+    private int extensionLength;
 
     /**
      * related the command to the handler of server/client

@@ -12,6 +12,6 @@ public interface ProtoConstants {
 
     int CURRENT_VERSION = VERSION1;
 
-    int HEAD_FIX_LENGTH = 24;
+    int HEAD_FIX_LENGTH = 19;
 
 }
