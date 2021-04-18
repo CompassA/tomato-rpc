@@ -38,18 +38,7 @@ public class CodecTest {
         List<Object> res = new ArrayList<>(1);
         rawFrameDecoder.decode(null, byteBuf, res);
         Command decodeResult = (Command) res.get(0);
-
-        Header mockHeader = mockCommand.getHeader();
-        Header decodeResultHeader = decodeResult.getHeader();
-        Assert.assertEquals(mockHeader.getMagicNumber(), decodeResultHeader.getMagicNumber());
-        Assert.assertEquals(mockHeader.getVersion(), decodeResultHeader.getVersion());
-        Assert.assertEquals(mockHeader.getExtensionLength(), decodeResultHeader.getExtensionLength());
-        Assert.assertEquals(mockHeader.getLength(), decodeResultHeader.getLength());
-        Assert.assertEquals(mockHeader.getId(), decodeResultHeader.getId());
-        Assert.assertEquals(mockHeader.getSerializeType(), decodeResultHeader.getSerializeType());
-        Assert.assertEquals(mockHeader.getMessageType(), decodeResultHeader.getMessageType());
-        Assert.assertArrayEquals(mockCommand.getBody(), decodeResult.getBody());
-        Assert.assertArrayEquals(mockCommand.getExtension(), decodeResult.getExtension());
+        Assert.assertEquals(decodeResult, mockCommand);
     }
 
     @Test

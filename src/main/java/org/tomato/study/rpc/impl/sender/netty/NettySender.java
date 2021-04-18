@@ -1,5 +1,6 @@
 package org.tomato.study.rpc.impl.sender.netty;
 
+import io.netty.channel.ChannelFutureListener;
 import lombok.Getter;
 import org.tomato.study.rpc.core.MessageSender;
 import org.tomato.study.rpc.core.protocol.Command;
@@ -15,14 +16,37 @@ public class NettySender implements MessageSender {
 
     private final String serviceVip;
 
-    private ChannelManager channelManager;
+    private final ChannelHolder channelHolder;
 
-    public NettySender(String serviceVip) {
+    private final ChannelResponseHolder responseHolder;
+
+    public NettySender(String serviceVip,
+                       ChannelHolder channelHolder,
+                       ChannelResponseHolder responseHolder) {
         this.serviceVip = serviceVip;
+        this.channelHolder = channelHolder;
+        this.responseHolder = responseHolder;
     }
 
     @Override
     public CompletableFuture<Command> send(Command msg) {
-        return null;
+        CompletableFuture<Command> future = new CompletableFuture<>();
+        long id = msg.getHeader().getId();
+        responseHolder.putFeatureResponse(id, future);
+        try {
+            channelHolder.getChannelWrapper(serviceVip)
+                    .getChannel()
+                    .writeAndFlush(msg)
+                    .addListener((ChannelFutureListener) futureChannel -> {
+                        if (!futureChannel.isSuccess()) {
+                            future.completeExceptionally(futureChannel.cause());
+                            responseHolder.remove(id);
+                        }
+                    });
+        } catch (Throwable e) {
+            responseHolder.remove(id);
+            future.completeExceptionally(e);
+        }
+        return future;
     }
 }

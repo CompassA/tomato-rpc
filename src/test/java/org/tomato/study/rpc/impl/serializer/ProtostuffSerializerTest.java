@@ -6,6 +6,7 @@ import org.tomato.study.rpc.core.SerializerHolder;
 import org.tomato.study.rpc.core.protocol.Command;
 import org.tomato.study.rpc.core.protocol.CommandFactory;
 import org.tomato.study.rpc.core.protocol.CommandModel;
+import org.tomato.study.rpc.core.protocol.CommandType;
 import org.tomato.study.rpc.core.protocol.Parameter;
 import org.tomato.study.rpc.data.MethodContext;
 
@@ -40,7 +41,7 @@ public class ProtostuffSerializerTest {
                 .parameters(new Object[] { "mockString", 1, LocalDateTime.now(), listList, map})
                 .build();
         Command mockCommand = CommandFactory.INSTANCE.createRequest(
-                methodContext, list, SerializerHolder.getSerializer((byte) 0));
+                methodContext, list, SerializerHolder.getSerializer((byte) 0), CommandType.RPC_REQUEST);
         CommandModel<MethodContext> commandModel = CommandModel.toModel(mockCommand, MethodContext.class);
         Assert.assertNotNull(commandModel);
         Assert.assertEquals(2, commandModel.getExtension().size());

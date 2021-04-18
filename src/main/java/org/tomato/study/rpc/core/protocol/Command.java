@@ -7,6 +7,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Arrays;
+import java.util.Objects;
+
 /**
  * rpc protocol frame
  * every rpc request/response will send a command to server/client
@@ -34,6 +37,24 @@ public class Command {
      * frame payload data which has been serialized
      */
     private byte[] body;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Command command = (Command) o;
+        return Objects.equals(header, command.header)
+                && Arrays.equals(extension, command.extension)
+                && Arrays.equals(body, command.body);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(header);
+        result = 31 * result + Arrays.hashCode(extension);
+        result = 31 * result + Arrays.hashCode(body);
+        return result;
+    }
 
     public static void encode(Command command, ByteBuf byteBuf) {
         Header header = command.getHeader();

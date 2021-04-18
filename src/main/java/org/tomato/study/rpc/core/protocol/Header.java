@@ -6,6 +6,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.util.Objects;
+
 /**
  * rpc frame header
  * @author Tomato
@@ -54,4 +56,24 @@ public class Header {
      * message id, each command sent by one server/client will have an unique id
      */
     private long id;
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Header header = (Header) o;
+        return magicNumber == header.magicNumber
+                && length == header.length
+                && version == header.version
+                && extensionLength == header.extensionLength
+                && messageType == header.messageType
+                && serializeType == header.serializeType
+                && id == header.id;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(magicNumber, length, version, extensionLength,
+                messageType, serializeType, id);
+    }
 }

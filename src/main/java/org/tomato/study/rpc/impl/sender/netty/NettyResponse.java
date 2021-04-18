@@ -18,7 +18,7 @@ import java.util.concurrent.CompletableFuture;
 @AllArgsConstructor
 public class NettyResponse {
 
-    private String messageId;
+    private long messageId;
 
     private CompletableFuture<Command> future;
 

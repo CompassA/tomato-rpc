@@ -13,6 +13,11 @@ public enum CommandType {
      * RPC client request
      */
     RPC_REQUEST((short) 1),
+
+    /**
+     * RPC server response
+     */
+    RPC_RESPONSE((short) 2),
     ;
 
     private final short id;

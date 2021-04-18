@@ -8,14 +8,11 @@ import lombok.Getter;
  * Created on 2021.04.08
  */
 @Getter
-public class ChannelContext {
+public class ChannelWrapper {
 
     private final Channel channel;
 
-    private final ChannelResponseHolder responseHolder;
-
-    public ChannelContext(Channel channel) {
+    public ChannelWrapper(Channel channel) {
         this.channel = channel;
-        this.responseHolder = new ChannelResponseHolder();
     }
 }

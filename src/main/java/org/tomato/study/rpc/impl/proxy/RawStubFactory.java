@@ -26,7 +26,7 @@ public class RawStubFactory implements StubFactory {
             "import org.tomato.study.rpc.data.MethodContext;\n" +
             "\n" +
             "public class %s extends AbstractStub implements %s {\n" +
-            "%s" +
+            "%s\n" +
             "}\n";
 
     private static final String METHOD_TEMPLATE = "\n" +

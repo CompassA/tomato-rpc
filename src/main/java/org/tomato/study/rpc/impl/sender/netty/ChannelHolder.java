@@ -13,6 +13,10 @@ import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.tomato.study.rpc.core.NameService;
+import org.tomato.study.rpc.core.SpiLoader;
+import org.tomato.study.rpc.impl.codec.netty.NettyFrameEncoder;
+import org.tomato.study.rpc.impl.codec.netty.NettyProtoDecoder;
+import org.tomato.study.rpc.impl.handler.netty.ResponseHandler;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -26,17 +30,19 @@ import java.util.concurrent.TimeoutException;
  * @author Tomato
  * Created on 2021.04.08
  */
-public class ChannelManager {
+public class ChannelHolder {
+
+    public static final ChannelHolder INSTANCE = new ChannelHolder();
 
     /**
      * service provider discovery
      */
-    private final NameService nameService;
+    private final NameService nameService = SpiLoader.load(NameService.class);
 
     /**
      * serviceURI -> service connection info
      */
-    private final ConcurrentMap<URI, ChannelContext> channelContextMap;
+    private final ConcurrentMap<URI, ChannelWrapper> channelMap;
 
     /**
      * client event loop
@@ -48,47 +54,51 @@ public class ChannelManager {
      */
     private final long connectionTimeout;
 
-    public ChannelManager(NameService nameService, long connectionTimeout) {
-        this.nameService = nameService;
-        this.connectionTimeout = connectionTimeout;
-        this.channelContextMap = new ConcurrentHashMap<>(0);
+    public ChannelHolder() {
+        this.connectionTimeout = 20;
+        this.channelMap = new ConcurrentHashMap<>(0);
         this.eventLoopGroup = Epoll.isAvailable() ?
                 new EpollEventLoopGroup() : new NioEventLoopGroup();
     }
 
     /**
-     * get the connection with the service provider by serviceVip
+     * get the connection with the service provider by serviceVip,
+     * if the connection is not established, create a new channel
      * @param serviceVip service provider vip
-     * @return connection info
+     * @return netty channel
      * @throws Exception any exception during service discovery and connection register.
      */
-    public ChannelContext getChannel(String serviceVip) throws Exception {
+    public ChannelWrapper getChannelWrapper(String serviceVip) throws Exception {
         URI serviceURI = nameService.lookupService(serviceVip);
-        ChannelContext channelContext = channelContextMap.get(serviceURI);
-        if (channelContext == null) {
-            synchronized (ChannelManager.class) {
-                channelContext = channelContextMap.get(serviceURI);
-                if (channelContext == null) {
-                    channelContext = registerChannel(serviceURI, connectionTimeout);
+        ChannelWrapper channelWrapper = channelMap.get(serviceURI);
+        if (channelWrapper == null) {
+            synchronized (ChannelHolder.class) {
+                channelWrapper = channelMap.get(serviceURI);
+                if (channelWrapper == null) {
+                    channelWrapper = registerChannel(serviceURI, connectionTimeout);
                 }
             }
         }
-        return channelContext;
+        return channelWrapper;
     }
 
-    private synchronized ChannelContext registerChannel(URI serviceURI, long connectionTimeOut)
+    private ChannelWrapper registerChannel(URI serviceURI, long connectionTimeOut)
             throws InterruptedException, TimeoutException {
         Bootstrap bootstrap = new Bootstrap()
+                .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .group(eventLoopGroup)
                 .channel(Epoll.isAvailable() ?
                         EpollSocketChannel.class : NioSocketChannel.class)
                 .handler(new ChannelInitializer<>() {
-
                     @Override
                     protected void initChannel(Channel channel) throws Exception {
-                        //todo
+                        channel.pipeline()
+                                .addLast(new NettyFrameEncoder())
+                                .addLast(new NettyProtoDecoder())
+                                .addLast(ResponseHandler.INSTANCE)
+                                .addLast(new NettyFrameEncoder());
                     }
-                }).option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT);
+                });
         ChannelFuture connectFuture = bootstrap.connect(
                 new InetSocketAddress(serviceURI.getHost(), serviceURI.getPort()));
         if (!connectFuture.await(connectionTimeOut, TimeUnit.MILLISECONDS)) {
@@ -98,8 +108,8 @@ public class ChannelManager {
         if (channel == null || !channel.isActive()) {
             throw new IllegalStateException("netty channel is not active");
         }
-        ChannelContext channelContext = new ChannelContext(channel);
-        channelContextMap.put(serviceURI, channelContext);
-        return channelContext;
+        ChannelWrapper channelWrapper = new ChannelWrapper(channel);
+        channelMap.put(serviceURI, channelWrapper);
+        return channelWrapper;
     }
 }

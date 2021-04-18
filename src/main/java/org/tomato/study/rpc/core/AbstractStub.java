@@ -1,6 +1,9 @@
 package org.tomato.study.rpc.core;
 
 import lombok.Setter;
+import org.tomato.study.rpc.core.protocol.Command;
+import org.tomato.study.rpc.core.protocol.CommandFactory;
+import org.tomato.study.rpc.core.protocol.CommandType;
 import org.tomato.study.rpc.data.MethodContext;
 
 import java.util.concurrent.ExecutionException;
@@ -21,17 +24,14 @@ public abstract class AbstractStub {
         if (methodContext == null) {
             throw new RuntimeException("rpc methodContext is null");
         }
+        Command request = CommandFactory.INSTANCE.createRequest(
+                methodContext, serializer, CommandType.RPC_REQUEST);
         try {
-            //todo
-            throw new Exception();
+            return messageSender.send(request).get();
         } catch (ExecutionException e) {
             throw new RuntimeException(e.getCause());
         } catch (Throwable e) {
             throw new RuntimeException(e);
         }
-    }
-
-    protected byte[] serializeParameter(Object... args) {
-        return null;
     }
 }
