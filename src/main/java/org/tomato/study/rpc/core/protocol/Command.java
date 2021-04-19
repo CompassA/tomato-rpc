@@ -65,7 +65,8 @@ public class Command {
         byteBuf.writeShort(header.getMessageType());
         byteBuf.writeByte(header.getSerializeType());
         byteBuf.writeLong(header.getId());
-        byteBuf.writeBytes(command.extension);
+        byteBuf.writeBytes(header.getExtensionLength() == 0 ?
+                new byte[0] : command.extension);
         byteBuf.writeBytes(command.body);
     }
 

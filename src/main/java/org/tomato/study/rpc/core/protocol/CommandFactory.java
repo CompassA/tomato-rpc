@@ -23,7 +23,8 @@ public enum CommandFactory {
                                      CommandType type) {
         byte[] body = serializer.serialize(requestData);
         return Command.builder()
-                .header(createHeader(type, serializer, 0, body.length))
+                .header(createHeader(null, type, serializer, 0, body.length))
+                .extension(new byte[0])
                 .body(body)
                 .build();
     }
@@ -35,25 +36,33 @@ public enum CommandFactory {
         byte[] extension = serializer.serializeList(parameters, Parameter.class);
         byte[] body = serializer.serialize(requestData);
         return Command.builder()
-                .header(
-                        createHeader(
-                                type,
-                                serializer,
-                                extension.length,
-                                body.length))
+                .header(createHeader(null, type, serializer, extension.length, body.length))
                 .extension(extension)
                 .body(body)
                 .build();
     }
 
-    private Header createHeader(CommandType type,
+    public <T> Command createResponse(long requestId,
+                                      T responseData,
+                                      Serializer serializer,
+                                      CommandType type) {
+        byte[] body = serializer.serialize(responseData);
+        return Command.builder()
+                .header(createHeader(requestId, type, serializer, 0, body.length))
+                .extension(new byte[0])
+                .body(body)
+                .build();
+    }
+
+    private Header createHeader(Long id,
+                                CommandType type,
                                 Serializer serializer,
                                 int extensionLength,
                                 int bodyLength) {
         return Header.builder()
                 .magicNumber(MAGIC_NUMBER)
                 .version(CURRENT_VERSION)
-                .id(ID_GENERATOR.incrementAndGet())
+                .id(id == null ? ID_GENERATOR.incrementAndGet() : id)
                 .messageType(type.getId())
                 .serializeType(serializer.serializerIndex())
                 .extensionLength(extensionLength)

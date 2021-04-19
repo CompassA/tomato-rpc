@@ -17,4 +17,10 @@ public interface MessageSender {
      * @return response message
      */
     CompletableFuture<Command> send(Command msg);
+
+    /**
+     * get the vip of the sender target server
+     * @return vip
+     */
+    String getServiceVIP();
 }

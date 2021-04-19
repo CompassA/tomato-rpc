@@ -17,6 +17,7 @@ import java.util.stream.Stream;
  * @author Tomato
  * Created on 2021.03.31
  */
+@Deprecated
 public class RawStubFactory implements StubFactory {
 
     private static final String STUB_PACKAGE = "org.tomato.study.rpc.impl";
@@ -143,4 +144,12 @@ public class RawStubFactory implements StubFactory {
         }
         return argsBuilder.toString();
     }
+//
+//    //local test
+//    public static void main(String[] args) {
+//        RawStubFactory rawStubFactory = new RawStubFactory();
+//        NameService stubInstance = rawStubFactory.createStub(
+//                new NettySender("mockVIP", null, null), NameService.class);
+//        stubInstance.getClass().getName().contains("stub");
+//    }
 }

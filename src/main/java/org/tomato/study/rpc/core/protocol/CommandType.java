@@ -10,6 +10,10 @@ import lombok.Getter;
 public enum CommandType {
 
     /**
+     * unknown command type
+     */
+    UNKNOWN((short) 0),
+    /**
      * RPC client request
      */
     RPC_REQUEST((short) 1),
@@ -24,6 +28,18 @@ public enum CommandType {
 
     CommandType(short id) {
         this.id = id;
+    }
+
+    public static CommandType value(final Short id) {
+        if (id == null) {
+            return CommandType.UNKNOWN;
+        }
+        for (CommandType value : values()) {
+            if (value.id == id) {
+                return value;
+            }
+        }
+        return CommandType.UNKNOWN;
     }
 
 }

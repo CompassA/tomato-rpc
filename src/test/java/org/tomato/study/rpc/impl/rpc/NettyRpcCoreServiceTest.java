@@ -35,7 +35,7 @@ import static org.powermock.api.mockito.PowerMockito.when;
  * Created on 2021.04.18
  */
 @RunWith(PowerMockRunner.class)
-public class NettyRpcServiceTest {
+public class NettyRpcCoreServiceTest {
 
     @Mock
     private NameService mockNameService;
@@ -76,7 +76,7 @@ public class NettyRpcServiceTest {
         future.complete(mockResponse);
         when(mockSender.send(any())).thenReturn(future);
 
-        RpcCoreService rpcService = new NettyRpcService();
+        RpcCoreService rpcService = new NettyRpcCoreService();
         TestService clientStub = rpcService.createStub("mockVip", TestService.class);
 
         Assert.assertNotNull(clientStub);

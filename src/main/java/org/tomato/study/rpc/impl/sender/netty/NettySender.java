@@ -14,16 +14,16 @@ import java.util.concurrent.CompletableFuture;
 @Getter
 public class NettySender implements MessageSender {
 
-    private final String serviceVip;
+    private final String serviceVIP;
 
     private final ChannelHolder channelHolder;
 
     private final ChannelResponseHolder responseHolder;
 
-    public NettySender(String serviceVip,
+    public NettySender(String serviceVIP,
                        ChannelHolder channelHolder,
                        ChannelResponseHolder responseHolder) {
-        this.serviceVip = serviceVip;
+        this.serviceVIP = serviceVIP;
         this.channelHolder = channelHolder;
         this.responseHolder = responseHolder;
     }
@@ -34,7 +34,7 @@ public class NettySender implements MessageSender {
         long id = msg.getHeader().getId();
         responseHolder.putFeatureResponse(id, future);
         try {
-            channelHolder.getChannelWrapper(serviceVip)
+            channelHolder.getChannelWrapper(serviceVIP)
                     .getChannel()
                     .writeAndFlush(msg)
                     .addListener((ChannelFutureListener) futureChannel -> {

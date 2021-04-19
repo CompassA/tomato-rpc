@@ -21,16 +21,20 @@ public class MethodContext {
 
     private String methodName;
 
+    private Class<?>[] argsType;
+
     private Class<?> returnType;
 
     private Object[] parameters;
 
     public MethodContext(String interfaceName,
                          String methodName,
+                         Class<?>[] argsType,
                          Class<?> returnType,
                          Object... parameters) {
         this.interfaceName = interfaceName;
         this.methodName = methodName;
+        this.argsType = argsType;
         this.returnType = returnType;
         if (parameters == null || parameters.length == 0) {
             this.parameters = new Object[0];
