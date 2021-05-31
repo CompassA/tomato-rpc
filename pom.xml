@@ -6,70 +6,109 @@
 
     <groupId>org.tomato.study.rpc</groupId>
     <artifactId>tomato-rpc</artifactId>
+    <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
+    <modules>
+        <module>tomato-rpc-core</module>
+        <module>tomato-rpc-netty</module>
+        <module>tomato-rpc-common</module>
+    </modules>
 
     <properties>
         <encoding>UTF-8</encoding>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
+        <tomato-rpc.version>1.0-SNAPSHOT</tomato-rpc.version>
         <protostuff.version>1.7.2</protostuff.version>
         <powermock.version>2.0.2</powermock.version>
+        <netty.version>4.1.34.Final</netty.version>
+        <lombok.version>1.18.14</lombok.version>
+        <junit.version>4.12</junit.version>
+        <itranswarp.version>1.0</itranswarp.version>
+        <common-lang3.version>3.9</common-lang3.version>
     </properties>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
-            <version>1.18.14</version>
-        </dependency>
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.tomato.study.rpc</groupId>
+                <artifactId>tomato-rpc-netty</artifactId>
+                <version>${tomato-rpc.version}</version>
+            </dependency>
 
-        <!-- https://mvnrepository.com/artifact/junit/junit -->
-        <dependency>
-            <groupId>junit</groupId>
-            <artifactId>junit</artifactId>
-            <version>4.12</version>
-            <scope>test</scope>
-        </dependency>
+            <dependency>
+                <groupId>org.tomato.study.rpc</groupId>
+                <artifactId>tomato-rpc-common</artifactId>
+                <version>${tomato-rpc.version}</version>
+            </dependency>
 
-        <dependency>
-            <groupId>org.powermock</groupId>
-            <artifactId>powermock-api-mockito2</artifactId>
-            <version>${powermock.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.powermock</groupId>
-            <artifactId>powermock-module-junit4</artifactId>
-            <version>${powermock.version}</version>
-            <scope>test</scope>
-        </dependency>
+            <dependency>
+                <groupId>org.tomato.study.rpc</groupId>
+                <artifactId>tomato-rpc-core</artifactId>
+                <version>${tomato-rpc.version}</version>
+            </dependency>
 
-        <!-- https://mvnrepository.com/artifact/com.itranswarp/compiler -->
-        <dependency>
-            <groupId>com.itranswarp</groupId>
-            <artifactId>compiler</artifactId>
-            <version>1.0</version>
-        </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+            </dependency>
+
+            <!-- https://mvnrepository.com/artifact/junit/junit -->
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>${junit.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>org.powermock</groupId>
+                <artifactId>powermock-api-mockito2</artifactId>
+                <version>${powermock.version}</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.powermock</groupId>
+                <artifactId>powermock-module-junit4</artifactId>
+                <version>${powermock.version}</version>
+                <scope>test</scope>
+            </dependency>
+
+            <!-- https://mvnrepository.com/artifact/com.itranswarp/compiler -->
+            <dependency>
+                <groupId>com.itranswarp</groupId>
+                <artifactId>compiler</artifactId>
+                <version>${itranswarp.version}</version>
+            </dependency>
 
 
-        <dependency>
-            <groupId>io.protostuff</groupId>
-            <artifactId>protostuff-core</artifactId>
-            <version>${protostuff.version}</version>
-        </dependency>
+            <dependency>
+                <groupId>io.protostuff</groupId>
+                <artifactId>protostuff-core</artifactId>
+                <version>${protostuff.version}</version>
+            </dependency>
 
-        <dependency>
-            <groupId>io.protostuff</groupId>
-            <artifactId>protostuff-runtime</artifactId>
-            <version>${protostuff.version}</version>
-        </dependency>
+            <dependency>
+                <groupId>io.protostuff</groupId>
+                <artifactId>protostuff-runtime</artifactId>
+                <version>${protostuff.version}</version>
+            </dependency>
 
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
-            <version>4.1.34.Final</version>
-        </dependency>
-    </dependencies>
+            <dependency>
+                <groupId>io.netty</groupId>
+                <artifactId>netty-all</artifactId>
+                <version>${netty.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>${common-lang3.version}</version>
+            </dependency>
+
+        </dependencies>
+    </dependencyManagement>
 
 </project>
