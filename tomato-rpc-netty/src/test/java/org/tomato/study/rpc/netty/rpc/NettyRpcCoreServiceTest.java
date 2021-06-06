@@ -72,7 +72,7 @@ public class NettyRpcCoreServiceTest {
         // mock netty send
         CompletableFuture<Command> future = new CompletableFuture<>();
         Integer sum = mockArgs.stream().reduce(0, Integer::sum);
-        Command mockResponse = CommandFactory.INSTANCE.createRequest(sum, serializer, CommandType.RPC_RESPONSE);
+        Command mockResponse = CommandFactory.INSTANCE.requestCommand(sum, serializer, CommandType.RPC_RESPONSE);
         future.complete(mockResponse);
         when(mockSender.send(any())).thenReturn(future);
 

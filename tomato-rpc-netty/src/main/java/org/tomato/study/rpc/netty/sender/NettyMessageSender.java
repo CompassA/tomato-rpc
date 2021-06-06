@@ -12,7 +12,7 @@ import java.util.concurrent.CompletableFuture;
  * Created on 2021.04.08
  */
 @Getter
-public class NettySender implements MessageSender {
+public class NettyMessageSender implements MessageSender {
 
     private final String serviceVIP;
 
@@ -20,9 +20,9 @@ public class NettySender implements MessageSender {
 
     private final ChannelResponseHolder responseHolder;
 
-    public NettySender(String serviceVIP,
-                       ChannelHolder channelHolder,
-                       ChannelResponseHolder responseHolder) {
+    public NettyMessageSender(String serviceVIP,
+                              ChannelHolder channelHolder,
+                              ChannelResponseHolder responseHolder) {
         this.serviceVIP = serviceVIP;
         this.channelHolder = channelHolder;
         this.responseHolder = responseHolder;

@@ -11,7 +11,7 @@ public final class NettySenderFactory implements SenderFactory {
 
     @Override
     public MessageSender create(String serviceVIP) {
-        return new NettySender(serviceVIP,
+        return new NettyMessageSender(serviceVIP,
                 ChannelHolder.INSTANCE, ChannelResponseHolder.INSTANCE);
     }
 }

@@ -6,7 +6,7 @@ import org.tomato.study.rpc.core.Serializer;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
-import org.tomato.study.rpc.netty.data.MethodContext;
+import org.tomato.study.rpc.netty.data.RpcRequest;
 import org.tomato.study.rpc.netty.serializer.SerializerHolder;
 
 import java.util.concurrent.ExecutionException;
@@ -23,12 +23,12 @@ public abstract class AbstractStub {
     @Setter
     protected MessageSender messageSender;
 
-    protected Object invokeRemote(MethodContext methodContext) {
-        if (methodContext == null) {
+    protected Object invokeRemote(RpcRequest rpcRequest) {
+        if (rpcRequest == null) {
             throw new RuntimeException("rpc methodContext is null");
         }
-        Command request = CommandFactory.INSTANCE.createRequest(
-                methodContext, serializer, CommandType.RPC_REQUEST);
+        Command request = CommandFactory.INSTANCE.requestCommand(
+                rpcRequest, serializer, CommandType.RPC_REQUEST);
         try {
             return messageSender.send(request).get();
         } catch (ExecutionException e) {

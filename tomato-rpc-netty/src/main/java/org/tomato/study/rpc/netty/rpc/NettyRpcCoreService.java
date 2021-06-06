@@ -50,7 +50,7 @@ public class NettyRpcCoreService implements RpcCoreService {
     public <T> T createStub(String serviceVIP, Class<T> serviceInterface) {
         try {
             return stubFactory.createStub(
-                    senderFactory.create(serviceVIP), serviceInterface);
+                    senderFactory.create(serviceVIP), serviceInterface, serviceVIP);
         } catch (Exception e) {
             e.printStackTrace();
         }

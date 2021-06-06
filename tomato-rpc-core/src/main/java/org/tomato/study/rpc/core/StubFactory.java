@@ -11,8 +11,9 @@ public interface StubFactory {
      * create a proxy instance which can send message to provider
      * @param messageSender the instance to send message to server
      * @param serviceInterface interface of service provider
+     * @param serviceVIP service vip
      * @param <T> proxy interface type
      * @return proxy instance
      */
-    <T> T createStub(MessageSender messageSender, Class<T> serviceInterface);
+    <T> T createStub(MessageSender messageSender, Class<T> serviceInterface, String serviceVIP);
 }

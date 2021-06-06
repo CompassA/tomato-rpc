@@ -3,12 +3,12 @@ package org.tomato.study.rpc.netty.proxy;
 import lombok.AllArgsConstructor;
 import org.tomato.study.rpc.core.MessageSender;
 import org.tomato.study.rpc.core.Serializer;
-import org.tomato.study.rpc.netty.serializer.SerializerHolder;
 import org.tomato.study.rpc.core.StubFactory;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
-import org.tomato.study.rpc.netty.data.MethodContext;
+import org.tomato.study.rpc.netty.data.RpcRequest;
+import org.tomato.study.rpc.netty.serializer.SerializerHolder;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -22,8 +22,9 @@ public class JdkStubFactory implements StubFactory {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T> T createStub(MessageSender messageSender, Class<T> serviceInterface) {
+    public <T> T createStub(MessageSender messageSender, Class<T> serviceInterface, String serviceVIP) {
         InvocationHandler handler = new StubHandler(
+                serviceVIP,
                 serviceInterface,
                 SerializerHolder.getSerializer((byte) 0),
                 messageSender);
@@ -36,6 +37,8 @@ public class JdkStubFactory implements StubFactory {
     @AllArgsConstructor
     private static class StubHandler implements InvocationHandler {
 
+        private final String serviceVIP;
+
         private final Class<?> serviceInterface;
 
         private final Serializer serializer;
@@ -45,18 +48,19 @@ public class JdkStubFactory implements StubFactory {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             try {
-                MethodContext methodContext = MethodContext.builder()
+                RpcRequest rpcRequest = RpcRequest.builder()
+                        .serviceVIP(serviceVIP)
                         .interfaceName(serviceInterface.getName())
                         .methodName(method.getName())
                         .argsType(method.getParameterTypes())
                         .returnType(method.getReturnType())
                         .parameters(args)
                         .build();
-                Command requestCommand = CommandFactory.INSTANCE.createRequest(
-                        methodContext, serializer, CommandType.RPC_REQUEST);
+                Command requestCommand = CommandFactory.INSTANCE.requestCommand(
+                        rpcRequest, serializer, CommandType.RPC_REQUEST);
                 Command responseCommand = messageSender.send(requestCommand).get();
                 return serializer.deserialize(
-                        responseCommand.getBody(), methodContext.getReturnType());
+                        responseCommand.getBody(), rpcRequest.getReturnType());
             } catch (Exception e) {
                 e.printStackTrace();
             }
