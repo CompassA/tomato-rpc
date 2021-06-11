@@ -28,21 +28,23 @@ import java.io.IOException;
 public class NettyRpcServer implements RpcServer {
 
     @Getter
-    private int port;
+    private final String host;
 
-    private CommandHandler commandHandler;
+    @Getter
+    private final int port;
 
-    private Channel channel;
+    private final CommandHandler commandHandler;
+
+    private final ServerBootstrap serverBootstrap;
+
+    private volatile Channel channel = null;
 
     private EventLoopGroup bossGroup;
 
     private EventLoopGroup workerGroup;
 
-    @Override
-    public synchronized void start(HandlerRegistry handlerRegistry, int port) throws InterruptedException {
-        if (!this.isClosed()) {
-            throw new IllegalStateException();
-        }
+    public NettyRpcServer(String host, int port, HandlerRegistry handlerRegistry) {
+        this.host = host;
         this.port = port;
         this.commandHandler = new CommandHandler(handlerRegistry);
         if (Epoll.isAvailable()) {
@@ -52,7 +54,7 @@ public class NettyRpcServer implements RpcServer {
             this.bossGroup = new NioEventLoopGroup();
             this.workerGroup = new NioEventLoopGroup();
         }
-        this.channel = new ServerBootstrap()
+        this.serverBootstrap = new ServerBootstrap()
                 .group(bossGroup, workerGroup)
                 .channel(Epoll.isAvailable() ? EpollServerSocketChannel.class : NioServerSocketChannel.class)
                 .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
@@ -65,7 +67,15 @@ public class NettyRpcServer implements RpcServer {
                                 .addLast(NettyRpcServer.this.commandHandler)
                                 .addLast(new NettyFrameEncoder());
                     }
-                })
+                });
+    }
+
+    @Override
+    public synchronized void start() throws InterruptedException {
+        if (!this.isClosed()) {
+            throw new IllegalStateException();
+        }
+        this.channel = this.serverBootstrap
                 .bind(port)
                 .sync()
                 .channel();
@@ -89,6 +99,6 @@ public class NettyRpcServer implements RpcServer {
 
     @Override
     public boolean isClosed() {
-        return this.channel == null && this.bossGroup == null && this.workerGroup == null;
+        return this.channel == null;
     }
 }

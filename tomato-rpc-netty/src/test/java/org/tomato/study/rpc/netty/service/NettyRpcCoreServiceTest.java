@@ -1,4 +1,4 @@
-package org.tomato.study.rpc.netty.rpc;
+package org.tomato.study.rpc.netty.service;
 
 import org.junit.Assert;
 import org.junit.Test;

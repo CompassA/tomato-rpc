@@ -10,10 +10,15 @@ public interface RpcServer extends Closeable {
 
     /**
      * start rpc sever
-     * @param handlerRegistry request handler which matches the request type by message type
-     * @param port server port
      */
-    void start(HandlerRegistry handlerRegistry, int port) throws InterruptedException;
+    void start() throws InterruptedException;
+
+
+    /**
+     * get rpc server ip
+     * @return local host
+     */
+    String getHost();
 
     /**
      * get rpc server port
