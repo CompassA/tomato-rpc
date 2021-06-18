@@ -1,5 +1,7 @@
 package org.tomato.study.rpc.core;
 
+import org.tomato.study.rpc.core.spi.SpiInterface;
+
 import java.util.List;
 
 /**
@@ -7,6 +9,7 @@ import java.util.List;
  * @author Tomato
  * Created on 2021.03.31
  */
+@SpiInterface(paramName = "serializer")
 public interface Serializer {
 
     /**

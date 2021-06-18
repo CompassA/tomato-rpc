@@ -40,7 +40,7 @@ public class ProtostuffSerializerTest {
                 .methodName("mockMethodName")
                 .parameters(new Object[] { "mockString", 1, LocalDateTime.now(), listList, map})
                 .build();
-        Command mockCommand = CommandFactory.INSTANCE.requestCommand(
+        Command mockCommand = CommandFactory.INSTANCE.request(
                 rpcRequest, list, SerializerHolder.getSerializer((byte) 0), CommandType.RPC_REQUEST);
         CommandModel<RpcRequest> commandModel = CommandUtil.toModel(mockCommand, RpcRequest.class);
         Assert.assertNotNull(commandModel);

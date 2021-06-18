@@ -5,8 +5,8 @@ import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.RpcServer;
 import org.tomato.study.rpc.core.RpcServerFactory;
 import org.tomato.study.rpc.core.SenderFactory;
-import org.tomato.study.rpc.core.SpiLoader;
 import org.tomato.study.rpc.core.StubFactory;
+import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.netty.utils.NetworkUtil;
 
 import java.io.IOException;
@@ -18,11 +18,13 @@ import java.net.URI;
  */
 public class NettyRpcCoreService implements RpcCoreService {
 
-    private final StubFactory stubFactory = SpiLoader.load(StubFactory.class);
+    private final StubFactory stubFactory = SpiLoader.getLoader(StubFactory.class).load();
 
-    private final SenderFactory senderFactory = SpiLoader.load(SenderFactory.class);
+    private final SenderFactory senderFactory = SpiLoader.getLoader(SenderFactory.class).load();
 
-    private final ProviderRegistry providerRegistry = SpiLoader.load(ProviderRegistry.class);
+    private final ProviderRegistry providerRegistry = SpiLoader.getLoader(ProviderRegistry.class).load();
+
+    private final RpcServerFactory rpcServerFactory = SpiLoader.getLoader(RpcServerFactory.class).load();
 
     private RpcServer server = null;
 
@@ -31,8 +33,7 @@ public class NettyRpcCoreService implements RpcCoreService {
         if (server != null) {
             throw new IllegalStateException("multi server");
         }
-        RpcServerFactory rpcServerFactory = SpiLoader.load(RpcServerFactory.class);
-        this.server = rpcServerFactory.create(NetworkUtil.getLocalHost(), port);
+        this.server = this.rpcServerFactory.create(NetworkUtil.getLocalHost(), port);
         server.start();
         return server;
     }

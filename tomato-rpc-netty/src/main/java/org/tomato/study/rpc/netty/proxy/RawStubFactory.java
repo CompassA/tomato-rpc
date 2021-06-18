@@ -1,8 +1,8 @@
 //package org.tomato.study.rpc.netty.proxy;
 //
 //import com.itranswarp.compiler.JavaStringCompiler;
-//import org.tomato.study.rpc.core.MessageSender;
-//import org.tomato.study.rpc.core.StubFactory;
+//import org.tomato.study.rpc.core.ServerHandler.MessageSender;
+//import org.tomato.study.rpc.core.ServerHandler.StubFactory;
 //
 //import java.io.IOException;
 //import java.lang.reflect.InvocationTargetException;

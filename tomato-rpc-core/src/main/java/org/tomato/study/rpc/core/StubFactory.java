@@ -1,10 +1,13 @@
 package org.tomato.study.rpc.core;
 
+import org.tomato.study.rpc.core.spi.SpiInterface;
+
 /**
  * create rpc client proxy
  * @author Tomato
  * Created on 2021.03.31
  */
+@SpiInterface(paramName = "stubFactory")
 public interface StubFactory {
 
     /**

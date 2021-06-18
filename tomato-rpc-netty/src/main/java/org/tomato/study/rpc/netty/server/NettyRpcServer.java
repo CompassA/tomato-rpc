@@ -1,9 +1,5 @@
 package org.tomato.study.rpc.netty.server;
 
-import org.tomato.study.rpc.netty.codec.netty.NettyFrameDecoder;
-import org.tomato.study.rpc.netty.codec.netty.NettyFrameEncoder;
-import org.tomato.study.rpc.netty.codec.netty.NettyProtoDecoder;
-import org.tomato.study.rpc.netty.server.handler.CommandHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
@@ -17,7 +13,10 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.Getter;
 import org.tomato.study.rpc.core.RpcServer;
-import org.tomato.study.rpc.core.HandlerRegistry;
+import org.tomato.study.rpc.netty.codec.netty.NettyFrameDecoder;
+import org.tomato.study.rpc.netty.codec.netty.NettyFrameEncoder;
+import org.tomato.study.rpc.netty.codec.netty.NettyProtoDecoder;
+import org.tomato.study.rpc.netty.handler.CommandHandler;
 
 import java.io.IOException;
 
@@ -43,10 +42,10 @@ public class NettyRpcServer implements RpcServer {
 
     private EventLoopGroup workerGroup;
 
-    public NettyRpcServer(String host, int port, HandlerRegistry handlerRegistry) {
+    public NettyRpcServer(String host, int port) {
         this.host = host;
         this.port = port;
-        this.commandHandler = new CommandHandler(handlerRegistry);
+        this.commandHandler = new CommandHandler();
         if (Epoll.isAvailable()) {
             this.bossGroup = new EpollEventLoopGroup();
             this.workerGroup = new EpollEventLoopGroup();

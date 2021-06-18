@@ -24,9 +24,9 @@ public enum CommandFactory {
      * @param <T> request type
      * @return request command
      */
-    public <T> Command requestCommand(T requestData,
-                                      Serializer serializer,
-                                      CommandType type) {
+    public <T> Command request(T requestData,
+                               Serializer serializer,
+                               CommandType type) {
         byte[] body = serializer.serialize(requestData);
         return Command.builder()
                 .header(createHeader(null, type, serializer, 0, body.length))
@@ -44,10 +44,10 @@ public enum CommandFactory {
      * @param <T> request data type
      * @return request data
      */
-    public <T> Command requestCommand(T requestData,
-                                      List<Parameter> parameters,
-                                      Serializer serializer,
-                                      CommandType type) {
+    public <T> Command request(T requestData,
+                               List<Parameter> parameters,
+                               Serializer serializer,
+                               CommandType type) {
         byte[] extension = serializer.serializeList(parameters, Parameter.class);
         byte[] body = serializer.serialize(requestData);
         return Command.builder()
@@ -66,10 +66,10 @@ public enum CommandFactory {
      * @param <T> response data type
      * @return response command
      */
-    public <T> Command responseCommand(long requestId,
-                                       T responseData,
-                                       Serializer serializer,
-                                       CommandType type) {
+    public <T> Command response(long requestId,
+                                T responseData,
+                                Serializer serializer,
+                                CommandType type) {
         byte[] body = serializer.serialize(responseData);
         return Command.builder()
                 .header(createHeader(requestId, type, serializer, 0, body.length))

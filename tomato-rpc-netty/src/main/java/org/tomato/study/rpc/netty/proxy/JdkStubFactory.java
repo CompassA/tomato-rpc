@@ -7,8 +7,11 @@ import org.tomato.study.rpc.core.StubFactory;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.spi.SpiLoader;
+import org.tomato.study.rpc.netty.data.Code;
 import org.tomato.study.rpc.netty.data.RpcRequest;
-import org.tomato.study.rpc.netty.serializer.SerializerHolder;
+import org.tomato.study.rpc.netty.data.RpcResponse;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -20,13 +23,15 @@ import java.lang.reflect.Proxy;
  */
 public class JdkStubFactory implements StubFactory {
 
+    private final Serializer serializer = SpiLoader.getLoader(Serializer.class).load();
+
     @Override
     @SuppressWarnings("unchecked")
     public <T> T createStub(MessageSender messageSender, Class<T> serviceInterface, String serviceVIP) {
         InvocationHandler handler = new StubHandler(
                 serviceVIP,
                 serviceInterface,
-                SerializerHolder.getSerializer((byte) 0),
+                serializer,
                 messageSender);
         return (T) Proxy.newProxyInstance(
                 JdkStubFactory.class.getClassLoader(),
@@ -48,7 +53,7 @@ public class JdkStubFactory implements StubFactory {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             try {
-                RpcRequest rpcRequest = RpcRequest.builder()
+                RpcRequest request = RpcRequest.builder()
                         .serviceVIP(serviceVIP)
                         .interfaceName(serviceInterface.getName())
                         .methodName(method.getName())
@@ -56,11 +61,16 @@ public class JdkStubFactory implements StubFactory {
                         .returnType(method.getReturnType())
                         .parameters(args)
                         .build();
-                Command requestCommand = CommandFactory.INSTANCE.requestCommand(
-                        rpcRequest, serializer, CommandType.RPC_REQUEST);
+                Command requestCommand = CommandFactory.INSTANCE.request(
+                        request, serializer, CommandType.RPC_REQUEST);
                 Command responseCommand = messageSender.send(requestCommand).get();
-                return serializer.deserialize(
-                        responseCommand.getBody(), rpcRequest.getReturnType());
+                RpcResponse response = serializer.deserialize(
+                        responseCommand.getBody(), RpcResponse.class);
+                if (Code.SUCCESS.equals(response.getCode())) {
+                    return response.getData();
+                } else {
+                    throw new TomatoRpcException("rpc failed, server message: " + response.getMessage());
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }

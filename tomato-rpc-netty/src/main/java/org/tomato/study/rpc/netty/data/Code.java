@@ -11,7 +11,9 @@ import lombok.Getter;
 @AllArgsConstructor
 public enum Code {
 
+    UNKNOWN(-1, "UNKNOWN"),
     SUCCESS(0, "SUCCESS"),
+    FAIL(1, "FAIL"),
     ;
 
     private final int code;
@@ -19,5 +21,17 @@ public enum Code {
 
     public boolean equals(int code) {
         return this.code == code;
+    }
+
+    public static Code valueOf(Integer code) {
+        if (code == null) {
+            return UNKNOWN;
+        }
+        for (Code value : values()) {
+            if (code.equals(value.getCode())) {
+                return value;
+            }
+        }
+        return UNKNOWN;
     }
 }

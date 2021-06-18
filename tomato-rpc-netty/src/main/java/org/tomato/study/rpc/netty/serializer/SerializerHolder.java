@@ -14,7 +14,6 @@ public final class SerializerHolder {
     private static final ConcurrentMap<Byte, Serializer> SERIALIZER_MAP = new ConcurrentHashMap<>();
 
     static {
-        //TODO spi
         ProtostuffSerializer protostuffSerializer = new ProtostuffSerializer();
         SERIALIZER_MAP.put(protostuffSerializer.serializerIndex(), protostuffSerializer);
     }

@@ -1,0 +1,1 @@
+providerRegistry : org.tomato.study.rpc.netty.server.NettyProviderRegistry

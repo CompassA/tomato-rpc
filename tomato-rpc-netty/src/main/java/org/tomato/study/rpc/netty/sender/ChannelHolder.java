@@ -13,7 +13,7 @@ import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.tomato.study.rpc.core.NameService;
-import org.tomato.study.rpc.core.SpiLoader;
+import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.netty.codec.netty.NettyFrameEncoder;
 import org.tomato.study.rpc.netty.codec.netty.NettyProtoDecoder;
 import org.tomato.study.rpc.netty.handler.ResponseHandler;
@@ -37,7 +37,7 @@ public class ChannelHolder {
     /**
      * service provider discovery
      */
-    private final NameService nameService = SpiLoader.load(NameService.class);
+    private final NameService nameService = SpiLoader.getLoader(NameService.class).load();
 
     /**
      * serviceURI -> service connection info

@@ -27,7 +27,7 @@ public abstract class AbstractStub {
         if (rpcRequest == null) {
             throw new RuntimeException("rpc methodContext is null");
         }
-        Command request = CommandFactory.INSTANCE.requestCommand(
+        Command request = CommandFactory.INSTANCE.request(
                 rpcRequest, serializer, CommandType.RPC_REQUEST);
         try {
             return messageSender.send(request).get();
