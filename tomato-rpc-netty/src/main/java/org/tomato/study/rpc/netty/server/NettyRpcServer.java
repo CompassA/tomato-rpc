@@ -1,3 +1,17 @@
+/*
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *      http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
 package org.tomato.study.rpc.netty.server;
 
 import io.netty.bootstrap.ServerBootstrap;
@@ -18,13 +32,13 @@ import org.tomato.study.rpc.netty.codec.netty.NettyFrameEncoder;
 import org.tomato.study.rpc.netty.codec.netty.NettyProtoDecoder;
 import org.tomato.study.rpc.netty.handler.CommandHandler;
 
-import java.io.IOException;
-
 /**
  * @author Tomato
  * Created on 2021.04.18
  */
 public class NettyRpcServer implements RpcServer {
+
+    private volatile boolean started;
 
     @Getter
     private final String host;
@@ -36,13 +50,14 @@ public class NettyRpcServer implements RpcServer {
 
     private final ServerBootstrap serverBootstrap;
 
-    private volatile Channel channel = null;
+    private Channel channel;
 
     private EventLoopGroup bossGroup;
 
     private EventLoopGroup workerGroup;
 
     public NettyRpcServer(String host, int port) {
+        this.started = false;
         this.host = host;
         this.port = port;
         this.commandHandler = new CommandHandler();
@@ -70,18 +85,30 @@ public class NettyRpcServer implements RpcServer {
     }
 
     @Override
-    public synchronized void start() throws InterruptedException {
-        if (!this.isClosed()) {
-            throw new IllegalStateException();
+    public boolean start() {
+        synchronized (this) {
+            if (this.started) {
+                return false;
+            }
+            this.started = true;
         }
-        this.channel = this.serverBootstrap
-                .bind(port)
-                .sync()
-                .channel();
+        try {
+            this.channel = this.serverBootstrap
+                    .bind(port)
+                    .sync()
+                    .channel();
+            return true;
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            synchronized (this) {
+                this.started = false;
+            }
+            return false;
+        }
     }
 
     @Override
-    public synchronized void close() throws IOException {
+    public void close() {
         if (this.channel != null) {
             this.channel.close();
             this.channel = null;
@@ -94,10 +121,13 @@ public class NettyRpcServer implements RpcServer {
             this.workerGroup.shutdownGracefully();
             this.workerGroup = null;
         }
+        synchronized (this) {
+            this.started = false;
+        }
     }
 
     @Override
     public boolean isClosed() {
-        return this.channel == null;
+        return !started;
     }
 }
