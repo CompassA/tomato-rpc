@@ -12,34 +12,28 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core;
-
-import org.tomato.study.rpc.core.data.Command;
-
-import java.util.concurrent.CompletableFuture;
+package org.tomato.study.rpc.sample.api.data;
 
 /**
- * send rpc request
  * @author Tomato
- * Created on 2021.03.31
+ * Created on 2021.06.20
  */
-public interface MessageSender {
+public class DemoResponse {
 
-    /**
-     * send rpc request
-     * @param msg request message
-     * @return response message
-     */
-    CompletableFuture<Command> send(Command msg);
+    public String data;
 
-    /**
-     * get the vip of the sender target server
-     * @return vip
-     */
-    String getServiceVIP();
+    public DemoResponse() {
+    }
 
-    /**
-     * close sender client
-     */
-    void close();
+    public DemoResponse(String data) {
+        this.data = data;
+    }
+
+    public String getData() {
+        return data;
+    }
+
+    public void setData(String data) {
+        this.data = data;
+    }
 }

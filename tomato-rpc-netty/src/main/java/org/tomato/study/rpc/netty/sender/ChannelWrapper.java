@@ -29,4 +29,8 @@ public class ChannelWrapper {
     public ChannelWrapper(Channel channel) {
         this.channel = channel;
     }
+
+    public void closeChannel() {
+        channel.close();
+    }
 }

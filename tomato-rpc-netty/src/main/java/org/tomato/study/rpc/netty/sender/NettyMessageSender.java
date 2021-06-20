@@ -63,4 +63,9 @@ public class NettyMessageSender implements MessageSender {
         }
         return future;
     }
+
+    @Override
+    public void close() {
+        channelHolder.close();
+    }
 }

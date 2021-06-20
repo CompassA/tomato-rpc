@@ -19,6 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
+import java.net.URI;
 import java.util.Enumeration;
 import java.util.regex.Pattern;
 
@@ -69,6 +70,10 @@ public final class NetworkUtil {
             }
         }
         return null;
+    }
+
+    public static URI createURI(String protocol, String host, int port) {
+        return URI.create(String.format("%s://%s:%d", protocol, host, port));
     }
 
 }

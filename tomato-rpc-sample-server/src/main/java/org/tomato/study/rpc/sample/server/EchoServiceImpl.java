@@ -12,34 +12,22 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core;
+package org.tomato.study.rpc.sample.server;
 
-import org.tomato.study.rpc.core.data.Command;
-
-import java.util.concurrent.CompletableFuture;
+import org.tomato.study.rpc.sample.api.EchoService;
+import org.tomato.study.rpc.sample.api.data.DemoRequest;
+import org.tomato.study.rpc.sample.api.data.DemoResponse;
 
 /**
- * send rpc request
  * @author Tomato
- * Created on 2021.03.31
+ * Created on 2021.06.20
  */
-public interface MessageSender {
+public class EchoServiceImpl implements EchoService {
 
-    /**
-     * send rpc request
-     * @param msg request message
-     * @return response message
-     */
-    CompletableFuture<Command> send(Command msg);
-
-    /**
-     * get the vip of the sender target server
-     * @return vip
-     */
-    String getServiceVIP();
-
-    /**
-     * close sender client
-     */
-    void close();
+    @Override
+    public DemoResponse echo(DemoRequest request) {
+        DemoResponse response = new DemoResponse();
+        response.setData(request.getData());
+        return response;
+    }
 }

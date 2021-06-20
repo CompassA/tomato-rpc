@@ -34,15 +34,12 @@ public interface RpcCoreService extends Closeable {
 
     /**
      * register service provider
-     * @param serviceVIP service virtual ip
      * @param serviceInstance service bean
      * @param serviceInterface service interface class
      * @param <T> service type
      * @return service address
      */
-    <T> URI registerProvider(String serviceVIP,
-                             T serviceInstance,
-                             Class<T> serviceInterface);
+    <T> URI registerProvider(T serviceInstance, Class<T> serviceInterface);
 
     /**
      * create client proxy consumer
@@ -51,5 +48,11 @@ public interface RpcCoreService extends Closeable {
      * @param <T> consumer class type
      * @return proxy instance
      */
-    <T> T createStub(String serviceVIP, Class<T> serviceInterface);
+    <T> T createStub(String serviceVIP,Class<T> serviceInterface);
+
+    /**
+     * get service virtual ip
+     * @return service virtual ip
+     */
+    String getServiceVIP();
 }

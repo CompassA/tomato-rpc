@@ -14,21 +14,37 @@
 
 package org.tomato.study.rpc.core;
 
+import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.spi.SpiInterface;
+
 import java.net.URI;
+import java.util.List;
+import java.util.Optional;
 
 /**
  * register service and routing
  * @author Tomato
  * Created on 2021.03.31
  */
+@SpiInterface(paramName = "nameService")
 public interface NameService {
 
     /**
-     * register service vip
-     * @param serviceVIP service identification
-     * @param serviceURI service address
+     * connect to name server
+     * @param nameServiceURI name service uri
      */
-    void registerService(String serviceVIP, URI serviceURI);
+    void connect(URI nameServiceURI, List<String> subscribedVIP);
+
+    /**
+     * disconnect from name server
+     */
+    void disconnect();
+
+    /**
+     * register service vip
+     * @param metaData service identification、service address
+     */
+    void registerService(MetaData metaData);
 
     /**
      * get service address
@@ -36,5 +52,5 @@ public interface NameService {
      * @return service address
      * @throws Exception any exception during look up
      */
-    URI lookupService(String serviceVIP) throws Exception;
+    Optional<URI> lookupService(String serviceVIP) throws Exception;
 }

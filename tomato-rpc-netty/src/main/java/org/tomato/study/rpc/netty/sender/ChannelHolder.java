@@ -27,6 +27,7 @@ import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.tomato.study.rpc.core.NameService;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.netty.codec.netty.NettyFrameEncoder;
 import org.tomato.study.rpc.netty.codec.netty.NettyProtoDecoder;
@@ -34,6 +35,7 @@ import org.tomato.study.rpc.netty.handler.ResponseHandler;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -47,6 +49,8 @@ import java.util.concurrent.TimeoutException;
 public class ChannelHolder {
 
     public static final ChannelHolder INSTANCE = new ChannelHolder();
+
+    public boolean close = false;
 
     /**
      * service provider discovery
@@ -83,7 +87,11 @@ public class ChannelHolder {
      * @throws Exception any exception during service discovery and connection register.
      */
     public ChannelWrapper getChannelWrapper(String serviceVip) throws Exception {
-        URI serviceURI = nameService.lookupService(serviceVip);
+        Optional<URI> optServiceURI = nameService.lookupService(serviceVip);
+        if (optServiceURI.isEmpty()) {
+            throw new TomatoRpcException("service can not found, vip: " + serviceVip);
+        }
+        URI serviceURI = optServiceURI.get();
         ChannelWrapper channelWrapper = channelMap.get(serviceURI);
         if (channelWrapper == null) {
             synchronized (ChannelHolder.class) {
@@ -115,7 +123,7 @@ public class ChannelHolder {
                 });
         ChannelFuture connectFuture = bootstrap.connect(
                 new InetSocketAddress(serviceURI.getHost(), serviceURI.getPort()));
-        if (!connectFuture.await(connectionTimeOut, TimeUnit.MILLISECONDS)) {
+        if (!connectFuture.await(connectionTimeOut, TimeUnit.SECONDS)) {
             throw new TimeoutException("netty connect timeout");
         }
         Channel channel = connectFuture.channel();
@@ -125,5 +133,17 @@ public class ChannelHolder {
         ChannelWrapper channelWrapper = new ChannelWrapper(channel);
         channelMap.put(serviceURI, channelWrapper);
         return channelWrapper;
+    }
+
+    public synchronized void close() {
+        if (close) {
+            return;
+        }
+        this.close = true;
+        for (ChannelWrapper channelWrapper : channelMap.values()) {
+            channelWrapper.closeChannel();
+        }
+        channelMap.clear();
+        this.eventLoopGroup.shutdownGracefully();
     }
 }

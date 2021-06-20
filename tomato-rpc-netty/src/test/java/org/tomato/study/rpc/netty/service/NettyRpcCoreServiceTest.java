@@ -45,6 +45,7 @@ import org.tomato.study.rpc.netty.core.test.TestService;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -71,7 +72,7 @@ public class NettyRpcCoreServiceTest {
 
     @Before
     public void init() {
-        this.rpcCoreService = new NettyRpcCoreService();
+        this.rpcCoreService = new NettyRpcCoreService("mockVIP", null, null);
         this.port = 1234;
     }
 
@@ -88,6 +89,8 @@ public class NettyRpcCoreServiceTest {
         // mock name service
         mockStatic(SpiLoader.class);
         when(SpiLoader.getLoader(eq(NameService.class))).thenReturn(mockNameServiceLoader);
+        when(SpiLoader.getLoader(eq(NameService.class))).thenReturn(mockNameServiceLoader);
+        when(mockNameServiceLoader.load()).thenReturn(mockNameService);
         when(mockNameServiceLoader.load()).thenReturn(mockNameService);
         when(SpiLoader.getLoader(eq(ProviderRegistry.class))).thenCallRealMethod();
 
@@ -97,8 +100,8 @@ public class NettyRpcCoreServiceTest {
         TestService serverService = new TestServiceImpl();
 
         //2. mock name service look up
-        URI serviceURI = rpcCoreService.registerProvider(serviceVIP, serverService, TestService.class);
-        when(mockNameService.lookupService(any())).thenReturn(serviceURI);
+        URI serviceURI = rpcCoreService.registerProvider(serverService, TestService.class);
+        when(mockNameService.lookupService(any())).thenReturn(Optional.of(serviceURI));
 
         //3. create stub
         TestService clientStub = rpcCoreService.createStub(serviceVIP, TestService.class);
