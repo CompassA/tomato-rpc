@@ -18,6 +18,7 @@ import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.netty.service.NettyRpcCoreService;
 import org.tomato.study.rpc.sample.api.EchoService;
 
+import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 
@@ -36,5 +37,12 @@ public class DemoServerApplication {
         coreService.startRpcServer(port);
         coreService.registerProvider(new EchoServiceImpl(), EchoService.class);
         System.out.println("rpc server started");
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                coreService.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }));
     }
 }

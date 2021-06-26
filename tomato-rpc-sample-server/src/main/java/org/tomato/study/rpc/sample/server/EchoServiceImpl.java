@@ -14,9 +14,12 @@
 
 package org.tomato.study.rpc.sample.server;
 
+import org.tomato.study.rpc.netty.utils.NetworkUtil;
 import org.tomato.study.rpc.sample.api.EchoService;
 import org.tomato.study.rpc.sample.api.data.DemoRequest;
 import org.tomato.study.rpc.sample.api.data.DemoResponse;
+
+import java.net.InetAddress;
 
 /**
  * @author Tomato
@@ -27,7 +30,29 @@ public class EchoServiceImpl implements EchoService {
     @Override
     public DemoResponse echo(DemoRequest request) {
         DemoResponse response = new DemoResponse();
-        response.setData(request.getData());
+        StringBuilder builder = new StringBuilder();
+        try {
+            InetAddress localAddress = NetworkUtil.getLocalAddress();
+            if (localAddress == null) {
+                throw new RuntimeException("local address == null");
+            }
+            builder.append("hello client!\n")
+                    .append("request message: ")
+                    .append(request.getData())
+                    .append("\n")
+                    .append("host address: ")
+                    .append(localAddress.getHostAddress())
+                    .append("\n")
+                    .append("host name: ")
+                    .append(localAddress.getHostName())
+                    .append("\n");
+        } catch (Exception e) {
+            e.printStackTrace();
+            response.setData(e.getMessage());
+            return response;
+
+        }
+        response.setData(builder.toString());
         return response;
     }
 }

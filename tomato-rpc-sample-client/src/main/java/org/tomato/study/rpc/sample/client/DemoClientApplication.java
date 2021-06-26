@@ -31,16 +31,25 @@ import java.util.List;
  */
 public class DemoClientApplication {
 
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) throws IOException, InterruptedException {
         String vip = "org.tomato.study.rpc.demo.client";
         List<String> subscribedVIP = new ArrayList<>();
         subscribedVIP.add("org.tomato.study.rpc.demo.server");
         URI nameServerURI = URI.create("zookeeper://127.0.0.1:2181");
         RpcCoreService rpcCoreService = new NettyRpcCoreService(vip, subscribedVIP, nameServerURI);
         EchoService stub = rpcCoreService.createStub(subscribedVIP.get(0), EchoService.class);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                rpcCoreService.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }));
 
-        DemoResponse response = stub.echo(new DemoRequest("hello world"));
-        System.out.println(response.getData());
-        rpcCoreService.close();
+        while (true) {
+            DemoResponse response = stub.echo(new DemoRequest("hello world"));
+            System.out.println(response.getData());
+            Thread.sleep(3000);
+        }
     }
 }
