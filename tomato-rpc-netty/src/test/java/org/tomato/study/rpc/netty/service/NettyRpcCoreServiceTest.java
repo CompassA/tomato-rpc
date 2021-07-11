@@ -44,6 +44,7 @@ import org.tomato.study.rpc.netty.core.test.TestService;
 
 import java.net.URI;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -72,7 +73,13 @@ public class NettyRpcCoreServiceTest {
 
     @Before
     public void init() {
-        this.rpcCoreService = new NettyRpcCoreService("mockVIP", null, null);
+        this.rpcCoreService = new NettyRpcCoreService(
+                RpcConfig.builder()
+                        .serviceVIP("mockVIP")
+                        .subscribedVIP(Collections.emptyList())
+                        .nameServiceURI("mock")
+                        .build()
+        );
         this.port = 1234;
     }
 

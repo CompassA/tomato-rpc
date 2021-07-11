@@ -17,11 +17,10 @@ package org.tomato.study.rpc.sample.server;
 import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.netty.service.NettyRpcCoreService;
+import org.tomato.study.rpc.netty.service.RpcConfig;
 import org.tomato.study.rpc.sample.api.EchoService;
 
 import java.io.IOException;
-import java.net.URI;
-import java.util.Collections;
 
 /**
  * @author Tomato
@@ -34,12 +33,13 @@ public class DemoServerApplication {
         if (StringUtils.isBlank(zkURL)) {
             zkURL = "127.0.0.1:2181";
         }
-        String serverVIP = "org.tomato.study.rpc.demo.server";
-        int port = 1535;
-        URI nameServerURI = URI.create("zookeeper://" + zkURL);
-
-        RpcCoreService coreService = new NettyRpcCoreService(serverVIP, Collections.emptyList(), nameServerURI);
-        coreService.startRpcServer(port);
+        RpcCoreService coreService = new NettyRpcCoreService(
+                RpcConfig.builder()
+                        .serviceVIP("org.tomato.study.rpc.demo.server")
+                        .nameServiceURI(zkURL)
+                        .build()
+        );
+        coreService.startRpcServer(1535);
         coreService.registerProvider(new EchoServiceImpl(), EchoService.class);
         System.out.println("rpc server started");
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {

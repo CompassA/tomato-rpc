@@ -17,16 +17,14 @@ package org.tomato.study.rpc.registry.zookeeper.impl;
 import lombok.Getter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.curator.framework.CuratorFramework;
-import org.apache.curator.framework.CuratorFrameworkFactory;
-import org.apache.curator.retry.ExponentialBackoffRetry;
-import org.apache.zookeeper.CreateMode;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.router.RpcInvoker;
 import org.tomato.study.rpc.core.router.ServiceProvider;
 import org.tomato.study.rpc.core.router.ServiceProviderFactory;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.registry.zookeeper.ChildrenListener;
 import org.tomato.study.rpc.registry.zookeeper.data.ZookeeperConfig;
+import org.tomato.study.rpc.zookeeper.CuratorClient;
 
 import java.io.IOException;
 import java.net.URI;
@@ -57,7 +55,7 @@ public class ZookeeperRegistry {
     /**
      * curator client
      */
-    private final CuratorFramework client;
+    private final CuratorClient curatorWrapper;
 
     /**
      * create service provider by factory interface
@@ -94,17 +92,9 @@ public class ZookeeperRegistry {
     public ZookeeperRegistry(ZookeeperConfig config) {
         this.namespace = config.getNamespace();
         this.zNodePathCharset = config.getCharset();
-        this.client = CuratorFrameworkFactory.builder()
-                .connectString(config.getConnString())
-                .retryPolicy(new ExponentialBackoffRetry(1000, 3))
-                //15 seconds
-                .connectionTimeoutMs(15 * 1000)
-                //session timeout
-                .sessionTimeoutMs(60 * 1000)
-                //root path
-                .namespace(this.namespace)
-                .build();
-        this.client.start();
+        this.curatorWrapper = new CuratorClient(
+                config.getConnString(), config.getNamespace()
+        ).start();
     }
 
     /**
@@ -122,7 +112,7 @@ public class ZookeeperRegistry {
                 metaData.getStage(),
                 PROVIDER_DICTIONARY,
                 uriOpt.get().toString());
-        this.client.create().withMode(CreateMode.EPHEMERAL).forPath(zNodePath);
+        this.curatorWrapper.createEphemeral(zNodePath);
     }
 
     /**
@@ -140,7 +130,7 @@ public class ZookeeperRegistry {
                 metaData.getStage(),
                 PROVIDER_DICTIONARY,
                 uriOpt.get().toString());
-        this.client.delete().forPath(zNodePath);
+        this.curatorWrapper.delete(zNodePath);
     }
 
     /**
@@ -157,11 +147,9 @@ public class ZookeeperRegistry {
             ChildrenListener listener = childrenListenerMap.computeIfAbsent(
                     serviceProvider, provider -> new PathChildrenListener(this));
             PathChildrenWatcher watcher = watcherMap.computeIfAbsent(
-                    listener, listenerKey -> new PathChildrenWatcher(client, listener));
+                    listener, listenerKey -> new PathChildrenWatcher(curatorWrapper, listener));
             // get metadata list of RPC provider nodes
-            List<String> children = this.client.getChildren()
-                    .usingWatcher(watcher)
-                    .forPath(vip);
+            List<String> children = this.curatorWrapper.getChildren(vip, watcher);
             if (CollectionUtils.isEmpty(children)) {
                 continue;
             }
@@ -221,8 +209,16 @@ public class ZookeeperRegistry {
         );
     }
 
+    public Optional<RpcInvoker> lookup(MetaData metaData) {
+        if (metaData == null || !metaData.isValid()) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(providerMap.get(metaData.getVip()))
+                .flatMap(provider -> provider.lookUp(metaData.getVersion()));
+    }
+
     public synchronized void close() throws IOException {
-        this.client.close();
+        this.curatorWrapper.close();
         this.unsubscribe(this.providerMap.keySet());
     }
 

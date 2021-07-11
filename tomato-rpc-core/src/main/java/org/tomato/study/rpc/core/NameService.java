@@ -31,9 +31,9 @@ public interface NameService {
 
     /**
      * connect to name server
-     * @param nameServiceURI name service uri
+     * @param nameServiceURI name service connection uri
      */
-    void connect(URI nameServiceURI, List<String> subscribedVIP);
+    void connect(String nameServiceURI);
 
     /**
      * disconnect from name server

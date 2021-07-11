@@ -32,10 +32,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
 
-import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -94,9 +91,6 @@ public class MetaData {
      * provider version
      */
     private final String version;
-
-    @Deprecated
-    private final URI uri;
 
     /**
      * is metadata valid
@@ -190,14 +184,5 @@ public class MetaData {
         hash = hash * 31 + Objects.hashCode(this.getStage());
         hash = hash * 31 + Objects.hashCode(this.getVersion());
         return hash;
-    }
-
-    @Deprecated
-    public String toPath() {
-        try {
-            return String.format("/%s/%s", vip, URLEncoder.encode(uri.toString(), StandardCharsets.UTF_8.toString()));
-        } catch (UnsupportedEncodingException e) {
-            throw new IllegalStateException("uri error" + uri);
-        }
     }
 }

@@ -17,10 +17,10 @@ package org.tomato.study.rpc.registry.zookeeper.impl;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.zookeeper.WatchedEvent;
 import org.tomato.study.rpc.registry.zookeeper.ChildrenListener;
+import org.tomato.study.rpc.zookeeper.CuratorClient;
 
 /**
  * @author Tomato
@@ -30,7 +30,7 @@ import org.tomato.study.rpc.registry.zookeeper.ChildrenListener;
 @AllArgsConstructor
 public class PathChildrenWatcher implements CuratorWatcher {
 
-    private final CuratorFramework zkClient;
+    private final CuratorClient zkClient;
 
     private ChildrenListener childrenListener;
 
@@ -43,11 +43,7 @@ public class PathChildrenWatcher implements CuratorWatcher {
         if (StringUtils.isBlank(path)) {
             return;
         }
-        childrenListener.childrenChanged(
-                path,
-                zkClient.getChildren()
-                        .usingWatcher(this)
-                        .forPath(path));
+        childrenListener.childrenChanged(path, zkClient.getChildren(path, this));
     }
 
     public void unwatch() {

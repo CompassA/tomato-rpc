@@ -16,6 +16,7 @@
         <module>tomato-rpc-sample-client</module>
         <module>tomato-rpc-sample-api</module>
         <module>tomato-rpc-registry</module>
+        <module>tomato-rpc-config</module>
     </modules>
 
     <properties>
@@ -58,6 +59,12 @@
             <dependency>
                 <groupId>org.tomato.study.rpc</groupId>
                 <artifactId>tomato-rpc-registry</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.tomato.study.rpc</groupId>
+                <artifactId>tomato-rpc-config</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

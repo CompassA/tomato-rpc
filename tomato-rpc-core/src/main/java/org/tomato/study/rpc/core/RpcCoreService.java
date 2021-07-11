@@ -16,6 +16,7 @@ package org.tomato.study.rpc.core;
 
 import java.io.Closeable;
 import java.net.URI;
+import java.util.List;
 
 /**
  * core method of rpc server
@@ -55,4 +56,22 @@ public interface RpcCoreService extends Closeable {
      * @return service virtual ip
      */
     String getServiceVIP();
+
+    /**
+     * get subscribed vip
+     * @return subscribed vip list
+     */
+    List<String> getSubscribedVIP();
+
+    /**
+     * get service stage
+     * @return stage
+     */
+    String getStage();
+
+    /**
+     * get service version
+     * @return
+     */
+    String getVersion();
 }

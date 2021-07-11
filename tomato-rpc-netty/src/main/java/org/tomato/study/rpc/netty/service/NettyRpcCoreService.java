@@ -14,7 +14,6 @@
 
 package org.tomato.study.rpc.netty.service;
 
-import lombok.Getter;
 import org.tomato.study.rpc.core.MessageSender;
 import org.tomato.study.rpc.core.NameService;
 import org.tomato.study.rpc.core.ProviderRegistry;
@@ -43,11 +42,11 @@ public class NettyRpcCoreService implements RpcCoreService {
 
     private final String serviceVIP;
 
-    @Getter
     private final List<String> subscribedVIP;
 
-    @Getter
-    private final URI nameServerURI;
+    private final String stage;
+
+    private final String version;
 
     private final StubFactory stubFactory = SpiLoader.getLoader(StubFactory.class).load();
 
@@ -63,11 +62,12 @@ public class NettyRpcCoreService implements RpcCoreService {
 
     private RpcServer server = null;
 
-    public NettyRpcCoreService(String serviceVIP, List<String> subscribedVIP, URI nameServerURI) {
-        this.serviceVIP = serviceVIP;
-        this.subscribedVIP = subscribedVIP;
-        this.nameServerURI = nameServerURI;
-        this.nameService.connect(this.nameServerURI, this.subscribedVIP);
+    public NettyRpcCoreService(RpcConfig rpcConfig) {
+        this.serviceVIP = rpcConfig.getServiceVIP();
+        this.subscribedVIP = rpcConfig.getSubscribedVIP();
+        this.stage = rpcConfig.getStage();
+        this.version = rpcConfig.getVersion();
+        this.nameService.connect(rpcConfig.getNameServiceURI());
     }
 
     @Override
@@ -75,8 +75,8 @@ public class NettyRpcCoreService implements RpcCoreService {
         if (this.server != null) {
             throw new IllegalStateException("multi server");
         }
-        URI uri = startServer(port);
-        export(uri);
+        URI uri = this.startServer(port);
+        this.export(uri);
         return this.server;
     }
 
@@ -89,8 +89,12 @@ public class NettyRpcCoreService implements RpcCoreService {
 
     private void export(URI rpcServerURI) {
         MetaData metadata = MetaData.builder()
-                .uri(rpcServerURI)
+                .protocol(rpcServerURI.getScheme())
+                .host(rpcServerURI.getHost())
+                .port(rpcServerURI.getPort())
                 .vip(this.serviceVIP)
+                .stage(this.stage)
+                .version(this.version)
                 .build();
         this.nameService.registerService(metadata);
     }
@@ -115,6 +119,21 @@ public class NettyRpcCoreService implements RpcCoreService {
     @Override
     public String getServiceVIP() {
         return this.serviceVIP;
+    }
+
+    @Override
+    public List<String> getSubscribedVIP() {
+        return this.subscribedVIP;
+    }
+
+    @Override
+    public String getStage() {
+        return this.stage;
+    }
+
+    @Override
+    public String getVersion() {
+        return this.version;
     }
 
     @Override

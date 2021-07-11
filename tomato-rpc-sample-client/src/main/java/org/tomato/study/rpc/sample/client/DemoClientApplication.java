@@ -17,14 +17,13 @@ package org.tomato.study.rpc.sample.client;
 import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.netty.service.NettyRpcCoreService;
+import org.tomato.study.rpc.netty.service.RpcConfig;
 import org.tomato.study.rpc.sample.api.EchoService;
 import org.tomato.study.rpc.sample.api.data.DemoRequest;
 import org.tomato.study.rpc.sample.api.data.DemoResponse;
 
 import java.io.IOException;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.Collections;
 
 /**
  * @author Tomato
@@ -37,12 +36,14 @@ public class DemoClientApplication {
         if (StringUtils.isBlank(zkURL)) {
             zkURL = "127.0.0.1:2181";
         }
-        String vip = "org.tomato.study.rpc.demo.client";
-        List<String> subscribedVIP = new ArrayList<>();
-        subscribedVIP.add("org.tomato.study.rpc.demo.server");
-        URI nameServerURI = URI.create("zookeeper://" + zkURL);
-        RpcCoreService rpcCoreService = new NettyRpcCoreService(vip, subscribedVIP, nameServerURI);
-        EchoService stub = rpcCoreService.createStub(subscribedVIP.get(0), EchoService.class);
+        RpcConfig rpcConfig = RpcConfig.builder()
+                .serviceVIP("org.tomato.study.rpc.demo.client")
+                .subscribedVIP(Collections.singletonList("org.tomato.study.rpc.demo.server"))
+                .nameServiceURI(zkURL)
+                .build();
+        RpcCoreService rpcCoreService = new NettyRpcCoreService(rpcConfig);
+        EchoService stub = rpcCoreService.createStub(
+                rpcConfig.getSubscribedVIP().get(0), EchoService.class);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 rpcCoreService.close();
@@ -51,6 +52,7 @@ public class DemoClientApplication {
             }
         }));
 
+        // call RPC method 3 seconds a time
         while (true) {
             DemoResponse response = stub.echo(new DemoRequest("hello world"));
             System.out.println(response.getData());
