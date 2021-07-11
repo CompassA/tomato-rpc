@@ -99,7 +99,9 @@ public class BalanceServiceProvider implements ServiceProvider {
             for (MetaData metadata : newMetadataSet) {
                 RpcInvoker rpcInvoker = invokerRegistry.computeIfAbsent(
                         metadata, key -> invokerFactory.create(key).orElse(null));
-                newInvokers.add(rpcInvoker);
+                if (rpcInvoker != null) {
+                    newInvokers.add(rpcInvoker);
+                }
             }
 
             // close invokers
