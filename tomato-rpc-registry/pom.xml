@@ -23,7 +23,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>tomato-rpc-core</artifactId>
+    <artifactId>tomato-rpc-registry</artifactId>
 
     <properties>
         <maven.compiler.source>11</maven.compiler.source>
@@ -32,8 +32,13 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.projectlombok</groupId>
-            <artifactId>lombok</artifactId>
+            <groupId>org.tomato.study.rpc</groupId>
+            <artifactId>tomato-rpc-common</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>org.tomato.study.rpc</groupId>
+            <artifactId>tomato-rpc-core</artifactId>
         </dependency>
 
         <dependency>
@@ -41,4 +46,5 @@
             <artifactId>junit</artifactId>
         </dependency>
     </dependencies>
+
 </project>

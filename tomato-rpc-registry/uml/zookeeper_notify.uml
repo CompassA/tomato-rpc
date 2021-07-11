@@ -1,0 +1,26 @@
+@startuml
+
+title Zookeeper Registry Notify
+
+autonumber "."
+
+participant new_rpc_service
+database zookeeper
+participant ClientWatcherCallBack
+participant ChildrenListener
+participant ZookeeperRegistry
+participant ServiceProvider
+
+new_rpc_service -> zookeeper: register api\n(ex./namespace/vip/providers/ip:port)
+zookeeper -> ClientWatcherCallBack: trigger watcher
+ClientWatcherCallBack -> zookeeper: request path children data
+ClientWatcherCallBack -> zookeeper: register watcher again
+zookeeper -> ClientWatcherCallBack: response full children data of the path
+ClientWatcherCallBack -> ChildrenListener: childrenChanged(path, children)
+ChildrenListener -> ZookeeperRegistry: notify(path, children)
+ZookeeperRegistry -> zookeeper: request provider api metadata
+zookeeper -> ZookeeperRegistry: response provider api metadata
+ZookeeperRegistry -> ServiceProvider: notify(api metadata)
+ServiceProvider -> ServiceProvider: refreshInvoker
+
+@enduml
