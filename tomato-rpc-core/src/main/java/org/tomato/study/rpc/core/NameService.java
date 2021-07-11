@@ -15,10 +15,10 @@
 package org.tomato.study.rpc.core;
 
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.router.RpcInvoker;
 import org.tomato.study.rpc.core.spi.SpiInterface;
 
 import java.net.URI;
-import java.util.List;
 import java.util.Optional;
 
 /**
@@ -53,4 +53,12 @@ public interface NameService {
      * @throws Exception any exception during look up
      */
     Optional<URI> lookupService(String serviceVIP) throws Exception;
+
+    /**
+     * search service invoker
+     * @param metadata provider metadata
+     * @return provider invoker
+     * @throws Exception any exception during look up
+     */
+    Optional<RpcInvoker> lookupInvoker(MetaData metadata);
 }

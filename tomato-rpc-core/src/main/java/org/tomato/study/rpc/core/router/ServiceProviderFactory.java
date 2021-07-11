@@ -14,10 +14,16 @@
 
 package org.tomato.study.rpc.core.router;
 
+import org.tomato.study.rpc.core.spi.SpiInterface;
+
 /**
  * @author Tomato
  * Created on 2021.07.10
  */
+@SpiInterface(
+        paramName = "serviceProviderFactory",
+        defaultSpiValue = "org.tomato.study.rpc.registry.zookeeper.impl.BalanceServiceProviderFactory"
+)
 public interface ServiceProviderFactory {
 
     /**

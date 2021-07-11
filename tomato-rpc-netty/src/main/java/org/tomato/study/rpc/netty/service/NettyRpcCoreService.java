@@ -88,21 +88,26 @@ public class NettyRpcCoreService implements RpcCoreService {
     }
 
     private void export(URI rpcServerURI) {
-        MetaData metadata = MetaData.builder()
-                .protocol(rpcServerURI.getScheme())
-                .host(rpcServerURI.getHost())
-                .port(rpcServerURI.getPort())
-                .vip(this.serviceVIP)
-                .stage(this.stage)
-                .version(this.version)
-                .build();
-        this.nameService.registerService(metadata);
+        this.nameService.registerService(
+                MetaData.builder()
+                        .protocol(rpcServerURI.getScheme())
+                        .host(rpcServerURI.getHost())
+                        .port(rpcServerURI.getPort())
+                        .vip(this.serviceVIP)
+                        .stage(this.stage)
+                        .version(this.version)
+                        .build()
+        );
     }
 
     @Override
     public <T> URI registerProvider(T serviceInstance, Class<T> serviceInterface) {
-        providerRegistry.register(serviceVIP, serviceInstance, serviceInterface);
-        return NetworkUtil.createURI(PROTOCOL, server.getHost(), server.getPort());
+        this.providerRegistry.register(serviceVIP, serviceInstance, serviceInterface);
+        return NetworkUtil.createURI(
+                PROTOCOL,
+                this.server.getHost(),
+                this.server.getPort()
+        );
     }
 
     @Override
@@ -149,6 +154,6 @@ public class NettyRpcCoreService implements RpcCoreService {
         for (MessageSender sender : senderMap.values()) {
             sender.close();
         }
-        senderMap.clear();
+        this.senderMap.clear();
     }
 }

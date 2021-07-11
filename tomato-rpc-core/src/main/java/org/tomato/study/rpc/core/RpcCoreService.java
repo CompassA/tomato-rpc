@@ -49,7 +49,7 @@ public interface RpcCoreService extends Closeable {
      * @param <T> consumer class type
      * @return proxy instance
      */
-    <T> T createStub(String serviceVIP,Class<T> serviceInterface);
+    <T> T createStub(String serviceVIP, Class<T> serviceInterface);
 
     /**
      * get service virtual ip
@@ -71,7 +71,7 @@ public interface RpcCoreService extends Closeable {
 
     /**
      * get service version
-     * @return
+     * @return service provider node version
      */
     String getVersion();
 }

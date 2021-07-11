@@ -68,7 +68,7 @@ public class ZookeeperNameService implements NameService {
 
     @Override
     public synchronized void disconnect() {
-        if (!connected) {
+        if (!this.connected) {
             return;
         }
         this.connected = false;
@@ -94,6 +94,7 @@ public class ZookeeperNameService implements NameService {
         return Optional.empty();
     }
 
+    @Override
     public Optional<RpcInvoker> lookupInvoker(MetaData metaData) {
         return this.registry.lookup(metaData);
     }
