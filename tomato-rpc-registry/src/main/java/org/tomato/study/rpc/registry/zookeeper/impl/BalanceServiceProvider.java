@@ -49,11 +49,6 @@ public class BalanceServiceProvider implements ServiceProvider {
     private final String vip;
 
     /**
-     * invoker creator
-     */
-    private final RpcInvokerFactory invokerFactory = SpiLoader.getLoader(RpcInvokerFactory.class).load();
-
-    /**
      * registered invoker
      */
     private final ConcurrentMap<MetaData, RpcInvoker> invokerRegistry = new ConcurrentHashMap<>(0);
@@ -98,7 +93,11 @@ public class BalanceServiceProvider implements ServiceProvider {
             // add new invokers, if the invoker is present, don't register
             for (MetaData metadata : newMetadataSet) {
                 RpcInvoker rpcInvoker = invokerRegistry.computeIfAbsent(
-                        metadata, key -> invokerFactory.create(key).orElse(null));
+                        metadata,
+                        key -> SpiLoader.getLoader(RpcInvokerFactory.class)
+                                .load()
+                                .create(key)
+                                .orElse(null));
                 if (rpcInvoker != null) {
                     newInvokers.add(rpcInvoker);
                 }

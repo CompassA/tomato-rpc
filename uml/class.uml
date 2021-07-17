@@ -1,0 +1,104 @@
+@startuml
+
+class ZookeeperNameService implements NameService {
+    ZookeeperRegistry registry
+}
+
+class ZookeeperRegistry {
+    CuratorClient curatorWrapper
+    String namespace
+    Charset zNodePathCharset
+    ConcurrentMap<String, ServiceProvider> providerMap
+    ConcurrentMap<ServiceProvider, ChildrenListener> childrenListenerMap
+    ConcurrentMap<ChildrenListener, PathChildrenWatcher> watcherMap
+}
+
+class NettyRpcServer implements RpcServer {
+    String host
+    int port
+    CommandHandler commandHandler
+    ServerBootstrap serverBootstrap
+    Channel channel
+    EventLoopGroup bossGroup
+    EventLoopGroup workerGroup
+}
+
+class NettyRpcCoreService implements RpcCoreService {
+    String serviceVIP;
+    List<String> subscribedVIP;
+    String stage;
+    String version;
+    NameService nameService;
+    RpcServer server;
+}
+
+class BalanceServiceProvider implements ServiceProvider {
+    String vip
+    ConcurrentMap<MetaData, RpcInvoker> invokerRegistry
+    ConcurrentMap<String, List<RpcInvoker>> invokerMap
+}
+
+class NettyRpcInvoker implements RpcInvoker {
+    MetaData providerNodeMetaData
+    Serializer commandSerializer
+    MessageSender sender
+}
+
+class NettyMessageSender implements MessageSender {
+    URI uri
+    ChannelWrapper channelWrapper
+    ChannelResponseHolder responseHolder
+}
+
+class ChannelWrapper {
+    Channel channel
+}
+
+class ChannelResponseHolder {
+    ConcurrentMap<Long, NettyResponseFuture> responseMap;
+}
+
+class NettyResponseFuture {
+    long messageId
+    CompletableFuture<Command> future
+    long timeStamp
+}
+
+class PathChildrenListener implements ChildrenListener {
+    ZookeeperRegistry registry
+}
+
+class PathChildrenWatcher implements CuratorWatcher {
+    CuratorClient zkClient
+    ChildrenListener childrenListener
+}
+
+class CommandHandler extends SimpleChannelInboundHandler {
+    ConcurrentMap<CommandType, ServerHandler> providerMap
+}
+
+class RpcRequestHandler implements ServerHandler {
+    ProviderRegistry providerRegistry;
+}
+
+class NettyProviderRegistry implements ProviderRegistry {
+    ConcurrentMap<String, Object> providerMap;
+}
+
+NettyRpcCoreService "1" *--> "1" ZookeeperNameService
+ZookeeperNameService "1"*--> "1" ZookeeperRegistry
+ZookeeperRegistry "1" *--> "n" BalanceServiceProvider
+ZookeeperRegistry "1" <--> "n" PathChildrenListener
+PathChildrenWatcher "1" --> "1" PathChildrenListener
+BalanceServiceProvider "1" *--> "n" NettyRpcInvoker
+NettyRpcInvoker "1" *--> "1" NettyMessageSender
+NettyMessageSender "1" *--> "1" ChannelWrapper
+NettyMessageSender "1" --> "1" ChannelResponseHolder
+ChannelResponseHolder "1" o--> "n" NettyResponseFuture
+NettyRpcCoreService "1" *--> "1" NettyRpcServer
+NettyRpcServer "1" *--> "1" CommandHandler
+RpcRequestHandler "1" <--* "1" CommandHandler
+RpcRequestHandler "1" --> "1" NettyProviderRegistry
+NettyProviderRegistry "1" <-- "1" NettyRpcCoreService
+
+@enduml

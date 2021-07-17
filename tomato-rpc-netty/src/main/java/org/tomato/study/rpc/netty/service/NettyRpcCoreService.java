@@ -46,7 +46,9 @@ public class NettyRpcCoreService implements RpcCoreService {
 
     private final String version;
 
-    private NameService nameService = SpiLoader.getLoader(NameService.class).load();
+    private final ProviderRegistry providerRegistry = SpiLoader.getLoader(ProviderRegistry.class).load();
+
+    private final NameService nameService = SpiLoader.getLoader(NameService.class).load();
 
     private RpcServer server = null;
 
@@ -92,9 +94,7 @@ public class NettyRpcCoreService implements RpcCoreService {
 
     @Override
     public <T> URI registerProvider(T serviceInstance, Class<T> serviceInterface) {
-        SpiLoader.getLoader(ProviderRegistry.class)
-                .load()
-                .register(serviceVIP, serviceInstance, serviceInterface);
+        this.providerRegistry.register(serviceVIP, serviceInstance, serviceInterface);
         return NetworkUtil.createURI(
                 PROTOCOL,
                 this.server.getHost(),
@@ -148,7 +148,6 @@ public class NettyRpcCoreService implements RpcCoreService {
         }
         if (this.nameService != null) {
             this.nameService.disconnect();
-            this.nameService = null;
         }
     }
 }

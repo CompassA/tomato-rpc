@@ -58,11 +58,6 @@ public class ZookeeperRegistry {
     private final CuratorClient curatorWrapper;
 
     /**
-     * create service provider by factory interface
-     */
-    private final ServiceProviderFactory providerFactory = SpiLoader.getLoader(ServiceProviderFactory.class).load();
-
-    /**
      * provider zNode path: /{namespace}/vip/stage/providers
      */
     @Getter
@@ -146,7 +141,10 @@ public class ZookeeperRegistry {
         for (String vip : vips) {
             // create provider
             ServiceProvider serviceProvider = this.providerMap.computeIfAbsent(
-                    vip, providerFactory::create);
+                    vip,
+                    vipKey -> SpiLoader.getLoader(ServiceProviderFactory.class)
+                            .load()
+                            .create(vipKey));
 
             // create vip listener
             ChildrenListener listener = this.childrenListenerMap.computeIfAbsent(
@@ -213,14 +211,18 @@ public class ZookeeperRegistry {
         if (StringUtils.isBlank(vip) || CollectionUtils.isEmpty(children)) {
             return;
         }
-        providerMap.computeIfAbsent(vip, providerFactory::create)
-                .refresh(
-                        children.stream()
-                                .map(MetaData::convert)
-                                .filter(Optional::isPresent)
-                                .map(Optional::get)
-                                .collect(Collectors.toSet())
-                );
+        providerMap.computeIfAbsent(
+                vip,
+                vipKey -> SpiLoader.getLoader(ServiceProviderFactory.class)
+                        .load()
+                        .create(vipKey)
+        ).refresh(
+                children.stream()
+                        .map(MetaData::convert)
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        .collect(Collectors.toSet())
+        );
     }
 
     public Optional<RpcInvoker> lookup(String serviceVip, String version) {
