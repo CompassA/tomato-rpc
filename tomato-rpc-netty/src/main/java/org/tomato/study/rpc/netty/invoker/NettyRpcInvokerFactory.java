@@ -28,8 +28,14 @@ public class NettyRpcInvokerFactory implements RpcInvokerFactory {
 
     @Override
     public Optional<RpcInvoker> create(MetaData metadata) {
-        return metadata.isValid()
-                ? Optional.of(new NettyRpcInvoker(metadata))
-                : Optional.empty();
+        try {
+            return metadata.isValid()
+                    ? Optional.of(new NettyRpcInvoker(metadata))
+                    : Optional.empty();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return Optional.empty();
+        }
+
     }
 }

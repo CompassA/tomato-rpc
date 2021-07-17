@@ -25,7 +25,7 @@ public interface Invocation {
      * get rpc service vip in the service name registry
      * @return service vip
      */
-    String getServiceVip();
+    String getServiceVIP();
 
     /**
      * get rpc api class full name

@@ -12,20 +12,6 @@
  *  limitations under the License.
  */
 
-/*
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *      http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-
 package org.tomato.study.rpc.netty.router.service;
 
 import org.tomato.study.rpc.core.NameService;
@@ -37,6 +23,7 @@ import org.tomato.study.rpc.registry.zookeeper.impl.ZookeeperRegistry;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 import java.util.Optional;
 
 /**
@@ -88,6 +75,11 @@ public class ZookeeperNameService implements NameService {
         }
     }
 
+    @Override
+    public void subscribe(Collection<String> vipList, String stage) throws Exception {
+        this.registry.subscribe(vipList, stage);
+    }
+
     @Deprecated
     @Override
     public Optional<URI> lookupService(String serviceVIP) throws Exception {
@@ -95,7 +87,7 @@ public class ZookeeperNameService implements NameService {
     }
 
     @Override
-    public Optional<RpcInvoker> lookupInvoker(MetaData metaData) {
-        return this.registry.lookup(metaData);
+    public Optional<RpcInvoker> lookupInvoker(String serviceVIP, String version) {
+        return this.registry.lookup(serviceVIP, version);
     }
 }

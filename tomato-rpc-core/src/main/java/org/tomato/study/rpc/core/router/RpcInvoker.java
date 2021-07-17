@@ -15,6 +15,7 @@
 package org.tomato.study.rpc.core.router;
 
 import org.tomato.study.rpc.core.Invocation;
+import org.tomato.study.rpc.core.Response;
 import org.tomato.study.rpc.core.Result;
 import org.tomato.study.rpc.core.data.MetaData;
 
@@ -44,5 +45,5 @@ public interface RpcInvoker extends Closeable {
      * @param invocation procedure call data
      * @return result
      */
-    Result invoke(Invocation invocation);
+    Result<Response> invoke(Invocation invocation);
 }

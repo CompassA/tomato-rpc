@@ -12,29 +12,38 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core;
+package org.tomato.study.rpc.core.data;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import org.tomato.study.rpc.core.NameService;
 
 /**
- * the result of a remote procedure call
+ * necessary data for creating stub
  * @author Tomato
- * Created on 2021.07.07
+ * Created on 2021.07.13
  */
-public interface Result<T> {
+@Getter
+@AllArgsConstructor
+public class StubConfig<T> {
 
     /**
-     * get result data sync
-     * @return result data
-     * @throws ExecutionException sync exception
-     * @throws InterruptedException sync interrupt
+     * name service
      */
-    T getResultSync() throws ExecutionException, InterruptedException;
+    private final NameService nameService;
 
     /**
-     * get result data async
-     * @return result data
+     * interface of service provider
      */
-    CompletableFuture<T> getResultAsync();
+    private final Class<T> serviceInterface;
+
+    /**
+     * service vip
+     */
+    private final String serviceVIP;
+
+    /**
+     * service version
+     */
+    private final String version;
 }

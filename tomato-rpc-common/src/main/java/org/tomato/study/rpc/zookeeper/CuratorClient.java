@@ -99,7 +99,7 @@ public class CuratorClient implements Closeable {
         return curatorClient.getChildren().forPath(path);
     }
 
-    public List<String> getChildren(String path, CuratorWatcher watcher) throws Exception {
+    public List<String> getChildrenAndAddWatcher(String path, CuratorWatcher watcher) throws Exception {
         if (StringUtils.isBlank(path) || watcher == null) {
             return Collections.emptyList();
         }

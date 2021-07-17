@@ -24,8 +24,7 @@ import org.tomato.study.rpc.core.SenderFactory;
 public final class NettySenderFactory implements SenderFactory {
 
     @Override
-    public MessageSender create(String serviceVIP) {
-        return new NettyMessageSender(serviceVIP,
-                ChannelHolder.INSTANCE, ChannelResponseHolder.INSTANCE);
+    public MessageSender create(String host, int port) throws Exception {
+        return new NettyMessageSender(host, port);
     }
 }

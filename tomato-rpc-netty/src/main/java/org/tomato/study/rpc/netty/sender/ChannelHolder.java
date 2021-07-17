@@ -27,7 +27,6 @@ import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.tomato.study.rpc.core.NameService;
-import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.netty.codec.netty.NettyFrameEncoder;
 import org.tomato.study.rpc.netty.codec.netty.NettyProtoDecoder;
@@ -35,7 +34,6 @@ import org.tomato.study.rpc.netty.handler.ResponseHandler;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.Optional;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -49,6 +47,11 @@ import java.util.concurrent.TimeoutException;
 public class ChannelHolder {
 
     public static final ChannelHolder INSTANCE = new ChannelHolder();
+
+    /**
+     * connection timeout, time unit: ms
+     */
+    private static final long CONNECTION_TIMEOUT = 30;
 
     public boolean close = false;
 
@@ -67,13 +70,7 @@ public class ChannelHolder {
      */
     private final EventLoopGroup eventLoopGroup;
 
-    /**
-     * connection timeout, time unit: ms
-     */
-    private final long connectionTimeout;
-
     public ChannelHolder() {
-        this.connectionTimeout = 20;
         this.channelMap = new ConcurrentHashMap<>(0);
         this.eventLoopGroup = Epoll.isAvailable() ?
                 new EpollEventLoopGroup() : new NioEventLoopGroup();
@@ -82,29 +79,24 @@ public class ChannelHolder {
     /**
      * get the connection with the service provider by serviceVip,
      * if the connection is not established, create a new channel
-     * @param serviceVip service provider vip
+     * @param uri service provider vip
      * @return netty channel
      * @throws Exception any exception during service discovery and connection register.
      */
-    public ChannelWrapper getChannelWrapper(String serviceVip) throws Exception {
-        Optional<URI> optServiceURI = nameService.lookupService(serviceVip);
-        if (optServiceURI.isEmpty()) {
-            throw new TomatoRpcException("service can not found, vip: " + serviceVip);
-        }
-        URI serviceURI = optServiceURI.get();
-        ChannelWrapper channelWrapper = channelMap.get(serviceURI);
+    public ChannelWrapper getChannelWrapper(URI uri) throws Exception {
+        ChannelWrapper channelWrapper = channelMap.get(uri);
         if (channelWrapper == null) {
             synchronized (ChannelHolder.class) {
-                channelWrapper = channelMap.get(serviceURI);
+                channelWrapper = channelMap.get(uri);
                 if (channelWrapper == null) {
-                    channelWrapper = registerChannel(serviceURI, connectionTimeout);
+                    channelWrapper = registerChannel(uri);
                 }
             }
         }
         return channelWrapper;
     }
 
-    private ChannelWrapper registerChannel(URI serviceURI, long connectionTimeOut)
+    private ChannelWrapper registerChannel(URI serverNodeURI)
             throws InterruptedException, TimeoutException {
         Bootstrap bootstrap = new Bootstrap()
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
@@ -122,8 +114,8 @@ public class ChannelHolder {
                     }
                 });
         ChannelFuture connectFuture = bootstrap.connect(
-                new InetSocketAddress(serviceURI.getHost(), serviceURI.getPort()));
-        if (!connectFuture.await(connectionTimeOut, TimeUnit.SECONDS)) {
+                new InetSocketAddress(serverNodeURI.getHost(), serverNodeURI.getPort()));
+        if (!connectFuture.await(CONNECTION_TIMEOUT, TimeUnit.SECONDS)) {
             throw new TimeoutException("netty connect timeout");
         }
         Channel channel = connectFuture.channel();
@@ -131,7 +123,7 @@ public class ChannelHolder {
             throw new IllegalStateException("netty channel is not active");
         }
         ChannelWrapper channelWrapper = new ChannelWrapper(channel);
-        channelMap.put(serviceURI, channelWrapper);
+        channelMap.put(serverNodeURI, channelWrapper);
         return channelWrapper;
     }
 

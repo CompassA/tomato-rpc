@@ -175,13 +175,22 @@ public class SpiLoader<T> {
 
         // open spi config file
         URL resourceUrl = classLoader.getResource(path);
-        if (resourceUrl == null) {
-            return Collections.emptyMap();
-        }
+
+        // if config is empty, load default implement class
         Map<String, Class<?>> spiConfigMap = new HashMap<>(0);
+        if (resourceUrl == null) {
+            try {
+                spiConfigMap.put(paramName,
+                        Class.forName(defaultClassFullName, true, classLoader));
+                return spiConfigMap;
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+                return Collections.emptyMap();
+            }
+        }
+
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(resourceUrl.openStream(), StandardCharsets.UTF_8))) {
-
             // resolve config line
             String line;
             while ((line = reader.readLine()) != null) {
@@ -200,15 +209,6 @@ public class SpiLoader<T> {
                 try {
                     Class<?> clazz = Class.forName(implClassName, true, classLoader);
                     spiConfigMap.put(paramName, clazz);
-                    continue;
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
-
-                // if config is empty, load default implement class
-                try {
-                    spiConfigMap.put(paramName,
-                            Class.forName(defaultClassFullName, true, classLoader));
                 } catch (ClassNotFoundException e) {
                     e.printStackTrace();
                 }

@@ -22,7 +22,6 @@ import org.tomato.study.rpc.sample.api.EchoService;
 import org.tomato.study.rpc.sample.api.data.DemoRequest;
 import org.tomato.study.rpc.sample.api.data.DemoResponse;
 
-import java.io.IOException;
 import java.util.Collections;
 
 /**
@@ -31,7 +30,7 @@ import java.util.Collections;
  */
 public class DemoClientApplication {
 
-    public static void main(String[] args) throws IOException, InterruptedException {
+    public static void main(String[] args) throws Exception {
         String zkURL = System.getenv("ZK_IP_PORT");
         if (StringUtils.isBlank(zkURL)) {
             zkURL = "127.0.0.1:2181";
@@ -41,22 +40,24 @@ public class DemoClientApplication {
                 .subscribedVIP(Collections.singletonList("org.tomato.study.rpc.demo.server"))
                 .nameServiceURI(zkURL)
                 .build();
+
+        // create rpc core service
         RpcCoreService rpcCoreService = new NettyRpcCoreService(rpcConfig);
+
+        // subscribe vip list
+        rpcCoreService.subscribe(rpcConfig.getSubscribedVIP());
+
+        // create stub
         EchoService stub = rpcCoreService.createStub(
                 rpcConfig.getSubscribedVIP().get(0), EchoService.class);
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                rpcCoreService.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }));
 
         // call RPC method 3 seconds a time
-        while (true) {
+        for (int i = 0; i < 20; ++i) {
             DemoResponse response = stub.echo(new DemoRequest("hello world"));
             System.out.println(response.getData());
             Thread.sleep(3000);
         }
+
+        rpcCoreService.close();
     }
 }

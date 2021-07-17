@@ -14,27 +14,28 @@
 
 package org.tomato.study.rpc.core;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-
 /**
- * the result of a remote procedure call
+ * invocation response
  * @author Tomato
- * Created on 2021.07.07
+ * Created on 2021.07.17
  */
-public interface Result<T> {
+public interface Response {
 
     /**
-     * get result data sync
-     * @return result data
-     * @throws ExecutionException sync exception
-     * @throws InterruptedException sync interrupt
+     * response status code
+     * @return status code
      */
-    T getResultSync() throws ExecutionException, InterruptedException;
+    int getCode();
 
     /**
-     * get result data async
+     * get method call result
      * @return result data
      */
-    CompletableFuture<T> getResultAsync();
+    Object getData();
+
+    /**
+     * get error message
+     * @return error message
+     */
+    String getMessage();
 }

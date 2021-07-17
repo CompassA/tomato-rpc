@@ -136,20 +136,33 @@ public class ZookeeperRegistry {
     /**
      * method for PRC client to fetch RPC service metadata
      * @param vips RPC service vip list
+     * @param stage client stage
      * @throws Exception exception during subscribe
      */
-    public void subscribe(Collection<String> vips) throws Exception {
+    public void subscribe(Collection<String> vips, String stage) throws Exception {
         if (CollectionUtils.isEmpty(vips)) {
             return;
         }
         for (String vip : vips) {
-            ServiceProvider serviceProvider = providerMap.computeIfAbsent(vip, providerFactory::create);
-            ChildrenListener listener = childrenListenerMap.computeIfAbsent(
+            // create provider
+            ServiceProvider serviceProvider = this.providerMap.computeIfAbsent(
+                    vip, providerFactory::create);
+
+            // create vip listener
+            ChildrenListener listener = this.childrenListenerMap.computeIfAbsent(
                     serviceProvider, provider -> new PathChildrenListener(this));
-            PathChildrenWatcher watcher = watcherMap.computeIfAbsent(
+
+            // create zk path children listener
+            PathChildrenWatcher watcher = this.watcherMap.computeIfAbsent(
                     listener, listenerKey -> new PathChildrenWatcher(curatorWrapper, listener));
+
             // get metadata list of RPC provider nodes
-            List<String> children = this.curatorWrapper.getChildren(vip, watcher);
+            List<String> children = this.curatorWrapper.getChildrenAndAddWatcher(
+                    this.convertToZNodePath(
+                            vip,
+                            stage,
+                            PROVIDER_DICTIONARY),
+                    watcher);
             if (CollectionUtils.isEmpty(children)) {
                 continue;
             }
@@ -200,21 +213,22 @@ public class ZookeeperRegistry {
         if (StringUtils.isBlank(vip) || CollectionUtils.isEmpty(children)) {
             return;
         }
-        providerMap.computeIfAbsent(vip, providerFactory::create).refresh(
-                children.stream()
-                        .map(MetaData::convert)
-                        .filter(Optional::isPresent)
-                        .map(Optional::get)
-                        .collect(Collectors.toSet())
-        );
+        providerMap.computeIfAbsent(vip, providerFactory::create)
+                .refresh(
+                        children.stream()
+                                .map(MetaData::convert)
+                                .filter(Optional::isPresent)
+                                .map(Optional::get)
+                                .collect(Collectors.toSet())
+                );
     }
 
-    public Optional<RpcInvoker> lookup(MetaData metaData) {
-        if (metaData == null || !metaData.isValid()) {
+    public Optional<RpcInvoker> lookup(String serviceVip, String version) {
+        if (StringUtils.isBlank(serviceVip) || StringUtils.isBlank(version)) {
             return Optional.empty();
         }
-        return Optional.ofNullable(providerMap.get(metaData.getVip()))
-                .flatMap(provider -> provider.lookUp(metaData.getVersion()));
+        return Optional.ofNullable(providerMap.get(serviceVip))
+                .flatMap(provider -> provider.lookUp(version));
     }
 
     public synchronized void close() throws IOException {

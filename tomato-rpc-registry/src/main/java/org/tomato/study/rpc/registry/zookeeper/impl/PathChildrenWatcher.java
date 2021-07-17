@@ -36,14 +36,16 @@ public class PathChildrenWatcher implements CuratorWatcher {
 
     @Override
     public void process(WatchedEvent watchedEvent) throws Exception {
-        if (childrenListener == null) {
+        if (this.childrenListener == null) {
             return;
         }
         String path = watchedEvent.getPath();
         if (StringUtils.isBlank(path)) {
             return;
         }
-        childrenListener.childrenChanged(path, zkClient.getChildren(path, this));
+        this.childrenListener.childrenChanged(
+                path,
+                this.zkClient.getChildrenAndAddWatcher(path, this));
     }
 
     public void unwatch() {

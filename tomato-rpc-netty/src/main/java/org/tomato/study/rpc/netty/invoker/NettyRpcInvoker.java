@@ -15,9 +15,17 @@
 package org.tomato.study.rpc.netty.invoker;
 
 import org.tomato.study.rpc.core.Invocation;
+import org.tomato.study.rpc.core.MessageSender;
+import org.tomato.study.rpc.core.Response;
 import org.tomato.study.rpc.core.Result;
+import org.tomato.study.rpc.core.SenderFactory;
+import org.tomato.study.rpc.core.Serializer;
+import org.tomato.study.rpc.core.data.CommandFactory;
+import org.tomato.study.rpc.core.data.CommandType;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.router.RpcInvoker;
+import org.tomato.study.rpc.core.spi.SpiLoader;
+import org.tomato.study.rpc.netty.data.NettyInvocationResult;
 
 import java.io.IOException;
 
@@ -27,29 +35,40 @@ import java.io.IOException;
  */
 public class NettyRpcInvoker implements RpcInvoker {
 
-    private final MetaData metaData;
+    private final MetaData providerNodeMetaData;
 
-    public NettyRpcInvoker(MetaData metaData) {
-        this.metaData = metaData;
+    private final Serializer commandSerializer = SpiLoader.getLoader(Serializer.class).load();
+
+    private final MessageSender sender;
+
+    public NettyRpcInvoker(MetaData providerNodeMetaData) throws Exception {
+        this.providerNodeMetaData = providerNodeMetaData;
+        this.sender = SpiLoader.getLoader(SenderFactory.class)
+                .load()
+                .create(providerNodeMetaData.getHost(), providerNodeMetaData.getPort());
     }
 
     @Override
     public String getVersion() {
-        return metaData.getVersion();
+        return providerNodeMetaData.getVersion();
     }
 
     @Override
     public MetaData getMetadata() {
-        return metaData;
+        return providerNodeMetaData;
     }
 
     @Override
-    public Result invoke(Invocation invocation) {
-        return null;
+    public Result<Response> invoke(Invocation invocation) {
+        return new NettyInvocationResult(
+                sender.send(
+                        CommandFactory.INSTANCE.request(
+                                invocation, commandSerializer, CommandType.RPC_REQUEST))
+        );
     }
 
     @Override
     public void close() throws IOException {
-
+        this.sender.close();
     }
 }

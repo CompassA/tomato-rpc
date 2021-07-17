@@ -21,7 +21,6 @@ import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.framework.recipes.cache.TreeCacheListener;
 import org.apache.zookeeper.data.Stat;
 import org.junit.Assert;
-import org.junit.Test;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;

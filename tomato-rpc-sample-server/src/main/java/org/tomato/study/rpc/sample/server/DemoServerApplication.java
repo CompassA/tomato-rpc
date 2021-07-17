@@ -40,7 +40,7 @@ public class DemoServerApplication {
                         .build()
         );
         coreService.startRpcServer(1535);
-        coreService.registerProvider(new EchoServiceImpl(), EchoService.class);
+        coreService.registerProvider(new EchoServiceImpl(coreService), EchoService.class);
         System.out.println("rpc server started");
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {

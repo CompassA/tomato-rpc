@@ -14,23 +14,21 @@
 
 package org.tomato.study.rpc.netty.service;
 
-import org.tomato.study.rpc.core.MessageSender;
 import org.tomato.study.rpc.core.NameService;
 import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.RpcServer;
 import org.tomato.study.rpc.core.RpcServerFactory;
-import org.tomato.study.rpc.core.SenderFactory;
 import org.tomato.study.rpc.core.StubFactory;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.netty.utils.NetworkUtil;
 
 import java.io.IOException;
 import java.net.URI;
+import java.util.Collection;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author Tomato
@@ -48,17 +46,7 @@ public class NettyRpcCoreService implements RpcCoreService {
 
     private final String version;
 
-    private final StubFactory stubFactory = SpiLoader.getLoader(StubFactory.class).load();
-
-    private final SenderFactory senderFactory = SpiLoader.getLoader(SenderFactory.class).load();
-
-    private final ProviderRegistry providerRegistry = SpiLoader.getLoader(ProviderRegistry.class).load();
-
-    private final RpcServerFactory rpcServerFactory = SpiLoader.getLoader(RpcServerFactory.class).load();
-
     private NameService nameService = SpiLoader.getLoader(NameService.class).load();
-
-    private final Map<String, MessageSender> senderMap = new ConcurrentHashMap<>();
 
     private RpcServer server = null;
 
@@ -82,7 +70,9 @@ public class NettyRpcCoreService implements RpcCoreService {
 
     private URI startServer(int port) {
         String localHost = NetworkUtil.getLocalHost();
-        this.server = this.rpcServerFactory.create(localHost, port);
+        this.server = SpiLoader.getLoader(RpcServerFactory.class)
+                .load()
+                .create(localHost, port);
         this.server.start();
         return NetworkUtil.createURI(PROTOCOL, localHost, port);
     }
@@ -102,7 +92,9 @@ public class NettyRpcCoreService implements RpcCoreService {
 
     @Override
     public <T> URI registerProvider(T serviceInstance, Class<T> serviceInterface) {
-        this.providerRegistry.register(serviceVIP, serviceInstance, serviceInterface);
+        SpiLoader.getLoader(ProviderRegistry.class)
+                .load()
+                .register(serviceVIP, serviceInstance, serviceInterface);
         return NetworkUtil.createURI(
                 PROTOCOL,
                 this.server.getHost(),
@@ -112,13 +104,20 @@ public class NettyRpcCoreService implements RpcCoreService {
 
     @Override
     public <T> T createStub(String serviceVIP, Class<T> serviceInterface) {
-        try {
-            MessageSender sender = senderMap.computeIfAbsent(serviceVIP, senderFactory::create);
-            return stubFactory.createStub(sender, serviceInterface, serviceVIP);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+        StubConfig<T> stubConfig = new StubConfig<>(
+                this.nameService,
+                serviceInterface,
+                serviceVIP,
+                this.version
+        );
+        return SpiLoader.getLoader(StubFactory.class)
+                .load()
+                .createStub(stubConfig);
+    }
+
+    @Override
+    public void subscribe(Collection<String> vipList) throws Exception {
+        this.nameService.subscribe(vipList, this.stage);
     }
 
     @Override
@@ -151,9 +150,5 @@ public class NettyRpcCoreService implements RpcCoreService {
             this.nameService.disconnect();
             this.nameService = null;
         }
-        for (MessageSender sender : senderMap.values()) {
-            sender.close();
-        }
-        this.senderMap.clear();
     }
 }

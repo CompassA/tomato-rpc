@@ -14,6 +14,11 @@
 
 package org.tomato.study.rpc.sample.api.data;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 /**
  * @author Tomato
  * Created on 2021.06.20
@@ -21,6 +26,14 @@ package org.tomato.study.rpc.sample.api.data;
 public class DemoRequest {
 
     private String data;
+
+    private final List<Map<String, Long>> testMap = new ArrayList<>(List.of(
+            new HashMap<>(Map.of("a", 1L, "b", 2L, "c", 3L)),
+            new HashMap<>(Map.of("c", 4L, "d", 5L, "e", 6L)),
+            new HashMap<>(Map.of("e", 7L, "f", 8L, "g", 9L))
+    ));
+
+    private final List<Integer> testList = new ArrayList<>(List.of(1, 2, 3, 4));
 
     public DemoRequest() {
     }
@@ -35,5 +48,22 @@ public class DemoRequest {
 
     public void setData(String data) {
         this.data = data;
+    }
+
+    public List<Map<String, Long>> getTestMap() {
+        return testMap;
+    }
+
+    public List<Integer> getTestList() {
+        return testList;
+    }
+
+    @Override
+    public String toString() {
+        return "DemoRequest{" +
+                "data='" + data + '\'' +
+                ", testMap=" + testMap +
+                ", testList=" + testList +
+                '}';
     }
 }
