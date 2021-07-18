@@ -25,8 +25,9 @@ public interface SenderFactory {
 
     /**
      * create message sender
-     * @param serviceVIP service provider uri
-     * @return messageSender
+     * @param host node host
+     * @param port node port
+     * @return message sender to the provider node
      */
-    MessageSender create(String serviceVIP);
+    MessageSender create(String host, int port) throws Exception;
 }

@@ -33,10 +33,16 @@ public interface MessageSender {
     CompletableFuture<Command> send(Command msg);
 
     /**
-     * get the vip of the sender target server
-     * @return vip
+     * get target host
+     * @return host
      */
-    String getServiceVIP();
+    String getHost();
+
+    /**
+     * get target port
+     * @return port
+     */
+    int getPort();
 
     /**
      * close sender client

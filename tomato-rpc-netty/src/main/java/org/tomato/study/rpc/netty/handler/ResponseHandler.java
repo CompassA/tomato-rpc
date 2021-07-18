@@ -33,9 +33,21 @@ public class ResponseHandler extends SimpleChannelInboundHandler<Command> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Command msg) throws Exception {
+        if (msg.getHeader() == null) {
+            throw new IllegalStateException("no header data");
+        }
         long id = msg.getHeader().getId();
-        responseHolder.remove(id).ifPresent(
-                nettyResponse -> nettyResponse.getFuture().complete(msg));
+        try {
+            this.responseHolder.remove(id)
+                    .ifPresent(nettyResponse ->
+                            nettyResponse.getFuture().complete(msg));
+        } catch (RuntimeException exception) {
+            this.responseHolder.remove(id)
+                    .ifPresent(nettyResponse ->
+                            nettyResponse.getFuture()
+                                    .completeExceptionally(exception));
+            throw exception;
+        }
     }
 
     @Override

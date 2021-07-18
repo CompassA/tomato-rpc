@@ -14,6 +14,8 @@
 
 package org.tomato.study.rpc.sample.server;
 
+import lombok.AllArgsConstructor;
+import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.netty.utils.NetworkUtil;
 import org.tomato.study.rpc.sample.api.EchoService;
 import org.tomato.study.rpc.sample.api.data.DemoRequest;
@@ -25,7 +27,10 @@ import java.net.InetAddress;
  * @author Tomato
  * Created on 2021.06.20
  */
+@AllArgsConstructor
 public class EchoServiceImpl implements EchoService {
+
+    private final RpcCoreService coreService;
 
     @Override
     public DemoResponse echo(DemoRequest request) {
@@ -37,15 +42,11 @@ public class EchoServiceImpl implements EchoService {
                 throw new RuntimeException("local address == null");
             }
             builder.append("hello client!\n")
-                    .append("request message: ")
-                    .append(request.getData())
-                    .append("\n")
-                    .append("host address: ")
-                    .append(localAddress.getHostAddress())
-                    .append("\n")
-                    .append("host name: ")
-                    .append(localAddress.getHostName())
-                    .append("\n");
+                    .append("request message: ").append(request.toString()).append("\n")
+                    .append("provider host address: ").append(localAddress.getHostAddress()).append("\n")
+                    .append("provider vip: ").append(coreService.getServiceVIP()).append("\n")
+                    .append("provider stage: ").append(coreService.getStage()).append("\n")
+                    .append("provider version: ").append(coreService.getVersion()).append("\n");
         } catch (Exception e) {
             e.printStackTrace();
             response.setData(e.getMessage());

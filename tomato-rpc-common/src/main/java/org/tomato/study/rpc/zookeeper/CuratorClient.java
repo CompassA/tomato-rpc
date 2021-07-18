@@ -18,14 +18,17 @@ import lombok.Getter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.cache.TreeCacheListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -36,6 +39,7 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class CuratorClient implements Closeable {
 
+    @Getter
     private final CuratorFramework curatorClient;
 
     private final ConcurrentMap<String, TreeCache> listeners = new ConcurrentHashMap<>(0);
@@ -57,8 +61,17 @@ public class CuratorClient implements Closeable {
                 .build();
     }
 
-    public void start() {
+    public CuratorClient start() {
         this.curatorClient.start();
+        return this;
+    }
+
+    public void createEphemeral(String path) throws Exception {
+        this.create(path, true, null);
+    }
+
+    public void createEphemeral(String path, byte[] payload) throws Exception {
+        this.create(path, true, payload);
     }
 
     public void create(String path, boolean ephemeral, byte[] payload) throws Exception {
@@ -85,6 +98,29 @@ public class CuratorClient implements Closeable {
 
     public List<String> getChildren(String path) throws Exception {
         return curatorClient.getChildren().forPath(path);
+    }
+
+    public List<String> getChildrenAndAddWatcher(String path, CuratorWatcher watcher) throws Exception {
+        if (StringUtils.isBlank(path) || watcher == null) {
+            return Collections.emptyList();
+        }
+        // create path if absent
+        if (this.curatorClient.checkExists().forPath(path) == null) {
+            try {
+                curatorClient.create()
+                        .creatingParentsIfNeeded()
+                        .withMode(CreateMode.PERSISTENT)
+                        .forPath(path);
+            } catch (KeeperException.NodeExistsException exception) {
+                // catch node exist exception and logic continue
+                exception.printStackTrace();
+            }
+        }
+
+        //
+        return curatorClient.getChildren()
+                .usingWatcher(watcher)
+                .forPath(path);
     }
 
     public byte[] getData(String path) throws Exception {

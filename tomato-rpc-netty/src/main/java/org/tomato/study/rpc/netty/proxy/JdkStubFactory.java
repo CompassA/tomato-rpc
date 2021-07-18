@@ -15,17 +15,14 @@
 package org.tomato.study.rpc.netty.proxy;
 
 import lombok.AllArgsConstructor;
-import org.tomato.study.rpc.core.MessageSender;
-import org.tomato.study.rpc.core.Serializer;
+import org.tomato.study.rpc.core.Invocation;
+import org.tomato.study.rpc.core.NameService;
+import org.tomato.study.rpc.core.Response;
 import org.tomato.study.rpc.core.StubFactory;
-import org.tomato.study.rpc.core.data.Command;
-import org.tomato.study.rpc.core.data.CommandFactory;
-import org.tomato.study.rpc.core.data.CommandType;
+import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
-import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.netty.data.Code;
 import org.tomato.study.rpc.netty.data.RpcRequest;
-import org.tomato.study.rpc.netty.data.RpcResponse;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -37,58 +34,50 @@ import java.lang.reflect.Proxy;
  */
 public class JdkStubFactory implements StubFactory {
 
-    private final Serializer serializer = SpiLoader.getLoader(Serializer.class).load();
-
     @Override
-    @SuppressWarnings("unchecked")
-    public <T> T createStub(MessageSender messageSender, Class<T> serviceInterface, String serviceVIP) {
-        InvocationHandler handler = new StubHandler(
-                serviceVIP,
-                serviceInterface,
-                serializer,
-                messageSender);
+    @SuppressWarnings("unchecked cast")
+    public <T> T createStub(StubConfig<T> config) {
         return (T) Proxy.newProxyInstance(
                 JdkStubFactory.class.getClassLoader(),
-                new Class[] { serviceInterface },
-                handler);
+                new Class[] { config.getServiceInterface() },
+                new StubHandler(
+                        config.getServiceVIP(),
+                        config.getVersion(),
+                        config.getNameService(),
+                        config.getServiceInterface())
+        );
     }
 
     @AllArgsConstructor
     private static class StubHandler implements InvocationHandler {
 
-        private final String serviceVIP;
+        private final String vip;
+
+        private final String version;
+
+        private final NameService nameService;
 
         private final Class<?> serviceInterface;
 
-        private final Serializer serializer;
-
-        private final MessageSender messageSender;
-
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            try {
-                RpcRequest request = RpcRequest.builder()
-                        .serviceVIP(serviceVIP)
-                        .interfaceName(serviceInterface.getName())
-                        .methodName(method.getName())
-                        .argsType(method.getParameterTypes())
-                        .returnType(method.getReturnType())
-                        .parameters(args)
-                        .build();
-                Command requestCommand = CommandFactory.INSTANCE.request(
-                        request, serializer, CommandType.RPC_REQUEST);
-                Command responseCommand = messageSender.send(requestCommand).get();
-                RpcResponse response = serializer.deserialize(
-                        responseCommand.getBody(), RpcResponse.class);
-                if (Code.SUCCESS.equals(response.getCode())) {
-                    return response.getData();
-                } else {
-                    throw new TomatoRpcException("rpc failed, server message: " + response.getMessage());
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
+            Invocation invocation = RpcRequest.builder()
+                    .serviceVIP(this.vip)
+                    .interfaceName(this.serviceInterface.getName())
+                    .methodName(method.getName())
+                    .argsType(method.getParameterTypes())
+                    .returnType(method.getReturnType())
+                    .parameters(args)
+                    .build();
+            Response response = nameService.lookupInvoker(this.vip, this.version)
+                    .orElseThrow(() -> new TomatoRpcException(
+                            "invoker not found, vip=" + this.version + ",version=" + this.version))
+                    .invoke(invocation)
+                    .getResultSync();
+            if (!Code.SUCCESS.equals(response.getCode())) {
+                throw new TomatoRpcException("rpc failed, server message: " + response.getMessage());
             }
-            return null;
+            return response.getData();
         }
     }
 }

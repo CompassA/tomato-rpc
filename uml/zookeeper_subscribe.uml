@@ -1,0 +1,17 @@
+@startuml
+title Zookeeper Registry Subscribe
+autonumber
+
+database zookeeper
+participant ZookeeperRegistry
+
+
+ZookeeperRegistry -> setting.yml: load vip config from
+setting.yml -> ZookeeperRegistry: vip list in the config file
+ZookeeperRegistry -> zookeeper: request metadata\n(path: /namespace/vip/providers)
+zookeeper -> ZookeeperRegistry: provider meta data list
+ZookeeperRegistry -> ZookeeperRegistry: create provider instance
+ZookeeperRegistry -> ZookeeperRegistry: create child listener instance
+ZookeeperRegistry -> zookeeper: add watcher
+
+@enduml

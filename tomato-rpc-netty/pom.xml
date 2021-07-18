@@ -33,7 +33,7 @@
     <dependencies>
         <dependency>
             <groupId>org.tomato.study.rpc</groupId>
-            <artifactId>tomato-rpc-common</artifactId>
+            <artifactId>tomato-rpc-registry</artifactId>
         </dependency>
 
         <dependency>

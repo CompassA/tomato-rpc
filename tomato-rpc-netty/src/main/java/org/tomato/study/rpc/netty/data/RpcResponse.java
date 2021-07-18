@@ -18,6 +18,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.tomato.study.rpc.core.Response;
 
 /**
  * @author Tomato
@@ -27,7 +28,7 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class RpcResponse {
+public class RpcResponse implements Response {
 
     public int code;
 

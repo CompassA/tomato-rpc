@@ -14,6 +14,7 @@
 
 package org.tomato.study.rpc.core;
 
+import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.spi.SpiInterface;
 
 /**
@@ -26,11 +27,9 @@ public interface StubFactory {
 
     /**
      * create a proxy instance which can send message to provider
-     * @param messageSender the instance to send message to server
-     * @param serviceInterface interface of service provider
-     * @param serviceVIP service vip
+     * @param config necessary data for creating a stub
      * @param <T> proxy interface type
      * @return proxy instance
      */
-    <T> T createStub(MessageSender messageSender, Class<T> serviceInterface, String serviceVIP);
+    <T> T createStub(StubConfig<T> config);
 }

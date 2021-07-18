@@ -15,10 +15,11 @@
 package org.tomato.study.rpc.core;
 
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.router.RpcInvoker;
 import org.tomato.study.rpc.core.spi.SpiInterface;
 
 import java.net.URI;
-import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 
 /**
@@ -31,9 +32,9 @@ public interface NameService {
 
     /**
      * connect to name server
-     * @param nameServiceURI name service uri
+     * @param nameServiceURI name service connection uri
      */
-    void connect(URI nameServiceURI, List<String> subscribedVIP);
+    void connect(String nameServiceURI);
 
     /**
      * disconnect from name server
@@ -47,10 +48,26 @@ public interface NameService {
     void registerService(MetaData metaData);
 
     /**
+     * subscribe vip
+     * @param vipList vip to subscribe
+     * @param stage client subscribe the provider invoker which has the same stage
+     * @exception Exception subscribe exception
+     */
+    void subscribe(Collection<String> vipList, String stage) throws Exception;
+
+    /**
      * get service address
      * @param serviceVIP service identification
      * @return service address
      * @throws Exception any exception during look up
      */
     Optional<URI> lookupService(String serviceVIP) throws Exception;
+
+    /**
+     * search service invoker
+     * @param serviceVIP service vip
+     * @param version service version
+     * @return provider invoker
+     */
+    Optional<RpcInvoker> lookupInvoker(String serviceVIP, String version);
 }

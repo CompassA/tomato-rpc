@@ -19,6 +19,7 @@ import lombok.Getter;
 import org.tomato.study.rpc.core.MessageSender;
 import org.tomato.study.rpc.core.data.Command;
 
+import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -28,44 +29,45 @@ import java.util.concurrent.CompletableFuture;
 @Getter
 public class NettyMessageSender implements MessageSender {
 
-    private final String serviceVIP;
+    private final URI uri;
 
-    private final ChannelHolder channelHolder;
+    private final ChannelWrapper channelWrapper;
 
-    private final ChannelResponseHolder responseHolder;
+    private final ChannelResponseHolder responseHolder = ChannelResponseHolder.INSTANCE;
 
-    public NettyMessageSender(String serviceVIP,
-                              ChannelHolder channelHolder,
-                              ChannelResponseHolder responseHolder) {
-        this.serviceVIP = serviceVIP;
-        this.channelHolder = channelHolder;
-        this.responseHolder = responseHolder;
+    public NettyMessageSender(String host, int port) throws Exception {
+        this.uri = URI.create("tomato://" + host + ":" + port);
+        this.channelWrapper = ChannelHolder.INSTANCE.getChannelWrapper(uri);
     }
 
     @Override
     public CompletableFuture<Command> send(Command msg) {
         CompletableFuture<Command> future = new CompletableFuture<>();
         long id = msg.getHeader().getId();
-        responseHolder.putFeatureResponse(id, future);
-        try {
-            channelHolder.getChannelWrapper(serviceVIP)
-                    .getChannel()
-                    .writeAndFlush(msg)
-                    .addListener((ChannelFutureListener) futureChannel -> {
-                        if (!futureChannel.isSuccess()) {
-                            future.completeExceptionally(futureChannel.cause());
-                            responseHolder.remove(id);
-                        }
-                    });
-        } catch (Throwable e) {
-            responseHolder.remove(id);
-            future.completeExceptionally(e);
-        }
+        this.responseHolder.putFeatureResponse(id, future);
+        this.channelWrapper.getChannel()
+                .writeAndFlush(msg)
+                .addListener((ChannelFutureListener) futureChannel -> {
+                    if (!futureChannel.isSuccess()) {
+                        future.completeExceptionally(futureChannel.cause());
+                        responseHolder.remove(id);
+                    }
+                });
         return future;
     }
 
     @Override
+    public String getHost() {
+        return uri.getHost();
+    }
+
+    @Override
+    public int getPort() {
+        return uri.getPort();
+    }
+
+    @Override
     public void close() {
-        channelHolder.close();
+        this.channelWrapper.closeChannel();
     }
 }

@@ -14,7 +14,6 @@
 
 package org.tomato.study.rpc.core.spi;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.tomato.study.rpc.core.utils.ClassUtil;
 
@@ -35,7 +34,6 @@ import java.util.concurrent.ConcurrentMap;
  * Created on 2021.04.17
  */
 @Getter
-@AllArgsConstructor
 public class SpiLoader<T> {
 
     /**
@@ -69,6 +67,21 @@ public class SpiLoader<T> {
     private final Class<T> spiInterface;
 
     /**
+     * spi config parameter name
+     */
+    private final String paramName;
+
+    /**
+     * default implement class name
+     */
+    private final String defaultClassFullName;
+
+    /**
+     * is implement class instance singleton
+     */
+    private final boolean singletonInstance;
+
+    /**
      * [get] or [create and get] a spi loader of a spi interface
      * @param spiInterface interface class marked with @SpiInterface
      * @param <T> extension interface type
@@ -84,24 +97,32 @@ public class SpiLoader<T> {
         return (SpiLoader<T>) spiLoader;
     }
 
+    public SpiLoader(Class<T> clazz) {
+        if (!clazz.isAnnotationPresent(SpiInterface.class)) {
+            throw new IllegalStateException("not spi interface");
+        }
+        SpiInterface spiInfo = clazz.getAnnotation(SpiInterface.class);
+        this.spiInterface = clazz;
+        this.paramName = spiInfo.paramName();
+        this.defaultClassFullName = spiInfo.defaultSpiValue();
+        this.singletonInstance = spiInfo.singleton();
+
+    }
+
     /**
      * lazy: [get] or [create and get] spi instance
      * @return spi instance
      */
     public T load() {
-        if (!spiInterface.isAnnotationPresent(SpiInterface.class)) {
-            return null;
-        }
-        SpiInterface spiInfo = spiInterface.getAnnotation(SpiInterface.class);
-        if (!spiInfo.singleton()) {
-            return createSpiInstance(spiInfo.paramName());
+        if (!this.singletonInstance) {
+            return createSpiInstance(paramName);
         }
         T instance = singleton.get();
         if (instance == null) {
             synchronized (singleton) {
                 instance = singleton.get();
                 if (instance == null) {
-                    instance = createSpiInstance(spiInfo.paramName());
+                    instance = createSpiInstance(paramName);
                     singleton.set(instance);
                 }
             }
@@ -140,19 +161,37 @@ public class SpiLoader<T> {
         return spiConfigMap;
     }
 
+    /**
+     * load spi config file
+     * @return {@link SpiLoader#paramName} -> implement class of spi interface
+     */
     private Map<String, Class<?>> loadSpiConfigFile() {
+        // get classloader
         String path = SPI_CONFIG_DICTIONARY + spiInterface.getCanonicalName();
         ClassLoader classLoader = ClassUtil.getClassLoader(spiInterface);
         if (classLoader == null) {
             return Collections.emptyMap();
         }
+
+        // open spi config file
         URL resourceUrl = classLoader.getResource(path);
-        if (resourceUrl == null) {
-            return Collections.emptyMap();
-        }
+
+        // if config is empty, load default implement class
         Map<String, Class<?>> spiConfigMap = new HashMap<>(0);
+        if (resourceUrl == null) {
+            try {
+                spiConfigMap.put(paramName,
+                        Class.forName(defaultClassFullName, true, classLoader));
+                return spiConfigMap;
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+                return Collections.emptyMap();
+            }
+        }
+
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(resourceUrl.openStream(), StandardCharsets.UTF_8))) {
+            // resolve config line
             String line;
             while ((line = reader.readLine()) != null) {
                 line = line.trim();
@@ -160,6 +199,8 @@ public class SpiLoader<T> {
                 if (delimiterPos < 1) {
                     continue;
                 }
+
+                // load class by class full name in the config file
                 String paramName = line.substring(0, delimiterPos).trim();
                 String implClassName = line.substring(delimiterPos + 1).trim();
                 if (paramName.isEmpty() || implClassName.isEmpty()) {

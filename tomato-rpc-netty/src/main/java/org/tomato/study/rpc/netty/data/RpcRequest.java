@@ -18,18 +18,19 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.tomato.study.rpc.core.Invocation;
 
 import java.util.Arrays;
 
 /**
+ * necessary data during a RPC
  * @author Tomato
  * Created on 2021.03.31
  */
 @Setter
 @Getter
-@Builder
 @NoArgsConstructor
-public class RpcRequest {
+public class RpcRequest implements Invocation {
 
     /**
      * rpc service vip in the service name registry
@@ -65,6 +66,7 @@ public class RpcRequest {
      */
     private Object[] parameters;
 
+    @Builder
     public RpcRequest(String serviceVIP,
                       String interfaceName,
                       String methodName,
@@ -81,5 +83,15 @@ public class RpcRequest {
         } else {
             this.parameters = Arrays.copyOf(parameters, parameters.length);
         }
+    }
+
+    @Override
+    public Class<?>[] getArgsTypes() {
+        return this.argsType;
+    }
+
+    @Override
+    public Object[] getArgs() {
+        return this.parameters;
     }
 }

@@ -32,5 +32,7 @@ public @interface SpiInterface {
 
     String paramName() default "";
 
+    String defaultSpiValue() default "";
+
     boolean singleton() default true;
 }
