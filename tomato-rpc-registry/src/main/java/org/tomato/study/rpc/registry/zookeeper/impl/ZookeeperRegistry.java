@@ -33,6 +33,7 @@ import java.net.URLEncoder;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
@@ -46,6 +47,8 @@ import java.util.stream.Collectors;
  * Created on 2021.07.07
  */
 public class ZookeeperRegistry {
+
+    private static final String PATH_DELIMITER = "/";
 
     /**
      * provider zNode path: /namespace/vip/stage/{providers}
@@ -144,15 +147,20 @@ public class ZookeeperRegistry {
                     vip,
                     vipKey -> SpiLoader.getLoader(ServiceProviderFactory.class)
                             .load()
-                            .create(vipKey));
+                            .create(vipKey)
+            );
 
             // create vip listener
             ChildrenListener listener = this.childrenListenerMap.computeIfAbsent(
-                    serviceProvider, provider -> new PathChildrenListener(this));
+                    serviceProvider,
+                    provider -> new PathChildrenListener(this)
+            );
 
             // create zk path children listener
             PathChildrenWatcher watcher = this.watcherMap.computeIfAbsent(
-                    listener, listenerKey -> new PathChildrenWatcher(curatorWrapper, listener));
+                    listener,
+                    listenerKey -> new PathChildrenWatcher(curatorWrapper, listener)
+            );
 
             // get metadata list of RPC provider nodes
             List<String> children = this.curatorWrapper.getChildrenAndAddWatcher(
@@ -160,7 +168,8 @@ public class ZookeeperRegistry {
                             vip,
                             stage,
                             PROVIDER_DICTIONARY),
-                    watcher);
+                    watcher
+            );
             if (CollectionUtils.isEmpty(children)) {
                 continue;
             }
@@ -204,19 +213,34 @@ public class ZookeeperRegistry {
 
     /**
      * update provider instance data
-     * @param vip service provider vip
+     * @param path service provider path, format: /vip/{stage}/providers
      * @param children current provider node metadata
      */
-    public void notify(String vip, Collection<URI> children) {
-        if (StringUtils.isBlank(vip) || CollectionUtils.isEmpty(children)) {
+    public void notify(String path, Collection<URI> children) throws IOException {
+        if (StringUtils.isBlank(path)) {
             return;
         }
-        providerMap.computeIfAbsent(
+        String[] split = path.split(PATH_DELIMITER);
+        if (split.length == 0) {
+            return;
+        }
+        String vip = null;
+        for (String s : split) {
+            if (!StringUtils.isBlank(s) && !this.namespace.equals(s)) {
+                vip = s;
+                break;
+            }
+        }
+        if (StringUtils.isBlank(vip)) {
+            return;
+        }
+
+        this.providerMap.computeIfAbsent(
                 vip,
                 vipKey -> SpiLoader.getLoader(ServiceProviderFactory.class)
                         .load()
                         .create(vipKey)
-        ).refresh(
+        ).refresh(CollectionUtils.isEmpty(children) ? Collections.emptySet() :
                 children.stream()
                         .map(MetaData::convert)
                         .filter(Optional::isPresent)
@@ -229,7 +253,7 @@ public class ZookeeperRegistry {
         if (StringUtils.isBlank(serviceVip) || StringUtils.isBlank(version)) {
             return Optional.empty();
         }
-        return Optional.ofNullable(providerMap.get(serviceVip))
+        return Optional.ofNullable(this.providerMap.get(serviceVip))
                 .flatMap(provider -> provider.lookUp(version));
     }
 
@@ -244,7 +268,7 @@ public class ZookeeperRegistry {
         }
         StringBuilder builder = new StringBuilder(0);
         for (String part : parts) {
-            builder.append("/").append(URLEncoder.encode(part, this.zNodePathCharset));
+            builder.append(PATH_DELIMITER).append(URLEncoder.encode(part, this.zNodePathCharset));
         }
         return builder.toString();
     }

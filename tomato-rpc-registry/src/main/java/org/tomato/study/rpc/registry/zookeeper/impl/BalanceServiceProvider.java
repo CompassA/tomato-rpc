@@ -49,6 +49,11 @@ public class BalanceServiceProvider implements ServiceProvider {
     private final String vip;
 
     /**
+     * SPI invoker factory
+     */
+    private final RpcInvokerFactory invokerFactory = SpiLoader.getLoader(RpcInvokerFactory.class).load();
+
+    /**
      * registered invoker
      */
     private final ConcurrentMap<MetaData, RpcInvoker> invokerRegistry = new ConcurrentHashMap<>(0);
@@ -69,12 +74,13 @@ public class BalanceServiceProvider implements ServiceProvider {
         if (CollectionUtils.isEmpty(invokers)) {
             return Optional.empty();
         }
-        return Optional.of(invokers.get(0));
+        return Optional.of(invokers.get((int) (Math.random() * invokers.size())));
     }
 
     @Override
-    public void refresh(Set<MetaData> metadataSet) {
+    public void refresh(Set<MetaData> metadataSet) throws IOException {
         if (CollectionUtils.isEmpty(metadataSet)) {
+            this.close();
             return;
         }
         // version -> metadata set
@@ -94,25 +100,29 @@ public class BalanceServiceProvider implements ServiceProvider {
             for (MetaData metadata : newMetadataSet) {
                 RpcInvoker rpcInvoker = invokerRegistry.computeIfAbsent(
                         metadata,
-                        key -> SpiLoader.getLoader(RpcInvokerFactory.class)
-                                .load()
-                                .create(key)
-                                .orElse(null));
+                        key -> invokerFactory.create(key).orElse(null));
                 if (rpcInvoker != null) {
                     newInvokers.add(rpcInvoker);
                 }
             }
 
             // close invokers
-            List<RpcInvoker> oldInvokers = invokerMap.put(version, newInvokers);
-            if (CollectionUtils.isNotEmpty(oldInvokers)) {
-                for (RpcInvoker oldInvoker : oldInvokers) {
-                    invokerRegistry.remove(oldInvoker.getMetadata());
-                    try {
-                        oldInvoker.close();
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
+            List<RpcInvoker> oldInvokers = CollectionUtils.isEmpty(newInvokers)
+                    ? invokerMap.remove(version)
+                    : invokerMap.put(version, newInvokers);
+            if (CollectionUtils.isEmpty(oldInvokers)) {
+                continue;
+            }
+            for (RpcInvoker oldInvoker : oldInvokers) {
+                // only close the invoker which is not in the metadataSet
+                if (newInvokers.contains(oldInvoker)) {
+                    continue;
+                }
+                invokerRegistry.remove(oldInvoker.getMetadata());
+                try {
+                    oldInvoker.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
             }
         }

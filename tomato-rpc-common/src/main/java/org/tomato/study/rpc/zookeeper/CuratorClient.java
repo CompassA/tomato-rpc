@@ -23,6 +23,7 @@ import org.apache.curator.framework.recipes.cache.TreeCache;
 import org.apache.curator.framework.recipes.cache.TreeCacheListener;
 import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.CreateMode;
+import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
 
 import java.io.Closeable;
@@ -103,7 +104,23 @@ public class CuratorClient implements Closeable {
         if (StringUtils.isBlank(path) || watcher == null) {
             return Collections.emptyList();
         }
-        return curatorClient.getChildren().usingWatcher(watcher).forPath(path);
+        // create path if absent
+        if (this.curatorClient.checkExists().forPath(path) == null) {
+            try {
+                curatorClient.create()
+                        .creatingParentsIfNeeded()
+                        .withMode(CreateMode.PERSISTENT)
+                        .forPath(path);
+            } catch (KeeperException.NodeExistsException exception) {
+                // catch node exist exception and logic continue
+                exception.printStackTrace();
+            }
+        }
+
+        //
+        return curatorClient.getChildren()
+                .usingWatcher(watcher)
+                .forPath(path);
     }
 
     public byte[] getData(String path) throws Exception {

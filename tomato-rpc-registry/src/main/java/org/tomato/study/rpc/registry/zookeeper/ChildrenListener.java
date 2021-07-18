@@ -14,6 +14,7 @@
 
 package org.tomato.study.rpc.registry.zookeeper;
 
+import java.io.IOException;
 import java.util.List;
 
 /**
@@ -26,6 +27,7 @@ public interface ChildrenListener {
      * call back when path children changed
      * @param path path subscribed
      * @param children children of path
+     * @throws IOException exception during children changed callback
      */
-    void childrenChanged(String path, List<String> children);
+    void childrenChanged(String path, List<String> children) throws IOException;
 }

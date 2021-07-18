@@ -70,7 +70,8 @@ public class JdkStubFactory implements StubFactory {
                     .parameters(args)
                     .build();
             Response response = nameService.lookupInvoker(this.vip, this.version)
-                    .orElseThrow()
+                    .orElseThrow(() -> new TomatoRpcException(
+                            "invoker not found, vip=" + this.version + ",version=" + this.version))
                     .invoke(invocation)
                     .getResultSync();
             if (!Code.SUCCESS.equals(response.getCode())) {

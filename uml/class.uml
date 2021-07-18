@@ -1,5 +1,7 @@
 @startuml
 
+title tomato-rpc
+
 class ZookeeperNameService implements NameService {
     ZookeeperRegistry registry
 }
@@ -24,12 +26,13 @@ class NettyRpcServer implements RpcServer {
 }
 
 class NettyRpcCoreService implements RpcCoreService {
-    String serviceVIP;
-    List<String> subscribedVIP;
-    String stage;
-    String version;
-    NameService nameService;
-    RpcServer server;
+    String serviceVIP
+    List<String> subscribedVIP
+    String stage
+    String version
+    ProviderRegistry providerRegistry
+    NameService nameService
+    RpcServer server
 }
 
 class BalanceServiceProvider implements ServiceProvider {

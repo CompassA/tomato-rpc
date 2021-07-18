@@ -17,6 +17,7 @@ package org.tomato.study.rpc.registry.zookeeper.impl;
 import lombok.AllArgsConstructor;
 import org.tomato.study.rpc.registry.zookeeper.ChildrenListener;
 
+import java.io.IOException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.util.Collections;
@@ -33,7 +34,7 @@ public class PathChildrenListener implements ChildrenListener {
     private final ZookeeperRegistry registry;
 
     @Override
-    public void childrenChanged(String path, List<String> children) {
+    public void childrenChanged(String path, List<String> children) throws IOException {
         if (children == null) {
             this.registry.notify(path, Collections.emptyList());
             return;

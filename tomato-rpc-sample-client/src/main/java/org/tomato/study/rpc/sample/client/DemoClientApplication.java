@@ -16,6 +16,7 @@ package org.tomato.study.rpc.sample.client;
 
 import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.RpcCoreService;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.netty.service.NettyRpcCoreService;
 import org.tomato.study.rpc.netty.service.RpcConfig;
 import org.tomato.study.rpc.sample.api.EchoService;
@@ -53,8 +54,12 @@ public class DemoClientApplication {
 
         // call RPC method 3 seconds a time
         for (int i = 0; i < 20; ++i) {
-            DemoResponse response = stub.echo(new DemoRequest("hello world"));
-            System.out.println(response.getData());
+            try {
+                DemoResponse response = stub.echo(new DemoRequest("hello world"));
+                System.out.println(response.getData());
+            } catch (TomatoRpcException exception) {
+                exception.printStackTrace();
+            }
             Thread.sleep(3000);
         }
 

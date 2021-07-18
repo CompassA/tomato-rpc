@@ -20,7 +20,7 @@ import lombok.Getter;
  * @author Tomato
  * Created on 2021.06.19
  */
-public class TomatoRpcException extends Exception {
+public class TomatoRpcException extends RuntimeException {
 
     @Getter
     private final String message;

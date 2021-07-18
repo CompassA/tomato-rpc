@@ -17,6 +17,7 @@ package org.tomato.study.rpc.core.router;
 import org.tomato.study.rpc.core.data.MetaData;
 
 import java.io.Closeable;
+import java.io.IOException;
 import java.util.Optional;
 import java.util.Set;
 
@@ -42,8 +43,9 @@ public interface ServiceProvider extends Closeable {
 
     /**
      * refresh provider data by metaDataList
-     * @param metadataSet all rpc node metadata of a provider
+     * @param metadataSet all rpc node metadata of a provider with same vip and stage
+     * @throws IOException IOException during refresh invoker data
      */
-    void refresh(Set<MetaData> metadataSet);
+    void refresh(Set<MetaData> metadataSet) throws IOException;
 
 }
