@@ -3,7 +3,7 @@ FROM maven:3.8-openjdk-11 as builder
 COPY . /tmp/
 COPY settings.xml /usr/share/maven/ref/
 WORKDIR /tmp/
-RUN mvn clean package -DskipTests -U -B -e
+RUN mvn clean package -DskipTests -U -B -e --settings /usr/share/maven/ref/settings.xml
 
 FROM openjdk:11
 COPY --from=builder /tmp/tomato-rpc-sample-server/target/*-jar-with-dependencies.jar /usr/src/myapp/
