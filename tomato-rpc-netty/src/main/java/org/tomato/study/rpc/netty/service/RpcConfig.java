@@ -96,7 +96,8 @@ public class RpcConfig {
                     this.stage,
                     this.version,
                     this.subscribedVIP,
-                    this.nameServiceURI);
+                    this.nameServiceURI
+            );
         }
     }
 }

@@ -37,7 +37,7 @@ public class NettyMessageSender implements MessageSender {
 
     public NettyMessageSender(String host, int port) throws Exception {
         this.uri = URI.create("tomato://" + host + ":" + port);
-        this.channelWrapper = ChannelHolder.INSTANCE.getChannelWrapper(uri);
+        this.channelWrapper = ChannelHolder.INSTANCE.getChannelWrapper(this.uri);
     }
 
     @Override
@@ -50,7 +50,7 @@ public class NettyMessageSender implements MessageSender {
                 .addListener((ChannelFutureListener) futureChannel -> {
                     if (!futureChannel.isSuccess()) {
                         future.completeExceptionally(futureChannel.cause());
-                        responseHolder.remove(id);
+                        this.responseHolder.remove(id);
                     }
                 });
         return future;
@@ -58,12 +58,12 @@ public class NettyMessageSender implements MessageSender {
 
     @Override
     public String getHost() {
-        return uri.getHost();
+        return this.uri.getHost();
     }
 
     @Override
     public int getPort() {
-        return uri.getPort();
+        return this.uri.getPort();
     }
 
     @Override

@@ -69,7 +69,7 @@ public class NettyRpcServer implements RpcServer {
             this.workerGroup = new NioEventLoopGroup();
         }
         this.serverBootstrap = new ServerBootstrap()
-                .group(bossGroup, workerGroup)
+                .group(this.bossGroup, this.workerGroup)
                 .channel(Epoll.isAvailable() ? EpollServerSocketChannel.class : NioServerSocketChannel.class)
                 .childOption(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .childHandler(new ChannelInitializer<>() {
@@ -94,7 +94,7 @@ public class NettyRpcServer implements RpcServer {
         }
         try {
             this.channel = this.serverBootstrap
-                    .bind(port)
+                    .bind(this.port)
                     .sync()
                     .channel();
             return true;
@@ -128,6 +128,6 @@ public class NettyRpcServer implements RpcServer {
 
     @Override
     public boolean isClosed() {
-        return !started;
+        return !this.started;
     }
 }

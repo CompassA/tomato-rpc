@@ -37,7 +37,7 @@ public class NettyProviderRegistry implements ProviderRegistry {
         if (StringUtils.isBlank(vip) || instance == null || !providerInterface.isInterface()) {
             throw new IllegalCallerException("register invalid data");
         }
-        providerMap.put(providerId(providerInterface.getName(), vip), instance);
+        this.providerMap.put(providerId(providerInterface.getName(), vip), instance);
     }
 
     @Override
@@ -46,7 +46,7 @@ public class NettyProviderRegistry implements ProviderRegistry {
             return null;
         }
         String providerId = providerId(providerInterface.getCanonicalName(), vip);
-        return providerMap.get(providerId);
+        return this.providerMap.get(providerId);
     }
 
     private String providerId(String interfaceName, String vip) {

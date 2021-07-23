@@ -63,7 +63,7 @@ public class RpcRequestHandler implements ServerHandler {
             }
 
             // search the RPC service provider
-            Object provider = providerRegistry.getProvider(request.getServiceVIP(), providerInterface);
+            Object provider = this.providerRegistry.getProvider(request.getServiceVIP(), providerInterface);
             if (provider == null) {
                 throw new TomatoRpcException("provider not found: " + interfaceName);
             }

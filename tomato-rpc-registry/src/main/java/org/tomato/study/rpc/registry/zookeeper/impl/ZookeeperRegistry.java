@@ -159,7 +159,7 @@ public class ZookeeperRegistry {
             // create zk path children listener
             PathChildrenWatcher watcher = this.watcherMap.computeIfAbsent(
                     listener,
-                    listenerKey -> new PathChildrenWatcher(curatorWrapper, listener)
+                    listenerKey -> new PathChildrenWatcher(this.curatorWrapper, listener)
             );
 
             // get metadata list of RPC provider nodes
@@ -195,16 +195,16 @@ public class ZookeeperRegistry {
             return;
         }
         for (String vip : vips) {
-            ServiceProvider provider = providerMap.remove(vip);
+            ServiceProvider provider = this.providerMap.remove(vip);
             if (provider == null) {
                 continue;
             }
             provider.close();
-            ChildrenListener listener = childrenListenerMap.remove(provider);
+            ChildrenListener listener = this.childrenListenerMap.remove(provider);
             if (listener == null) {
                 continue;
             }
-            PathChildrenWatcher watcher = watcherMap.remove(listener);
+            PathChildrenWatcher watcher = this.watcherMap.remove(listener);
             if (watcher != null) {
                 watcher.unwatch();
             }
@@ -268,7 +268,8 @@ public class ZookeeperRegistry {
         }
         StringBuilder builder = new StringBuilder(0);
         for (String part : parts) {
-            builder.append(PATH_DELIMITER).append(URLEncoder.encode(part, this.zNodePathCharset));
+            builder.append(PATH_DELIMITER)
+                    .append(URLEncoder.encode(part, this.zNodePathCharset));
         }
         return builder.toString();
     }

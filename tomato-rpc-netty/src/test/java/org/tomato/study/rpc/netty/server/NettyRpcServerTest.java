@@ -58,7 +58,7 @@ public class NettyRpcServerTest {
             } catch (InterruptedException e) {
                 // do nothing
             }
-            if (nettyRpcServer.start()) {
+            if (this.nettyRpcServer.start()) {
                 cnt[0]++;
             }
         };
@@ -77,7 +77,7 @@ public class NettyRpcServerTest {
         thread3.join();
         thread4.join();
 
-        if (nettyRpcServer.start()) {
+        if (this.nettyRpcServer.start()) {
             cnt[0]++;
         }
         Assert.assertEquals(1, cnt[0]);
@@ -85,9 +85,9 @@ public class NettyRpcServerTest {
 
     @Test
     public void doubleStopTest() {
-        nettyRpcServer.start();
-        nettyRpcServer.close();
-        nettyRpcServer.close();
+        this.nettyRpcServer.start();
+        this.nettyRpcServer.close();
+        this.nettyRpcServer.close();
         Assert.assertTrue(true);
     }
 }

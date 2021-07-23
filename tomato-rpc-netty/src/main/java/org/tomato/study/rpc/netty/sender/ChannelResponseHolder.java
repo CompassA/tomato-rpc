@@ -34,14 +34,17 @@ public class ChannelResponseHolder {
     private final ConcurrentMap<Long, NettyResponseFuture> responseMap = new ConcurrentHashMap<>(0);
 
     public void putFeatureResponse(long id, CompletableFuture<Command> future) {
-        responseMap.put(id, new NettyResponseFuture(id, future, System.nanoTime()));
+        this.responseMap.put(
+                id,
+                new NettyResponseFuture(id, future, System.nanoTime())
+        );
     }
 
     public Optional<NettyResponseFuture> getResponse(long id) {
-        return Optional.ofNullable(responseMap.get(id));
+        return Optional.ofNullable(this.responseMap.get(id));
     }
 
     public Optional<NettyResponseFuture> remove(long id) {
-        return Optional.ofNullable(responseMap.remove(id));
+        return Optional.ofNullable(this.responseMap.remove(id));
     }
 }

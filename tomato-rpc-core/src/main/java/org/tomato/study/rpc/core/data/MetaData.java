@@ -97,11 +97,11 @@ public class MetaData {
      * @return true valid
      */
     public boolean isValid() {
-        return protocol != null && !protocol.isBlank()
-                && host != null && !host.isBlank()
-                && vip != null && !vip.isBlank()
-                && stage != null && !stage.isBlank()
-                && version != null && !version.isBlank();
+        return this.protocol != null && !this.protocol.isBlank()
+                && this.host != null && !this.host.isBlank()
+                && this.vip != null && !this.vip.isBlank()
+                && this.stage != null && !this.stage.isBlank()
+                && this.version != null && !this.version.isBlank();
     }
 
     /**

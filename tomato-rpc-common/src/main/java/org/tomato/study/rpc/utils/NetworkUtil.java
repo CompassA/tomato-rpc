@@ -12,7 +12,7 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.netty.utils;
+package org.tomato.study.rpc.utils;
 
 import org.apache.commons.lang3.StringUtils;
 

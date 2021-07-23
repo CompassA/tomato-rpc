@@ -17,13 +17,22 @@ package org.tomato.study.rpc.utils;
 import java.lang.reflect.Field;
 
 /**
+ * Reflect Common Utils
  * @author Tomato
  * Created on 2021.07.18
  */
 public final class ReflectUtils {
 
-    public static void reflectSet(Object instance,
-                                  Class<?> clazz,
+    /**
+     * set object field by reflect
+     * @param instance object to set field
+     * @param clazz object type
+     * @param fieldName field name of the object to set
+     * @param value value to set
+     * @param <T> target object type
+     */
+    public static <T> void reflectSet(T instance,
+                                  Class<T> clazz,
                                   String fieldName,
                                   Object value) {
         try {
@@ -35,14 +44,23 @@ public final class ReflectUtils {
         }
     }
 
+    /**
+     * get object field by reflect
+     * @param instance target object
+     * @param clazz target object class
+     * @param fieldName target field name
+     * @param <T> instance type
+     * @param <U> filed type
+     * @return file value
+     */
     @SuppressWarnings("unchecked")
-    public static <T> T reflectGet(Object instance,
-                            Class<?> clazz,
+    public static <T, U> U reflectGet(T instance,
+                            Class<? extends T> clazz,
                             String fieldName) {
         try {
             Field declaredField = clazz.getDeclaredField(fieldName);
             declaredField.setAccessible(true);
-            return (T) declaredField.get(instance);
+            return (U) declaredField.get(instance);
         } catch (NoSuchFieldException | IllegalAccessException e) {
             e.printStackTrace();
             return null;

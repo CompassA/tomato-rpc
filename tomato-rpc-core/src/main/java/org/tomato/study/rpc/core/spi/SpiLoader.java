@@ -115,15 +115,15 @@ public class SpiLoader<T> {
      */
     public T load() {
         if (!this.singletonInstance) {
-            return createSpiInstance(paramName);
+            return this.createSpiInstance(this.paramName);
         }
-        T instance = singleton.get();
+        T instance = this.singleton.get();
         if (instance == null) {
-            synchronized (singleton) {
-                instance = singleton.get();
+            synchronized (this.singleton) {
+                instance = this.singleton.get();
                 if (instance == null) {
-                    instance = createSpiInstance(paramName);
-                    singleton.set(instance);
+                    instance = this.createSpiInstance(this.paramName);
+                    this.singleton.set(instance);
                 }
             }
         }
@@ -132,7 +132,7 @@ public class SpiLoader<T> {
 
     @SuppressWarnings("unchecked")
     private T createSpiInstance(final String spiParameterName) {
-        Map<String, Class<?>> spiConfigMap = getSpiConfigMap();
+        Map<String, Class<?>> spiConfigMap = this.getSpiConfigMap();
         Class<?> spiImplClass = spiConfigMap.get(spiParameterName);
         if (spiImplClass == null) {
             return null;
@@ -146,14 +146,14 @@ public class SpiLoader<T> {
     }
 
     private Map<String, Class<?>> getSpiConfigMap() {
-        Map<String, Class<?>> spiConfigMap = spiConfigHolder.get();
+        Map<String, Class<?>> spiConfigMap = this.spiConfigHolder.get();
         if (spiConfigMap == null) {
-            synchronized (spiConfigHolder) {
-                spiConfigMap = spiConfigHolder.get();
+            synchronized (this.spiConfigHolder) {
+                spiConfigMap = this.spiConfigHolder.get();
                 if (spiConfigMap == null) {
-                    spiConfigMap = loadSpiConfigFile();
+                    spiConfigMap = this.loadSpiConfigFile();
                     if (!spiConfigMap.isEmpty()) {
-                        spiConfigHolder.set(spiConfigMap);
+                        this.spiConfigHolder.set(spiConfigMap);
                     }
                 }
             }
@@ -167,8 +167,8 @@ public class SpiLoader<T> {
      */
     private Map<String, Class<?>> loadSpiConfigFile() {
         // get classloader
-        String path = SPI_CONFIG_DICTIONARY + spiInterface.getCanonicalName();
-        ClassLoader classLoader = ClassUtil.getClassLoader(spiInterface);
+        String path = SPI_CONFIG_DICTIONARY + this.spiInterface.getCanonicalName();
+        ClassLoader classLoader = ClassUtil.getClassLoader(this.spiInterface);
         if (classLoader == null) {
             return Collections.emptyMap();
         }
@@ -180,8 +180,10 @@ public class SpiLoader<T> {
         Map<String, Class<?>> spiConfigMap = new HashMap<>(0);
         if (resourceUrl == null) {
             try {
-                spiConfigMap.put(paramName,
-                        Class.forName(defaultClassFullName, true, classLoader));
+                spiConfigMap.put(
+                        this.paramName,
+                        Class.forName(this.defaultClassFullName, true, classLoader)
+                );
                 return spiConfigMap;
             } catch (ClassNotFoundException e) {
                 e.printStackTrace();

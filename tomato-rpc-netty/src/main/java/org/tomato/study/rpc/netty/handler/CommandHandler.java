@@ -43,7 +43,7 @@ public class CommandHandler extends SimpleChannelInboundHandler<Command> {
     public CommandHandler() {
         ServiceLoader<ServerHandler> serviceHandlers = ServiceLoader.load(ServerHandler.class);
         for (ServerHandler serviceHandler : serviceHandlers) {
-            register(serviceHandler);
+            this.register(serviceHandler);
         }
     }
 
@@ -85,10 +85,10 @@ public class CommandHandler extends SimpleChannelInboundHandler<Command> {
     }
 
     private Optional<ServerHandler> match(CommandType type) {
-        return Optional.ofNullable(providerMap.get(type));
+        return Optional.ofNullable(this.providerMap.get(type));
     }
 
     private void register(ServerHandler serverHandler) {
-        providerMap.put(serverHandler.getType(), serverHandler);
+        this.providerMap.put(serverHandler.getType(), serverHandler);
     }
 }

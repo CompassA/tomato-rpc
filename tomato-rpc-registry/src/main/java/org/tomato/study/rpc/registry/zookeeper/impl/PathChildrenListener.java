@@ -43,7 +43,7 @@ public class PathChildrenListener implements ChildrenListener {
                 path,
                 children.stream()
                         .map(child -> URI.create(
-                                URLDecoder.decode(child, registry.getZNodePathCharset())))
+                                URLDecoder.decode(child, this.registry.getZNodePathCharset())))
                         .collect(Collectors.toList())
         );
     }

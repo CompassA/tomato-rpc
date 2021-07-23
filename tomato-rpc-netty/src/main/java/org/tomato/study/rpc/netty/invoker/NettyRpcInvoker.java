@@ -50,20 +50,24 @@ public class NettyRpcInvoker implements RpcInvoker {
 
     @Override
     public String getVersion() {
-        return providerNodeMetaData.getVersion();
+        return this.providerNodeMetaData.getVersion();
     }
 
     @Override
     public MetaData getMetadata() {
-        return providerNodeMetaData;
+        return this.providerNodeMetaData;
     }
 
     @Override
     public Result<Response> invoke(Invocation invocation) {
         return new NettyInvocationResult(
-                sender.send(
+                this.sender.send(
                         CommandFactory.INSTANCE.request(
-                                invocation, commandSerializer, CommandType.RPC_REQUEST))
+                                invocation,
+                                this.commandSerializer,
+                                CommandType.RPC_REQUEST
+                        )
+                )
         );
     }
 

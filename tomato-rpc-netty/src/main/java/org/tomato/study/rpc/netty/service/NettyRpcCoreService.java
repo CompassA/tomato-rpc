@@ -23,7 +23,7 @@ import org.tomato.study.rpc.core.StubFactory;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.spi.SpiLoader;
-import org.tomato.study.rpc.netty.utils.NetworkUtil;
+import org.tomato.study.rpc.utils.NetworkUtil;
 
 import java.io.IOException;
 import java.net.URI;
@@ -94,7 +94,11 @@ public class NettyRpcCoreService implements RpcCoreService {
 
     @Override
     public <T> URI registerProvider(T serviceInstance, Class<T> serviceInterface) {
-        this.providerRegistry.register(serviceVIP, serviceInstance, serviceInterface);
+        this.providerRegistry.register(
+                this.serviceVIP,
+                serviceInstance,
+                serviceInterface
+        );
         return NetworkUtil.createURI(
                 PROTOCOL,
                 this.server.getHost(),

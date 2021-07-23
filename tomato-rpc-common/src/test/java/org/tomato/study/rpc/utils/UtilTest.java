@@ -12,8 +12,9 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.netty.utils;
+package org.tomato.study.rpc.utils;
 
+import lombok.AllArgsConstructor;
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Test;
@@ -28,5 +29,23 @@ public class UtilTest {
     public void networkUtilTest() {
         String localHost = NetworkUtil.getLocalHost();
         Assert.assertTrue(StringUtils.isNotBlank(localHost) && !"127.0.0.1".equals(localHost));
+    }
+
+    @Test
+    public void reflectUtilTest() {
+        int intVal = 1;
+        String strVal = "test_str";
+        ReflectTestObject testObject = new ReflectTestObject(intVal, strVal);
+        Assert.assertEquals(ReflectUtils.reflectGet(testObject, ReflectTestObject.class, "intField"), (Integer) intVal);
+
+        strVal = "new_str";
+        ReflectUtils.reflectSet(testObject,  ReflectTestObject.class, "stringField", strVal);
+        Assert.assertEquals(ReflectUtils.reflectGet(testObject, ReflectTestObject.class, "stringField"), strVal);
+    }
+
+    @AllArgsConstructor
+    public static class ReflectTestObject {
+        private int intField;
+        private String stringField;
     }
 }

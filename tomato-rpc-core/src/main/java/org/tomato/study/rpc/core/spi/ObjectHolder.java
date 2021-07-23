@@ -24,7 +24,7 @@ public class ObjectHolder<T> {
     private volatile T object;
 
     public T get() {
-        return object;
+        return this.object;
     }
 
     public void set(T object) {

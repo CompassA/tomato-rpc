@@ -39,11 +39,17 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class CuratorClient implements Closeable {
 
+    /**
+     * curator client
+     */
     @Getter
     private final CuratorFramework curatorClient;
 
     private final ConcurrentMap<String, TreeCache> listeners = new ConcurrentHashMap<>(0);
 
+    /**
+     * zookeeper namespace
+     */
     @Getter
     private final String nameSpace;
 
@@ -80,12 +86,12 @@ public class CuratorClient implements Closeable {
         }
         CreateMode createMode = ephemeral ? CreateMode.EPHEMERAL : CreateMode.PERSISTENT;
         if (payload == null || payload.length == 0) {
-            curatorClient.create()
+            this.curatorClient.create()
                     .creatingParentsIfNeeded()
                     .withMode(createMode)
                     .forPath(path);
         } else {
-            curatorClient.create()
+            this.curatorClient.create()
                     .creatingParentsIfNeeded()
                     .withMode(createMode)
                     .forPath(path, payload);
@@ -93,11 +99,11 @@ public class CuratorClient implements Closeable {
     }
 
     public Stat checkExists(String path) throws Exception {
-        return curatorClient.checkExists().forPath(path);
+        return this.curatorClient.checkExists().forPath(path);
     }
 
     public List<String> getChildren(String path) throws Exception {
-        return curatorClient.getChildren().forPath(path);
+        return this.curatorClient.getChildren().forPath(path);
     }
 
     public List<String> getChildrenAndAddWatcher(String path, CuratorWatcher watcher) throws Exception {
@@ -107,7 +113,7 @@ public class CuratorClient implements Closeable {
         // create path if absent
         if (this.curatorClient.checkExists().forPath(path) == null) {
             try {
-                curatorClient.create()
+                this.curatorClient.create()
                         .creatingParentsIfNeeded()
                         .withMode(CreateMode.PERSISTENT)
                         .forPath(path);
@@ -117,35 +123,34 @@ public class CuratorClient implements Closeable {
             }
         }
 
-        //
-        return curatorClient.getChildren()
+        return this.curatorClient.getChildren()
                 .usingWatcher(watcher)
                 .forPath(path);
     }
 
     public byte[] getData(String path) throws Exception {
-        return curatorClient.getData().forPath(path);
+        return this.curatorClient.getData().forPath(path);
     }
 
     public void update(String path, byte[] val) throws Exception {
         if (val == null || val.length < 1) {
             return;
         }
-        curatorClient.setData().forPath(path, val);
+        this.curatorClient.setData().forPath(path, val);
     }
 
     public void delete(String path) throws Exception {
         if (StringUtils.isBlank(path)) {
             return;
         }
-        curatorClient.delete().guaranteed().deletingChildrenIfNeeded().forPath(path);
+        this.curatorClient.delete().guaranteed().deletingChildrenIfNeeded().forPath(path);
     }
 
     public void subscribe(String path, TreeCacheListener listener) throws Exception {
         if (StringUtils.isBlank(path) || listener == null) {
             return;
         }
-        TreeCache treeCache = new TreeCache(curatorClient, path);
+        TreeCache treeCache = new TreeCache(this.curatorClient, path);
         treeCache.start();
         treeCache.getListenable().addListener(listener);
         this.listeners.put(path, treeCache);
@@ -153,12 +158,8 @@ public class CuratorClient implements Closeable {
 
     @Override
     public void close() throws IOException {
-        if (curatorClient != null) {
-            curatorClient.close();
+        if (this.curatorClient != null) {
+            this.curatorClient.close();
         }
-        for (TreeCache value : listeners.values()) {
-            value.close();
-        }
-        listeners.clear();
     }
 }

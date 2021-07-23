@@ -56,16 +56,16 @@ public class Command {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Command command = (Command) o;
-        return Objects.equals(header, command.header)
-                && Arrays.equals(extension, command.extension)
-                && Arrays.equals(body, command.body);
+        return Objects.equals(this.header, command.header)
+                && Arrays.equals(this.extension, command.extension)
+                && Arrays.equals(this.body, command.body);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(header);
-        result = 31 * result + Arrays.hashCode(extension);
-        result = 31 * result + Arrays.hashCode(body);
+        int result = this.header.hashCode();
+        result = 31 * result + Arrays.hashCode(this.extension);
+        result = 31 * result + Arrays.hashCode(this.body);
         return result;
     }
 }

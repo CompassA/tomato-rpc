@@ -76,18 +76,24 @@ public class Header {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
         Header header = (Header) o;
-        return magicNumber == header.magicNumber
-                && length == header.length
-                && version == header.version
-                && extensionLength == header.extensionLength
-                && messageType == header.messageType
-                && serializeType == header.serializeType
-                && id == header.id;
+        return this.magicNumber == header.magicNumber
+                && this.length == header.length
+                && this.version == header.version
+                && this.extensionLength == header.extensionLength
+                && this.messageType == header.messageType
+                && this.serializeType == header.serializeType
+                && this.id == header.id;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(magicNumber, length, version, extensionLength,
-                messageType, serializeType, id);
+        return Objects.hash(
+                this.magicNumber,
+                this.length,
+                this.version,
+                this.extensionLength,
+                this.messageType,
+                this.serializeType,
+                this.id);
     }
 }

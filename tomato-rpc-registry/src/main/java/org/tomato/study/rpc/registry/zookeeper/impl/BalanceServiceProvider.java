@@ -70,7 +70,7 @@ public class BalanceServiceProvider implements ServiceProvider {
 
     @Override
     public Optional<RpcInvoker> lookUp(String version) {
-        List<RpcInvoker> invokers = invokerMap.get(version);
+        List<RpcInvoker> invokers = this.invokerMap.get(version);
         if (CollectionUtils.isEmpty(invokers)) {
             return Optional.empty();
         }
@@ -98,9 +98,10 @@ public class BalanceServiceProvider implements ServiceProvider {
 
             // add new invokers, if the invoker is present, don't register
             for (MetaData metadata : newMetadataSet) {
-                RpcInvoker rpcInvoker = invokerRegistry.computeIfAbsent(
+                RpcInvoker rpcInvoker = this.invokerRegistry.computeIfAbsent(
                         metadata,
-                        key -> invokerFactory.create(key).orElse(null));
+                        key -> this.invokerFactory.create(key).orElse(null)
+                );
                 if (rpcInvoker != null) {
                     newInvokers.add(rpcInvoker);
                 }
@@ -108,8 +109,8 @@ public class BalanceServiceProvider implements ServiceProvider {
 
             // close invokers
             List<RpcInvoker> oldInvokers = CollectionUtils.isEmpty(newInvokers)
-                    ? invokerMap.remove(version)
-                    : invokerMap.put(version, newInvokers);
+                    ? this.invokerMap.remove(version)
+                    : this.invokerMap.put(version, newInvokers);
             if (CollectionUtils.isEmpty(oldInvokers)) {
                 continue;
             }
@@ -118,7 +119,7 @@ public class BalanceServiceProvider implements ServiceProvider {
                 if (newInvokers.contains(oldInvoker)) {
                     continue;
                 }
-                invokerRegistry.remove(oldInvoker.getMetadata());
+                this.invokerRegistry.remove(oldInvoker.getMetadata());
                 try {
                     oldInvoker.close();
                 } catch (IOException e) {
@@ -130,12 +131,12 @@ public class BalanceServiceProvider implements ServiceProvider {
 
     @Override
     public synchronized void close() throws IOException {
-        if (CollectionUtils.isNotEmpty(invokerRegistry.values())) {
-            for (RpcInvoker value : invokerRegistry.values()) {
+        if (CollectionUtils.isNotEmpty(this.invokerRegistry.values())) {
+            for (RpcInvoker value : this.invokerRegistry.values()) {
                 value.close();
             }
         }
-        invokerRegistry.clear();
-        invokerMap.clear();
+        this.invokerRegistry.clear();
+        this.invokerMap.clear();
     }
 }

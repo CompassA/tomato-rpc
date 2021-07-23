@@ -31,6 +31,6 @@ public class ChannelWrapper {
     }
 
     public void closeChannel() {
-        channel.close();
+        this.channel.close();
     }
 }

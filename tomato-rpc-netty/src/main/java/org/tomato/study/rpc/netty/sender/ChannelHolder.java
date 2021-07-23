@@ -26,8 +26,6 @@ import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import org.tomato.study.rpc.core.NameService;
-import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.netty.codec.netty.NettyFrameEncoder;
 import org.tomato.study.rpc.netty.codec.netty.NettyProtoDecoder;
 import org.tomato.study.rpc.netty.handler.ResponseHandler;
@@ -56,11 +54,6 @@ public class ChannelHolder {
     public boolean close = false;
 
     /**
-     * service provider discovery
-     */
-    private final NameService nameService = SpiLoader.getLoader(NameService.class).load();
-
-    /**
      * serviceURI -> service connection info
      */
     private final ConcurrentMap<URI, ChannelWrapper> channelMap;
@@ -84,12 +77,12 @@ public class ChannelHolder {
      * @throws Exception any exception during service discovery and connection register.
      */
     public ChannelWrapper getChannelWrapper(URI uri) throws Exception {
-        ChannelWrapper channelWrapper = channelMap.get(uri);
+        ChannelWrapper channelWrapper = this.channelMap.get(uri);
         if (channelWrapper == null) {
             synchronized (ChannelHolder.class) {
-                channelWrapper = channelMap.get(uri);
+                channelWrapper = this.channelMap.get(uri);
                 if (channelWrapper == null) {
-                    channelWrapper = registerChannel(uri);
+                    channelWrapper = this.registerChannel(uri);
                 }
             }
         }
@@ -100,7 +93,7 @@ public class ChannelHolder {
             throws InterruptedException, TimeoutException {
         Bootstrap bootstrap = new Bootstrap()
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .group(eventLoopGroup)
+                .group(this.eventLoopGroup)
                 .channel(Epoll.isAvailable() ?
                         EpollSocketChannel.class : NioSocketChannel.class)
                 .handler(new ChannelInitializer<>() {
@@ -123,19 +116,19 @@ public class ChannelHolder {
             throw new IllegalStateException("netty channel is not active");
         }
         ChannelWrapper channelWrapper = new ChannelWrapper(channel);
-        channelMap.put(serverNodeURI, channelWrapper);
+        this.channelMap.put(serverNodeURI, channelWrapper);
         return channelWrapper;
     }
 
     public synchronized void close() {
-        if (close) {
+        if (this.close) {
             return;
         }
         this.close = true;
-        for (ChannelWrapper channelWrapper : channelMap.values()) {
+        for (ChannelWrapper channelWrapper : this.channelMap.values()) {
             channelWrapper.closeChannel();
         }
-        channelMap.clear();
+        this.channelMap.clear();
         this.eventLoopGroup.shutdownGracefully();
     }
 }
