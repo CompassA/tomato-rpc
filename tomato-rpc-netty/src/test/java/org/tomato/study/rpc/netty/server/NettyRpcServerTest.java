@@ -48,6 +48,10 @@ public class NettyRpcServerTest {
         this.nettyRpcServer = new NettyRpcServer("127.0.0.1", 6454);
     }
 
+    /**
+     * create 4 threads to call {@link NettyRpcServer#start()}
+     * check if only one thread succeed
+     */
     @Test
     public void doubleStartTest() throws InterruptedException {
         int[] cnt = new int[1];
@@ -83,11 +87,21 @@ public class NettyRpcServerTest {
         Assert.assertEquals(1, cnt[0]);
     }
 
+
     @Test
     public void doubleStopTest() {
         this.nettyRpcServer.start();
         this.nettyRpcServer.close();
         this.nettyRpcServer.close();
         Assert.assertTrue(true);
+    }
+
+    @Test
+    public void stateTest() {
+        Assert.assertEquals(this.nettyRpcServer.getState(), NettyRpcServer.SERVER_INIT);
+        this.nettyRpcServer.start();
+        Assert.assertEquals(this.nettyRpcServer.getState(), NettyRpcServer.SERVER_STARTED);
+        this.nettyRpcServer.close();
+        Assert.assertTrue(this.nettyRpcServer.isClosed());
     }
 }

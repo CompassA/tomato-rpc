@@ -28,11 +28,10 @@ public interface RpcCoreService extends Closeable {
 
     /**
      * create rpc server
-     * @return rpc server instance
      * @param port bind port
      * @throws Exception start exception
      */
-    RpcServer startRpcServer(int port) throws Exception;
+    void startRpcServer(int port) throws Exception;
 
     /**
      * register service provider

@@ -31,26 +31,53 @@ import java.util.Collection;
 import java.util.List;
 
 /**
+ * Functions:
+ *   1.start rpc server
+ *   2.create client stub
  * @author Tomato
  * Created on 2021.04.17
  */
 public class NettyRpcCoreService implements RpcCoreService {
 
+    /**
+     * default protocol name
+     */
     private static final String PROTOCOL = "tomato";
 
+    /**
+     * current application vip
+     */
     private final String serviceVIP;
 
+    /**
+     * vip list subscribes by current application
+     */
     private final List<String> subscribedVIP;
 
+    /**
+     * application stage
+     */
     private final String stage;
 
+    /**
+     * application's api version
+     */
     private final String version;
 
+    /**
+     * application provider object mapper
+     */
     private final ProviderRegistry providerRegistry = SpiLoader.getLoader(ProviderRegistry.class).load();
 
+    /**
+     * name service for service registry and discovery
+     */
     private final NameService nameService = SpiLoader.getLoader(NameService.class).load();
 
-    private RpcServer server = null;
+    /**
+     * application exported rpc server
+     */
+    private volatile RpcServer server = null;
 
     public NettyRpcCoreService(RpcConfig rpcConfig) {
         this.serviceVIP = rpcConfig.getServiceVIP();
@@ -61,13 +88,12 @@ public class NettyRpcCoreService implements RpcCoreService {
     }
 
     @Override
-    public synchronized RpcServer startRpcServer(int port) throws Exception {
+    public void startRpcServer(int port) throws Exception {
         if (this.server != null) {
             throw new IllegalStateException("multi server");
         }
         URI uri = this.startServer(port);
         this.export(uri);
-        return this.server;
     }
 
     private URI startServer(int port) {

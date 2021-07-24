@@ -32,20 +32,51 @@ import org.tomato.study.rpc.netty.codec.netty.NettyFrameEncoder;
 import org.tomato.study.rpc.netty.codec.netty.NettyProtoDecoder;
 import org.tomato.study.rpc.netty.handler.CommandHandler;
 
+import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
+
 /**
+ * netty rpc server, receive client rpc requests
  * @author Tomato
  * Created on 2021.04.18
  */
 public class NettyRpcServer implements RpcServer {
 
-    private volatile boolean started;
+    /**
+     * cas updater for {@link NettyRpcServer#state}
+     * state list:
+     * {@link NettyRpcServer#SERVER_INIT}
+     * {@link NettyRpcServer#SERVER_STARTED}
+     * {@link NettyRpcServer#SERVER_STOPPED}
+     */
+    private static final AtomicIntegerFieldUpdater<NettyRpcServer> STATE_UPDATER =
+            AtomicIntegerFieldUpdater.newUpdater(NettyRpcServer.class, "state");
 
+    public static final int SERVER_INIT = 0;
+    public static final int SERVER_STARTED = 1;
+    public static final int SERVER_STOPPED = 2;
+
+    /**
+     * server state
+     */
+    @Getter
+    @SuppressWarnings({ "unused", "FieldMayBeFinal" })
+    private volatile int state;
+
+    /**
+     * application host
+     */
     @Getter
     private final String host;
 
+    /**
+     * exported port
+     */
     @Getter
     private final int port;
 
+    /**
+     * handler with common logic
+     */
     private final CommandHandler commandHandler;
 
     private final ServerBootstrap serverBootstrap;
@@ -56,8 +87,13 @@ public class NettyRpcServer implements RpcServer {
 
     private EventLoopGroup workerGroup;
 
+    /**
+     * create a rpc server by host and port
+     * @param host application host
+     * @param port rpc server port to be exported
+     */
     public NettyRpcServer(String host, int port) {
-        this.started = false;
+        this.state = SERVER_INIT;
         this.host = host;
         this.port = port;
         this.commandHandler = new CommandHandler();
@@ -86,29 +122,25 @@ public class NettyRpcServer implements RpcServer {
 
     @Override
     public boolean start() {
-        synchronized (this) {
-            if (this.started) {
-                return false;
-            }
-            this.started = true;
+        if (!STATE_UPDATER.compareAndSet(this, SERVER_INIT, SERVER_STARTED)) {
+            return false;
         }
         try {
-            this.channel = this.serverBootstrap
-                    .bind(this.port)
+            this.channel = this.serverBootstrap.bind(this.port)
                     .sync()
                     .channel();
             return true;
         } catch (InterruptedException e) {
             e.printStackTrace();
-            synchronized (this) {
-                this.started = false;
-            }
             return false;
         }
     }
 
     @Override
     public void close() {
+        if (!STATE_UPDATER.compareAndSet(this, SERVER_STARTED, SERVER_STOPPED)) {
+            return;
+        }
         if (this.channel != null) {
             this.channel.close();
             this.channel = null;
@@ -121,13 +153,10 @@ public class NettyRpcServer implements RpcServer {
             this.workerGroup.shutdownGracefully();
             this.workerGroup = null;
         }
-        synchronized (this) {
-            this.started = false;
-        }
     }
 
     @Override
     public boolean isClosed() {
-        return !this.started;
+        return STATE_UPDATER.get(this) == SERVER_STOPPED;
     }
 }
