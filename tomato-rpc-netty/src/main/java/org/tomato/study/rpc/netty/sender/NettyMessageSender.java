@@ -50,7 +50,7 @@ public class NettyMessageSender implements MessageSender {
                 .addListener((ChannelFutureListener) futureChannel -> {
                     if (!futureChannel.isSuccess()) {
                         future.completeExceptionally(futureChannel.cause());
-                        this.responseHolder.remove(id);
+                        this.responseHolder.getAndRemove(id);
                     }
                 });
         return future;

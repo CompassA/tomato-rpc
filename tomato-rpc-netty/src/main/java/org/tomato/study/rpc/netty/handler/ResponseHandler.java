@@ -38,11 +38,11 @@ public class ResponseHandler extends SimpleChannelInboundHandler<Command> {
         }
         long id = msg.getHeader().getId();
         try {
-            this.responseHolder.remove(id)
+            this.responseHolder.getAndRemove(id)
                     .ifPresent(nettyResponse ->
                             nettyResponse.getFuture().complete(msg));
         } catch (RuntimeException exception) {
-            this.responseHolder.remove(id)
+            this.responseHolder.getAndRemove(id)
                     .ifPresent(nettyResponse ->
                             nettyResponse.getFuture()
                                     .completeExceptionally(exception));

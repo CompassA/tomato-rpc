@@ -21,6 +21,7 @@ import lombok.Setter;
 import org.tomato.study.rpc.core.data.Command;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author Tomato
@@ -37,4 +38,8 @@ public class NettyResponseFuture {
     private CompletableFuture<Command> future;
 
     private long timeStamp;
+
+    public void changeStateToTimeout() {
+        this.future.completeExceptionally(new TimeoutException("rpc timeout"));
+    }
 }
