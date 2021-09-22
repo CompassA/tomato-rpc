@@ -12,22 +12,35 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core.spi;
+package org.tomato.study.rpc.core.observer;
 
 /**
- * hold a volatile object
+ * component common life cycle
  * @author Tomato
- * Created on 2021.06.12
+ * Created on 2021.09.23
  */
-public class ObjectHolder<T> {
+public interface LifeCycle {
 
-    private volatile T object;
+    /**
+     * states
+     */
+    int CREATED = 0;
+    int INIT = 1;
+    int START = 2;
+    int STOP = 3;
 
-    public T get() {
-        return this.object;
-    }
+    /**
+     * initialize method
+     */
+    void init();
 
-    public void set(T object) {
-        this.object = object;
-    }
+    /**
+     * start method
+     */
+    void start();
+
+    /**
+     * destroy method
+     */
+    void destroy();
 }

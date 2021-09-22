@@ -21,7 +21,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * marked on a interface which supports SPI
+ * marked on an interface which supports SPI
  * @author Tomato
  * Created on 2021.06.12
  */

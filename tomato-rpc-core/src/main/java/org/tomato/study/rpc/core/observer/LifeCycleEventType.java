@@ -12,22 +12,35 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core.spi;
+package org.tomato.study.rpc.core.observer;
+
+import lombok.Getter;
 
 /**
- * hold a volatile object
+ * event types
  * @author Tomato
- * Created on 2021.06.12
+ * Created on 2021.09.23
  */
-public class ObjectHolder<T> {
+@Getter
+public enum LifeCycleEventType {
+    /**
+     * linked with {@link LifeCycle}
+     */
+    BEFORE_INIT(0),
+    AFTER_INIT(1),
+    BEFORE_START(2),
+    AFTER_START(3),
+    BEFORE_STOP(4),
+    AFTER_STOP(5),
+    ;
 
-    private volatile T object;
+    /**
+     * unique id
+     */
+    private final int id;
 
-    public T get() {
-        return this.object;
+    LifeCycleEventType(int id) {
+        this.id = id;
     }
 
-    public void set(T object) {
-        this.object = object;
-    }
 }

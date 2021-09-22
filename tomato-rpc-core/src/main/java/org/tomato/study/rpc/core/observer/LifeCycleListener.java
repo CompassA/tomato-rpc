@@ -12,22 +12,25 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core.spi;
+package org.tomato.study.rpc.core.observer;
 
 /**
- * hold a volatile object
+ * listener
  * @author Tomato
- * Created on 2021.06.12
+ * Created on 2021.09.23
  */
-public class ObjectHolder<T> {
+public interface LifeCycleListener {
 
-    private volatile T object;
+    /**
+     * handle event
+     * @param lifeCycleEvent event data
+     */
+    void onLifeCycleEvent(LifeCycleEvent lifeCycleEvent);
 
-    public T get() {
-        return this.object;
-    }
-
-    public void set(T object) {
-        this.object = object;
-    }
+    /**
+     *
+     * @param lifeCycleEvent event data
+     * @return true: current event can be handled by the listener
+     */
+    boolean isMatch(LifeCycleEvent lifeCycleEvent);
 }
