@@ -1,0 +1,124 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~  Licensed under the Apache License, Version 2.0 (the "License");
+  ~  you may not use this file except in compliance with the License.
+  ~  You may obtain a copy of the License at
+  ~
+  ~      http://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~  Unless required by applicable law or agreed to in writing, software
+  ~  distributed under the License is distributed on an "AS IS" BASIS,
+  ~  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~  See the License for the specific language governing permissions and
+  ~  limitations under the License.
+  -->
+
+<!--日志级别以及优先级排序: OFF > FATAL > ERROR > WARN > INFO > DEBUG > TRACE > ALL -->
+<!--Configuration后面的status，这个用于设置log4j2自身内部的信息输出，可以不设置，当设置成trace时，你会看到log4j2内部各种详细输出-->
+<!--monitorInterval：Log4j能够自动检测修改配置 文件和重新配置本身，设置间隔秒数-->
+<Configuration status="WARN" monitorInterval="30">
+
+  <Properties>
+    <!-- 终端日志输出格式 -->
+    <Property name="TERMINAL_PATTERN">
+      %d{yyyy-MM-dd HH:mm:ss.SSS} %highlight{-%5p} [%15.15t] %highlight{%-40.40logger{39}} : %m%n
+    </Property>
+
+    <!-- 日志文件输出格式 -->
+    <Property name="FILE_PATTERN">
+      %d{yyyy-MM-dd HH:mm:ss.SSS} -%5p [%15.15t] %-40.40logger{39} : %m%n
+    </Property>
+
+    <!-- 日志目录 -->
+    <Property name="LOG_HOME">
+      logs
+    </Property>
+  </Properties>
+
+  <!--先定义所有的appender-->
+  <Appenders>
+
+    <!--这个输出控制台的配置-->
+    <Console name="Console" target="SYSTEM_OUT">
+      <!--输出日志的格式-->
+      <PatternLayout pattern="${TERMINAL_PATTERN}"/>
+    </Console>
+
+    <!-- 这个会打印出所有的info及以下级别的信息
+         immediateFlush：是否每次写入都要立刻刷新到硬盘中。默认true，如果使用默认值可能会影响性能。
+         fileName：来指定文件位置，文件或目录不存在则会自动创建。
+         bufferedIO: 使用IO缓存，不立即写入磁盘
+    -->
+    <RollingRandomAccessFile name="RollingFileInfo"
+                             immediateFlush="false"
+                             append="true"
+                             bufferedIO="true"
+                             fileName="${LOG_HOME}/info.log"
+                             filePattern="${LOG_HOME}/$${date:yyyy-MM}/info-%d{yyyy-MM-dd}-%i.log">
+      <!--控制台只输出level及以上级别的信息（onMatch），其他的直接拒绝（onMismatch）-->
+      <ThresholdFilter level="info" onMatch="ACCEPT" onMismatch="DENY"/>
+
+      <!-- 日志输出格式 -->
+      <PatternLayout pattern="${FILE_PATTERN}"/>
+
+      <!-- 日志分割策略 -->
+      <Policies>
+        <!-- 按时间间隔分日志，日期格式精确到哪一位，interval也精确到哪一个单位
+             modulate属性是指从启动时间开始算5秒，还是从0秒开始算5秒-->
+        <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+
+        <!-- 按文件大小分割日志，超过300mb就生成一个新日志文件 -->
+        <SizeBasedTriggeringPolicy size="300MB"/>
+      </Policies>
+
+      <!-- DefaultRolloverStrategy属性如不设置，则默认为最多同一文件夹下7个文件，这里设置了30，超过了就会覆盖之前的文件 -->
+      <DefaultRolloverStrategy max="30"/>
+    </RollingRandomAccessFile>
+
+    <RollingRandomAccessFile name="RollingFileWarn"
+                             immediateFlush="false"
+                             append="true"
+                             bufferedIO="true"
+                             fileName="${LOG_HOME}/warn.log"
+                             filePattern="${LOG_HOME}/$${date:yyyy-MM}/warn-%d{yyyy-MM-dd}-%i.log">
+      <ThresholdFilter level="warn" onMatch="ACCEPT" onMismatch="DENY"/>
+
+      <PatternLayout pattern="${FILE_PATTERN}"/>
+
+      <Policies>
+        <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+
+        <SizeBasedTriggeringPolicy size="300MB"/>
+      </Policies>
+
+      <DefaultRolloverStrategy max="30"/>
+    </RollingRandomAccessFile>
+
+    <RollingRandomAccessFile name="RollingFileError"
+                             immediateFlush="true"
+                             append="true"
+                             bufferedIO="false"
+                             fileName="${LOG_HOME}/error.log"
+                             filePattern="${LOG_HOME}/$${date:yyyy-MM}/error-%d{yyyy-MM-dd}-%i.log">
+      <ThresholdFilter level="error" onMatch="ACCEPT" onMismatch="DENY"/>
+
+      <PatternLayout pattern="${FILE_PATTERN}"/>
+
+      <Policies>
+        <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
+
+        <SizeBasedTriggeringPolicy size="300MB"/>
+      </Policies>
+    </RollingRandomAccessFile>
+  </Appenders>
+
+  <Loggers>
+    <Root level="INFO">
+      <AppenderRef ref="Console"/>
+      <AppenderRef ref="RollingFileInfo"/>
+      <AppenderRef ref="RollingFileWarn"/>
+      <AppenderRef ref="RollingFileError"/>
+    </Root>
+  </Loggers>
+
+</Configuration>
