@@ -26,6 +26,7 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.RpcServer;
 import org.tomato.study.rpc.netty.codec.netty.NettyFrameDecoder;
 import org.tomato.study.rpc.netty.codec.netty.NettyFrameEncoder;
@@ -39,6 +40,7 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  * @author Tomato
  * Created on 2021.04.18
  */
+@Slf4j
 public class NettyRpcServer implements RpcServer {
 
     /**
@@ -131,7 +133,7 @@ public class NettyRpcServer implements RpcServer {
                     .channel();
             return true;
         } catch (InterruptedException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
             return false;
         }
     }

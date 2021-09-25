@@ -15,6 +15,8 @@
 package org.tomato.study.rpc.sample.client;
 
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.netty.service.NettyRpcCoreService;
@@ -30,6 +32,8 @@ import java.util.Collections;
  * Created on 2021.06.21
  */
 public class DemoClientApplication {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(DemoClientApplication.class);
 
     public static void main(String[] args) throws Exception {
         String zkURL = System.getenv("ZK_IP_PORT");
@@ -56,9 +60,9 @@ public class DemoClientApplication {
         for (int i = 0; i < 20; ++i) {
             try {
                 DemoResponse response = stub.echo(new DemoRequest("hello world"));
-                System.out.println(response.getData());
+                LOGGER.info(response.getData());
             } catch (TomatoRpcException exception) {
-                exception.printStackTrace();
+                LOGGER.error(exception.getMessage(), exception);
             }
             Thread.sleep(3000);
         }

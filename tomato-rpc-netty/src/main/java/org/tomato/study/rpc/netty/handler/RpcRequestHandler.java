@@ -15,6 +15,7 @@
 package org.tomato.study.rpc.netty.handler;
 
 import io.netty.channel.ChannelHandler;
+import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.Serializer;
 import org.tomato.study.rpc.core.ServerHandler;
@@ -35,6 +36,7 @@ import java.lang.reflect.Method;
  * @author Tomato
  * Created on 2021.04.18
  */
+@Slf4j
 @ChannelHandler.Sharable
 public class RpcRequestHandler implements ServerHandler {
 
@@ -58,7 +60,7 @@ public class RpcRequestHandler implements ServerHandler {
             try {
                 providerInterface = Class.forName(interfaceName);
             } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+                log.error(e.getMessage(), e);
                 throw new TomatoRpcException("provider interface not found: " +interfaceName);
             }
 
@@ -73,7 +75,7 @@ public class RpcRequestHandler implements ServerHandler {
             try {
                 method = providerInterface.getMethod(request.getMethodName(), request.getArgsType());
             } catch (NoSuchMethodException | SecurityException e) {
-                e.printStackTrace();
+                log.error(e.getMessage(), e);
                 throw new TomatoRpcException("provider method not found: " + request.getMethodName());
             }
 
@@ -86,10 +88,11 @@ public class RpcRequestHandler implements ServerHandler {
                         serializer,
                         CommandType.RPC_RESPONSE);
             } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-                e.printStackTrace();
+                log.error(e.getMessage(), e);
                 throw new TomatoRpcException("rpc method call failed: " + method.getName());
             }
         } catch (TomatoRpcException exception) {
+            log.error(exception.getMessage(), exception);
             return CommandFactory.INSTANCE.response(
                     header.getId(),
                     RpcResponse.fail(exception),

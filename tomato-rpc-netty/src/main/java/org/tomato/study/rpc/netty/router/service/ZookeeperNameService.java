@@ -14,6 +14,7 @@
 
 package org.tomato.study.rpc.netty.router.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.NameService;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.router.RpcInvoker;
@@ -30,6 +31,7 @@ import java.util.Optional;
  * @author Tomato
  * Created on 2021.06.19
  */
+@Slf4j
 public class ZookeeperNameService implements NameService {
 
     private static final String ZK_NAME_SPACE = "tomato";
@@ -62,7 +64,7 @@ public class ZookeeperNameService implements NameService {
         try {
             this.registry.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
         }
     }
 
@@ -71,7 +73,7 @@ public class ZookeeperNameService implements NameService {
         try {
             this.registry.register(metaData);
         } catch (Exception exception) {
-            exception.printStackTrace();
+            log.error(exception.getMessage(), exception);
         }
     }
 

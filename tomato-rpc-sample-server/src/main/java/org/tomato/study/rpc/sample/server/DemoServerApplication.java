@@ -14,6 +14,7 @@
 
 package org.tomato.study.rpc.sample.server;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.netty.service.NettyRpcCoreService;
@@ -26,6 +27,7 @@ import java.io.IOException;
  * @author Tomato
  * Created on 2021.06.20
  */
+@Slf4j
 public class DemoServerApplication {
 
     public static void main(String[] args) throws Exception {
@@ -41,12 +43,12 @@ public class DemoServerApplication {
         );
         coreService.startRpcServer(1535);
         coreService.registerProvider(new EchoServiceImpl(coreService), EchoService.class);
-        System.out.println("rpc server started");
+        log.info("rpc server started");
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             try {
                 coreService.close();
             } catch (IOException e) {
-                e.printStackTrace();
+                log.error(e.getMessage(), e);
             }
         }));
     }

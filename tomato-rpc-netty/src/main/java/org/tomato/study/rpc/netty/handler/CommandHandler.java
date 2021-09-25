@@ -18,6 +18,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.ServerHandler;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
@@ -35,6 +36,7 @@ import java.util.concurrent.ConcurrentMap;
  * @author Tomato
  * Created on 2021.04.18
  */
+@Slf4j
 @ChannelHandler.Sharable
 public class CommandHandler extends SimpleChannelInboundHandler<Command> {
 
@@ -72,7 +74,7 @@ public class CommandHandler extends SimpleChannelInboundHandler<Command> {
                         }
                     });
         } catch (Exception exception) {
-            exception.printStackTrace();
+            log.error(exception.getMessage(), exception);
             ctx.channel().writeAndFlush(
                     CommandFactory.INSTANCE.response(
                             msg.getHeader().getId(),

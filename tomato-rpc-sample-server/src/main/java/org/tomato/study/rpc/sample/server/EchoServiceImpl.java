@@ -15,6 +15,7 @@
 package org.tomato.study.rpc.sample.server;
 
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.utils.NetworkUtil;
 import org.tomato.study.rpc.sample.api.EchoService;
@@ -27,6 +28,7 @@ import java.net.InetAddress;
  * @author Tomato
  * Created on 2021.06.20
  */
+@Slf4j
 @AllArgsConstructor
 public class EchoServiceImpl implements EchoService {
 
@@ -48,10 +50,9 @@ public class EchoServiceImpl implements EchoService {
                     .append("provider stage: ").append(coreService.getStage()).append("\n")
                     .append("provider version: ").append(coreService.getVersion()).append("\n");
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
             response.setData(e.getMessage());
             return response;
-
         }
         response.setData(builder.toString());
         return response;

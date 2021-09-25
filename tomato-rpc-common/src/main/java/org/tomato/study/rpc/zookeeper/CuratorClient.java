@@ -15,6 +15,7 @@
 package org.tomato.study.rpc.zookeeper;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.CuratorFrameworkFactory;
@@ -37,6 +38,7 @@ import java.util.concurrent.ConcurrentMap;
  * @author Tomato
  * Created on 2021.05.31
  */
+@Slf4j
 public class CuratorClient implements Closeable {
 
     /**
@@ -119,7 +121,7 @@ public class CuratorClient implements Closeable {
                         .forPath(path);
             } catch (KeeperException.NodeExistsException exception) {
                 // catch node exist exception and logic continue
-                exception.printStackTrace();
+                log.error(exception.getMessage(), exception);;
             }
         }
 

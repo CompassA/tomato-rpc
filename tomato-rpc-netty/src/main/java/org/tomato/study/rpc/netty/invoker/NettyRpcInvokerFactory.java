@@ -14,6 +14,7 @@
 
 package org.tomato.study.rpc.netty.invoker;
 
+import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.router.RpcInvoker;
 import org.tomato.study.rpc.core.router.RpcInvokerFactory;
@@ -24,6 +25,7 @@ import java.util.Optional;
  * @author Tomato
  * Created on 2021.07.11
  */
+@Slf4j
 public class NettyRpcInvokerFactory implements RpcInvokerFactory {
 
     @Override
@@ -33,7 +35,7 @@ public class NettyRpcInvokerFactory implements RpcInvokerFactory {
                     ? Optional.of(new NettyRpcInvoker(metadata))
                     : Optional.empty();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error(e.getMessage(), e);
             return Optional.empty();
         }
 

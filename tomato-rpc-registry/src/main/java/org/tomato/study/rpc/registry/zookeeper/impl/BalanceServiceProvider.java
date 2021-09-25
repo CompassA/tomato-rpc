@@ -16,6 +16,7 @@ package org.tomato.study.rpc.registry.zookeeper.impl;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.router.RpcInvoker;
@@ -39,6 +40,7 @@ import java.util.concurrent.ConcurrentMap;
  * @author Tomato
  * Created on 2021.07.10
  */
+@Slf4j
 @Builder
 @AllArgsConstructor
 public class BalanceServiceProvider implements ServiceProvider {
@@ -123,7 +125,7 @@ public class BalanceServiceProvider implements ServiceProvider {
                 try {
                     oldInvoker.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    log.error(e.getMessage(), e);
                 }
             }
         }

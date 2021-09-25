@@ -75,12 +75,12 @@
       <DefaultRolloverStrategy max="30"/>
     </RollingRandomAccessFile>
 
-    <RollingRandomAccessFile name="RollingFileWarn"
-                             immediateFlush="false"
+    <RollingRandomAccessFile name="RollingFileWarnAndError"
+                             immediateFlush="true"
                              append="true"
-                             bufferedIO="true"
-                             fileName="${LOG_HOME}/warn.log"
-                             filePattern="${LOG_HOME}/$${date:yyyy-MM}/warn-%d{yyyy-MM-dd}-%i.log">
+                             bufferedIO="false"
+                             fileName="${LOG_HOME}/warn_error.log"
+                             filePattern="${LOG_HOME}/$${date:yyyy-MM}/warn_error-%d{yyyy-MM-dd}-%i.log">
       <ThresholdFilter level="warn" onMatch="ACCEPT" onMismatch="DENY"/>
 
       <PatternLayout pattern="${FILE_PATTERN}"/>
@@ -93,31 +93,13 @@
 
       <DefaultRolloverStrategy max="30"/>
     </RollingRandomAccessFile>
-
-    <RollingRandomAccessFile name="RollingFileError"
-                             immediateFlush="true"
-                             append="true"
-                             bufferedIO="false"
-                             fileName="${LOG_HOME}/error.log"
-                             filePattern="${LOG_HOME}/$${date:yyyy-MM}/error-%d{yyyy-MM-dd}-%i.log">
-      <ThresholdFilter level="error" onMatch="ACCEPT" onMismatch="DENY"/>
-
-      <PatternLayout pattern="${FILE_PATTERN}"/>
-
-      <Policies>
-        <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
-
-        <SizeBasedTriggeringPolicy size="300MB"/>
-      </Policies>
-    </RollingRandomAccessFile>
   </Appenders>
 
   <Loggers>
     <Root level="INFO">
       <AppenderRef ref="Console"/>
       <AppenderRef ref="RollingFileInfo"/>
-      <AppenderRef ref="RollingFileWarn"/>
-      <AppenderRef ref="RollingFileError"/>
+      <AppenderRef ref="RollingFileWarnAndError"/>
     </Root>
   </Loggers>
 

@@ -98,7 +98,7 @@ public class ZookeeperRegistry {
     /**
      * export provider self to zookeeper
      * @param metaData provider metadata
-     * @throws Exception exception during register
+     * @throws Exception exceptions during register
      */
     public void register(MetaData metaData) throws Exception {
         Optional<URI> uriOpt = MetaData.convert(metaData);
