@@ -14,29 +14,30 @@
 
 package org.tomato.study.rpc.core.error;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 
 /**
+ * rpc error info
  * @author Tomato
- * Created on 2021.06.19
+ * Created on 2021.09.23
  */
-public class TomatoRpcException extends RuntimeException {
+@Getter
+@AllArgsConstructor
+public class TomatoRpcErrorInfo {
 
-    @Getter
-    private TomatoRpcErrorInfo errorInfo;
+    /**
+     * error code
+     */
+    private int code;
 
-    @Deprecated
-    public TomatoRpcException(String message) {
-        super();
-    }
-
-    private TomatoRpcException(TomatoRpcErrorInfo errorInfo, Throwable throwable) {
-        super(errorInfo.getMessage(), throwable);
-        this.errorInfo = errorInfo;
-    }
+    /**
+     * error message
+     */
+    private String message;
 
     @Override
-    public String getMessage() {
-        return errorInfo.getMessage();
+    public String toString() {
+        return String.format("error code: %d, error message: %s", code, message);
     }
 }
