@@ -30,7 +30,11 @@ public class TomatoRpcException extends RuntimeException {
         super();
     }
 
-    private TomatoRpcException(TomatoRpcErrorInfo errorInfo, Throwable throwable) {
+    public TomatoRpcException(TomatoRpcErrorInfo errorInfo) {
+        super(errorInfo.getMessage());
+        this.errorInfo = errorInfo;
+    }
+    public TomatoRpcException(TomatoRpcErrorInfo errorInfo, Throwable throwable) {
         super(errorInfo.getMessage(), throwable);
         this.errorInfo = errorInfo;
     }

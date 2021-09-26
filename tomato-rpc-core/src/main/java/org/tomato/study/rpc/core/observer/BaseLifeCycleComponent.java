@@ -14,8 +14,7 @@
 
 package org.tomato.study.rpc.core.observer;
 
-import lombok.Getter;
-
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
@@ -38,17 +37,12 @@ public abstract class BaseLifeCycleComponent implements LifeCycle {
     /**
      * component listener
      */
-    @Getter
-    private final List<LifeCycleListener> listeners;
+    private final List<LifeCycleListener> listeners = new ArrayList<>(0);
 
     /**
      * component state
      */
     private volatile int state = CREATED;
-
-    public BaseLifeCycleComponent(List<LifeCycleListener> listeners) {
-        this.listeners = listeners;
-    }
 
     @Override
     public void init() {
@@ -67,11 +61,30 @@ public abstract class BaseLifeCycleComponent implements LifeCycle {
     }
 
     @Override
-    public void destroy() {
-        if (!STATE_UPDATER.compareAndSet(this, START, START)) {
+    public void stop() {
+        if (!STATE_UPDATER.compareAndSet(this, START, STOP)) {
             return;
         }
-        doDestroy();
+        doStop();
+    }
+
+    @Override
+    public void addListener(LifeCycleListener lifeCycleListener) {
+        listeners.add(lifeCycleListener);
+    }
+
+    @Override
+    public void removeListener(LifeCycleListener lifeCycleListener) {
+        listeners.remove(lifeCycleListener);
+    }
+
+    @Override
+    public List<LifeCycleListener> getListeners() {
+        return listeners;
+    }
+
+    public int getState() {
+        return state;
     }
 
     /**
@@ -85,7 +98,7 @@ public abstract class BaseLifeCycleComponent implements LifeCycle {
     abstract protected void doStart();
 
     /**
-     * abstract method for destroying
+     * abstract method for stopping
      */
-    abstract protected void doDestroy();
+    abstract protected void doStop();
 }

@@ -14,20 +14,11 @@
 
 package org.tomato.study.rpc.core;
 
-import java.io.Closeable;
-
 /**
  * @author Tomato
  * Created on 2021.04.18
  */
-public interface RpcServer extends Closeable {
-
-    /**
-     * start rpc sever
-     * @return true: start the server
-     */
-    boolean start();
-
+public interface RpcServer {
 
     /**
      * get rpc server ip
@@ -40,10 +31,4 @@ public interface RpcServer extends Closeable {
      * @return port
      */
     int getPort();
-
-    /**
-     * is rpc server closed
-     * @return true: closed
-     */
-    boolean isClosed();
 }

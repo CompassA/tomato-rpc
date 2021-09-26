@@ -92,7 +92,11 @@ public class ZookeeperRegistry {
         this.zNodePathCharset = config.getCharset();
         this.curatorWrapper = new CuratorClient(
                 config.getConnString(), config.getNamespace()
-        ).start();
+        );
+    }
+
+    public void start() {
+        curatorWrapper.start();
     }
 
     /**

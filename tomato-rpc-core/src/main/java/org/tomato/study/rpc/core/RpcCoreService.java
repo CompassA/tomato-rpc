@@ -24,14 +24,7 @@ import java.util.List;
  * @author Tomato
  * Created on 2021.03.30
  */
-public interface RpcCoreService extends Closeable {
-
-    /**
-     * create rpc server
-     * @param port bind port
-     * @throws Exception start exception
-     */
-    void startRpcServer(int port) throws Exception;
+public interface RpcCoreService {
 
     /**
      * register service provider
@@ -81,4 +74,16 @@ public interface RpcCoreService extends Closeable {
      * @return service provider node version
      */
     String getVersion();
+
+    /**
+     * get rpc network protocol
+     * @return network protocol
+     */
+    String getProtocol();
+
+    /**
+     * get rpc server port
+     * @return rpc server port
+     */
+    int getPort();
 }

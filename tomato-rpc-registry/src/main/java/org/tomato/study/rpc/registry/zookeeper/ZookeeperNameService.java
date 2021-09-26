@@ -12,18 +12,20 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.netty.router.service;
+package org.tomato.study.rpc.registry.zookeeper;
 
 import lombok.extern.slf4j.Slf4j;
-import org.tomato.study.rpc.core.NameService;
+import org.tomato.study.rpc.core.base.BaseNameService;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.data.NameServerConfig;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.router.RpcInvoker;
 import org.tomato.study.rpc.registry.zookeeper.data.ZookeeperConfig;
+import org.tomato.study.rpc.registry.zookeeper.error.TomatoRegistryErrorEnum;
 import org.tomato.study.rpc.registry.zookeeper.impl.ZookeeperRegistry;
 
 import java.io.IOException;
 import java.net.URI;
-import java.nio.charset.StandardCharsets;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -32,40 +34,14 @@ import java.util.Optional;
  * Created on 2021.06.19
  */
 @Slf4j
-public class ZookeeperNameService implements NameService {
+public class ZookeeperNameService extends BaseNameService {
 
     private static final String ZK_NAME_SPACE = "tomato";
 
-    private boolean connected = false;
-
     private ZookeeperRegistry registry;
 
-    @Override
-    public synchronized void connect(String nameServiceURI) {
-        if (this.connected) {
-            return;
-        }
-        this.connected = true;
-        this.registry = new ZookeeperRegistry(
-                ZookeeperConfig.builder()
-                        .namespace(ZK_NAME_SPACE)
-                        .connString(nameServiceURI)
-                        .charset(StandardCharsets.UTF_8)
-                        .build()
-        );
-    }
-
-    @Override
-    public synchronized void disconnect() {
-        if (!this.connected) {
-            return;
-        }
-        this.connected = false;
-        try {
-            this.registry.close();
-        } catch (IOException e) {
-            log.error(e.getMessage(), e);
-        }
+    public ZookeeperNameService(NameServerConfig nameServerConfig) {
+        super(nameServerConfig);
     }
 
     @Override
@@ -91,5 +67,32 @@ public class ZookeeperNameService implements NameService {
     @Override
     public Optional<RpcInvoker> lookupInvoker(String serviceVIP, String version) {
         return this.registry.lookup(serviceVIP, version);
+    }
+
+    @Override
+    protected void doInit() {
+        registry = new ZookeeperRegistry(
+                ZookeeperConfig.builder()
+                        .namespace(ZK_NAME_SPACE)
+                        .connString(getConnString())
+                        .charset(getCharset())
+                        .build()
+        );
+    }
+
+    @Override
+    protected void doStart() {
+        registry.start();
+    }
+
+    @Override
+    protected void doStop() {
+        try {
+            registry.close();
+        } catch (IOException e) {
+            log.error(e.getMessage(), e);
+            throw new TomatoRpcException(
+                    TomatoRegistryErrorEnum.RPC_REGISTRY_CLOSE_ERROR.create(), e);
+        }
     }
 }

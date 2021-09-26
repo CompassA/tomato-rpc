@@ -14,21 +14,21 @@
 
 package org.tomato.study.rpc.netty.service;
 
-import org.tomato.study.rpc.core.NameService;
+import org.tomato.study.rpc.core.NameServerFactory;
 import org.tomato.study.rpc.core.ProviderRegistry;
-import org.tomato.study.rpc.core.RpcCoreService;
-import org.tomato.study.rpc.core.RpcServer;
-import org.tomato.study.rpc.core.RpcServerFactory;
 import org.tomato.study.rpc.core.StubFactory;
+import org.tomato.study.rpc.core.base.BaseNameService;
+import org.tomato.study.rpc.core.base.BaseRpcCoreService;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.data.NameServerConfig;
+import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.spi.SpiLoader;
+import org.tomato.study.rpc.netty.server.NettyRpcServer;
 import org.tomato.study.rpc.utils.NetworkUtil;
 
-import java.io.IOException;
 import java.net.URI;
 import java.util.Collection;
-import java.util.List;
 
 /**
  * Functions:
@@ -37,108 +37,56 @@ import java.util.List;
  * @author Tomato
  * Created on 2021.04.17
  */
-public class NettyRpcCoreService implements RpcCoreService {
-
-    /**
-     * default protocol name
-     */
-    private static final String PROTOCOL = "tomato";
-
-    /**
-     * current application vip
-     */
-    private final String serviceVIP;
-
-    /**
-     * vip list subscribes by current application
-     */
-    private final List<String> subscribedVIP;
-
-    /**
-     * application stage
-     */
-    private final String stage;
-
-    /**
-     * application's api version
-     */
-    private final String version;
+public class NettyRpcCoreService extends BaseRpcCoreService {
 
     /**
      * application provider object mapper
      */
-    private final ProviderRegistry providerRegistry = SpiLoader.getLoader(ProviderRegistry.class).load();
+    private final ProviderRegistry providerRegistry;
 
     /**
      * name service for service registry and discovery
      */
-    private final NameService nameService = SpiLoader.getLoader(NameService.class).load();
+    private final BaseNameService nameService;
 
     /**
      * application exported rpc server
      */
-    private volatile RpcServer server = null;
+    private final NettyRpcServer server;
 
     public NettyRpcCoreService(RpcConfig rpcConfig) {
-        this.serviceVIP = rpcConfig.getServiceVIP();
-        this.subscribedVIP = rpcConfig.getSubscribedVIP();
-        this.stage = rpcConfig.getStage();
-        this.version = rpcConfig.getVersion();
-        this.nameService.connect(rpcConfig.getNameServiceURI());
-    }
-
-    @Override
-    public void startRpcServer(int port) throws Exception {
-        if (this.server != null) {
-            throw new IllegalStateException("multi server");
-        }
-        URI uri = this.startServer(port);
-        this.export(uri);
-    }
-
-    private URI startServer(int port) {
-        String localHost = NetworkUtil.getLocalHost();
-        this.server = SpiLoader.getLoader(RpcServerFactory.class)
-                .load()
-                .create(localHost, port);
-        this.server.start();
-        return NetworkUtil.createURI(PROTOCOL, localHost, port);
-    }
-
-    private void export(URI rpcServerURI) {
-        this.nameService.registerService(
-                MetaData.builder()
-                        .protocol(rpcServerURI.getScheme())
-                        .host(rpcServerURI.getHost())
-                        .port(rpcServerURI.getPort())
-                        .vip(this.serviceVIP)
-                        .stage(this.stage)
-                        .version(this.version)
-                        .build()
-        );
+        super(rpcConfig);
+        providerRegistry = SpiLoader.getLoader(ProviderRegistry.class).load();
+        nameService = SpiLoader.getLoader(NameServerFactory.class).load()
+                .createNameService(
+                        NameServerConfig.builder()
+                                .connString(rpcConfig.getNameServiceURI())
+                                .build()
+                );
+        server = new NettyRpcServer(NetworkUtil.getLocalHost(), getPort());
     }
 
     @Override
     public <T> URI registerProvider(T serviceInstance, Class<T> serviceInterface) {
         this.providerRegistry.register(
-                this.serviceVIP,
+                getServiceVIP(),
                 serviceInstance,
                 serviceInterface
         );
         return NetworkUtil.createURI(
-                PROTOCOL,
-                this.server.getHost(),
-                this.server.getPort()
+                getProtocol(),
+                server.getHost(),
+                server.getPort()
         );
     }
 
     @Override
     public <T> T createStub(String serviceVIP, Class<T> serviceInterface) {
         StubConfig<T> stubConfig = new StubConfig<>(
-                this.nameService,
+                nameService,
                 serviceInterface,
                 serviceVIP,
-                this.version
+                getVersion()
         );
         return SpiLoader.getLoader(StubFactory.class)
                 .load()
@@ -147,37 +95,43 @@ public class NettyRpcCoreService implements RpcCoreService {
 
     @Override
     public void subscribe(Collection<String> vipList) throws Exception {
-        this.nameService.subscribe(vipList, this.stage);
+        this.nameService.subscribe(vipList, getStage());
     }
 
     @Override
-    public String getServiceVIP() {
-        return this.serviceVIP;
+    protected void doInit() {
+        server.init();
+        nameService.init();
     }
 
     @Override
-    public List<String> getSubscribedVIP() {
-        return this.subscribedVIP;
+    protected void doStart() {
+        server.start();
+
+        nameService.start();
+        export(NetworkUtil.createURI(getProtocol(), server.getHost(), server.getPort()));
+
+        Runtime.getRuntime().addShutdownHook(
+                new Thread(NettyRpcCoreService.this::stop)
+        );
     }
 
     @Override
-    public String getStage() {
-        return this.stage;
+    protected void doStop() {
+        server.stop();
+        nameService.stop();
     }
 
-    @Override
-    public String getVersion() {
-        return this.version;
-    }
-
-    @Override
-    public synchronized void close() throws IOException {
-        if (this.server != null) {
-            this.server.close();
-            this.server = null;
-        }
-        if (this.nameService != null) {
-            this.nameService.disconnect();
-        }
+    private void export(URI rpcServerURI) {
+        this.nameService.registerService(
+                MetaData.builder()
+                        .protocol(rpcServerURI.getScheme())
+                        .host(rpcServerURI.getHost())
+                        .port(rpcServerURI.getPort())
+                        .vip(getServiceVIP())
+                        .stage(getStage())
+                        .version(getVersion())
+                        .build()
+        );
     }
 }

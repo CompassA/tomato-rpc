@@ -14,33 +14,65 @@
 
 package org.tomato.study.rpc.core.observer;
 
+import java.util.List;
+
 /**
- * component common life cycle
+ * tomato-rpc所有组件的通用生命周期
  * @author Tomato
  * Created on 2021.09.23
  */
 public interface LifeCycle {
 
     /**
-     * states
+     * 创建
      */
     int CREATED = 0;
+
+    /**
+     * 初始化
+     */
     int INIT = 1;
+
+    /**
+     * 启动
+     */
     int START = 2;
+
+    /**
+     * 停止
+     */
     int STOP = 3;
 
     /**
-     * initialize method
+     * 组件初始化方法
      */
     void init();
 
     /**
-     * start method
+     * 组件启动方法
      */
     void start();
 
     /**
-     * destroy method
+     * 组件关闭方法
      */
-    void destroy();
+    void stop();
+
+    /**
+     * 获取组件的所有监听者
+     * @return 监听者
+     */
+    List<LifeCycleListener> getListeners();
+
+    /**
+     * 增加监听者
+     * @param lifeCycleListener 要添加的监听对象
+     */
+    void addListener(LifeCycleListener lifeCycleListener);
+
+    /**
+     * 删除监听者
+     * @param lifeCycleListener 要删除的监听对象
+     */
+    void removeListener(LifeCycleListener lifeCycleListener);
 }

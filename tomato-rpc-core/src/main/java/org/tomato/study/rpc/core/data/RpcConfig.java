@@ -12,7 +12,7 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.netty.service;
+package org.tomato.study.rpc.core.data;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -28,6 +28,11 @@ import java.util.List;
 @Getter
 @AllArgsConstructor
 public class RpcConfig {
+
+    /**
+     * network proto
+     */
+    private final String protocol;
 
     /**
      * a rpc application has a unique vip
@@ -54,16 +59,28 @@ public class RpcConfig {
      */
     private final String nameServiceURI;
 
+    /**
+     * rpc local server port
+     */
+    private final int port;
+
     public static Builder builder() {
         return new Builder();
     }
 
     public static class Builder {
+        private String protocol = "tomato";
         private String serviceVIP;
         private String stage = "default";
         private String version = "default";
         private List<String> subscribedVIP = Collections.emptyList();
         private String nameServiceURI;
+        private int port = 9090;
+
+        public Builder protocol(String protocol) {
+            this.protocol = protocol;
+            return this;
+        }
 
         public Builder serviceVIP(String serviceVIP) {
             this.serviceVIP = serviceVIP;
@@ -90,13 +107,20 @@ public class RpcConfig {
             return this;
         }
 
+        public Builder port(int port) {
+            this.port = port;
+            return this;
+        }
+
         public RpcConfig build() {
             return new RpcConfig(
+                    this.protocol,
                     this.serviceVIP,
                     this.stage,
                     this.version,
                     this.subscribedVIP,
-                    this.nameServiceURI
+                    this.nameServiceURI,
+                    this.port
             );
         }
     }

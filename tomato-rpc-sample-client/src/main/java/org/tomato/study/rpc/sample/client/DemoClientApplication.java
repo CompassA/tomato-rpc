@@ -17,10 +17,10 @@ package org.tomato.study.rpc.sample.client;
 import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.tomato.study.rpc.core.RpcCoreService;
+import org.tomato.study.rpc.core.base.BaseRpcCoreService;
+import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.netty.service.NettyRpcCoreService;
-import org.tomato.study.rpc.netty.service.RpcConfig;
 import org.tomato.study.rpc.sample.api.EchoService;
 import org.tomato.study.rpc.sample.api.data.DemoRequest;
 import org.tomato.study.rpc.sample.api.data.DemoResponse;
@@ -44,10 +44,13 @@ public class DemoClientApplication {
                 .serviceVIP("org.tomato.study.rpc.demo.client")
                 .subscribedVIP(Collections.singletonList("org.tomato.study.rpc.demo.server"))
                 .nameServiceURI(zkURL)
+                .port(7890)
                 .build();
 
         // create rpc core service
-        RpcCoreService rpcCoreService = new NettyRpcCoreService(rpcConfig);
+        BaseRpcCoreService rpcCoreService = new NettyRpcCoreService(rpcConfig);
+        rpcCoreService.init();
+        rpcCoreService.start();
 
         // subscribe vip list
         rpcCoreService.subscribe(rpcConfig.getSubscribedVIP());
@@ -66,7 +69,5 @@ public class DemoClientApplication {
             }
             Thread.sleep(3000);
         }
-
-        rpcCoreService.close();
     }
 }

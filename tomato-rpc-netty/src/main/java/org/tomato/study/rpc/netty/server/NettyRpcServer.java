@@ -25,15 +25,13 @@ import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import org.tomato.study.rpc.core.RpcServer;
+import org.tomato.study.rpc.core.base.BaseRpcServer;
+import org.tomato.study.rpc.core.observer.LifeCycle;
 import org.tomato.study.rpc.netty.codec.netty.NettyFrameDecoder;
 import org.tomato.study.rpc.netty.codec.netty.NettyFrameEncoder;
 import org.tomato.study.rpc.netty.codec.netty.NettyProtoDecoder;
 import org.tomato.study.rpc.netty.handler.CommandHandler;
-
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 /**
  * netty rpc server, receive client rpc requests
@@ -41,47 +39,14 @@ import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
  * Created on 2021.04.18
  */
 @Slf4j
-public class NettyRpcServer implements RpcServer {
-
-    /**
-     * cas updater for {@link NettyRpcServer#state}
-     * state list:
-     * {@link NettyRpcServer#SERVER_INIT}
-     * {@link NettyRpcServer#SERVER_STARTED}
-     * {@link NettyRpcServer#SERVER_STOPPED}
-     */
-    private static final AtomicIntegerFieldUpdater<NettyRpcServer> STATE_UPDATER =
-            AtomicIntegerFieldUpdater.newUpdater(NettyRpcServer.class, "state");
-
-    public static final int SERVER_INIT = 0;
-    public static final int SERVER_STARTED = 1;
-    public static final int SERVER_STOPPED = 2;
-
-    /**
-     * server state
-     */
-    @Getter
-    @SuppressWarnings({ "unused", "FieldMayBeFinal" })
-    private volatile int state;
-
-    /**
-     * application host
-     */
-    @Getter
-    private final String host;
-
-    /**
-     * exported port
-     */
-    @Getter
-    private final int port;
+public class NettyRpcServer extends BaseRpcServer {
 
     /**
      * handler with common logic
      */
-    private final CommandHandler commandHandler;
+    private CommandHandler commandHandler;
 
-    private final ServerBootstrap serverBootstrap;
+    private ServerBootstrap serverBootstrap;
 
     private Channel channel;
 
@@ -95,9 +60,11 @@ public class NettyRpcServer implements RpcServer {
      * @param port rpc server port to be exported
      */
     public NettyRpcServer(String host, int port) {
-        this.state = SERVER_INIT;
-        this.host = host;
-        this.port = port;
+        super(host, port);
+    }
+
+    @Override
+    protected void doInit() {
         this.commandHandler = new CommandHandler();
         if (Epoll.isAvailable()) {
             this.bossGroup = new EpollEventLoopGroup();
@@ -123,42 +90,23 @@ public class NettyRpcServer implements RpcServer {
     }
 
     @Override
-    public boolean start() {
-        if (!STATE_UPDATER.compareAndSet(this, SERVER_INIT, SERVER_STARTED)) {
-            return false;
-        }
+    protected void doStart() {
         try {
-            this.channel = this.serverBootstrap.bind(this.port)
-                    .sync()
-                    .channel();
-            return true;
+            channel = serverBootstrap.bind(getPort()).sync().channel();
         } catch (InterruptedException e) {
             log.error(e.getMessage(), e);
-            return false;
         }
     }
 
     @Override
-    public void close() {
-        if (!STATE_UPDATER.compareAndSet(this, SERVER_STARTED, SERVER_STOPPED)) {
-            return;
-        }
-        if (this.channel != null) {
-            this.channel.close();
-            this.channel = null;
-        }
-        if (this.bossGroup != null) {
-            this.bossGroup.shutdownGracefully();
-            this.bossGroup = null;
-        }
-        if (this.workerGroup != null) {
-            this.workerGroup.shutdownGracefully();
-            this.workerGroup = null;
-        }
+    protected void doStop() {
+        this.channel.close();
+        this.bossGroup.shutdownGracefully();
+        this.workerGroup.shutdownGracefully();
     }
 
     @Override
     public boolean isClosed() {
-        return STATE_UPDATER.get(this) == SERVER_STOPPED;
+        return getState() == LifeCycle.STOP;
     }
 }

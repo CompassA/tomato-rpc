@@ -31,17 +31,6 @@ import java.util.Optional;
 public interface NameService {
 
     /**
-     * connect to name server
-     * @param nameServiceURI name service connection uri
-     */
-    void connect(String nameServiceURI);
-
-    /**
-     * disconnect from name server
-     */
-    void disconnect();
-
-    /**
      * register service vip
      * @param metaData service identification、service address
      */

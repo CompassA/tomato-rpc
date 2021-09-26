@@ -16,12 +16,10 @@ package org.tomato.study.rpc.sample.server;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.tomato.study.rpc.core.RpcCoreService;
+import org.tomato.study.rpc.core.base.BaseRpcCoreService;
+import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.netty.service.NettyRpcCoreService;
-import org.tomato.study.rpc.netty.service.RpcConfig;
 import org.tomato.study.rpc.sample.api.EchoService;
-
-import java.io.IOException;
 
 /**
  * @author Tomato
@@ -35,21 +33,16 @@ public class DemoServerApplication {
         if (StringUtils.isBlank(zkURL)) {
             zkURL = "127.0.0.1:2181";
         }
-        RpcCoreService coreService = new NettyRpcCoreService(
+        BaseRpcCoreService coreService = new NettyRpcCoreService(
                 RpcConfig.builder()
                         .serviceVIP("org.tomato.study.rpc.demo.server")
                         .nameServiceURI(zkURL)
+                        .port(4567)
                         .build()
         );
-        coreService.startRpcServer(1535);
         coreService.registerProvider(new EchoServiceImpl(coreService), EchoService.class);
+        coreService.init();
+        coreService.start();
         log.info("rpc server started");
-        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
-            try {
-                coreService.close();
-            } catch (IOException e) {
-                log.error(e.getMessage(), e);
-            }
-        }));
     }
 }
