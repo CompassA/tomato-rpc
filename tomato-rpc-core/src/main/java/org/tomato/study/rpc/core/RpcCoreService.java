@@ -14,9 +14,9 @@
 
 package org.tomato.study.rpc.core;
 
-import java.io.Closeable;
+import org.tomato.study.rpc.core.observer.LifeCycle;
+
 import java.net.URI;
-import java.util.Collection;
 import java.util.List;
 
 /**
@@ -24,7 +24,7 @@ import java.util.List;
  * @author Tomato
  * Created on 2021.03.30
  */
-public interface RpcCoreService {
+public interface RpcCoreService extends LifeCycle {
 
     /**
      * register service provider
@@ -37,19 +37,12 @@ public interface RpcCoreService {
 
     /**
      * create client proxy consumer
-     * @param serviceVIP service virtual ip
+     * @param targetServiceVIP service virtual ip
      * @param serviceInterface consumer interface class
      * @param <T> consumer class type
      * @return proxy instance
      */
-    <T> T createStub(String serviceVIP, Class<T> serviceInterface);
-
-    /**
-     * subscribe service
-     * @param vipList vip to subscribe
-     * @exception Exception subscribe exception
-     */
-    void subscribe(Collection<String> vipList) throws Exception;
+    <T> T createStub(String targetServiceVIP, Class<T> serviceInterface);
 
     /**
      * get service virtual ip

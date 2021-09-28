@@ -14,6 +14,8 @@
 
 package org.tomato.study.rpc.core.observer;
 
+import org.tomato.study.rpc.core.error.TomatoRpcException;
+
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
@@ -45,7 +47,7 @@ public abstract class BaseLifeCycleComponent implements LifeCycle {
     private volatile int state = CREATED;
 
     @Override
-    public void init() {
+    public void init() throws TomatoRpcException {
         if (!STATE_UPDATER.compareAndSet(this, CREATED, INIT)) {
             return;
         }
@@ -53,7 +55,7 @@ public abstract class BaseLifeCycleComponent implements LifeCycle {
     }
 
     @Override
-    public void start() {
+    public void start() throws TomatoRpcException {
         if (!STATE_UPDATER.compareAndSet(this, INIT, START)) {
             return;
         }
@@ -61,7 +63,7 @@ public abstract class BaseLifeCycleComponent implements LifeCycle {
     }
 
     @Override
-    public void stop() {
+    public void stop() throws TomatoRpcException{
         if (!STATE_UPDATER.compareAndSet(this, START, STOP)) {
             return;
         }
@@ -90,15 +92,15 @@ public abstract class BaseLifeCycleComponent implements LifeCycle {
     /**
      * abstract method for initializing
      */
-    abstract protected void doInit();
+    abstract protected void doInit() throws TomatoRpcException;
 
     /**
      * abstract method for starting
      */
-    abstract protected void doStart();
+    abstract protected void doStart() throws TomatoRpcException;
 
     /**
      * abstract method for stopping
      */
-    abstract protected void doStop();
+    abstract protected void doStop() throws TomatoRpcException;
 }

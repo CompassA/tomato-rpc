@@ -1,1 +1,0 @@
-rpcServerFactory : org.tomato.study.rpc.netty.server.NettyRpcServerFactory

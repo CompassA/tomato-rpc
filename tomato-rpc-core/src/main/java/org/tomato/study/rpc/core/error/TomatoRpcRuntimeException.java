@@ -12,19 +12,28 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.netty.server;
-
-import org.tomato.study.rpc.core.RpcServer;
-import org.tomato.study.rpc.core.RpcServerFactory;
+package org.tomato.study.rpc.core.error;
 
 /**
+ * rpc异常
  * @author Tomato
- * Created on 2021.06.12
+ * Created on 2021.06.19
  */
-public class NettyRpcServerFactory implements RpcServerFactory {
+public class TomatoRpcRuntimeException extends RuntimeException {
+
+    private final TomatoRpcErrorInfo errorInfo;
+
+    public TomatoRpcRuntimeException(TomatoRpcErrorInfo errorInfo) {
+        super(errorInfo.getMessage());
+        this.errorInfo = errorInfo;
+    }
+    public TomatoRpcRuntimeException(TomatoRpcErrorInfo errorInfo, Throwable throwable) {
+        super(errorInfo.getMessage(), throwable);
+        this.errorInfo = errorInfo;
+    }
 
     @Override
-    public RpcServer create(String host, int port) {
-        return new NettyRpcServer(host, port);
+    public String getMessage() {
+        return errorInfo.getMessage();
     }
 }

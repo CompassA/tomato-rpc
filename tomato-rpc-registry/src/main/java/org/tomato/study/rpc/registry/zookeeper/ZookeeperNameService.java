@@ -45,17 +45,13 @@ public class ZookeeperNameService extends BaseNameService {
     }
 
     @Override
-    public void registerService(MetaData metaData) {
-        try {
-            this.registry.register(metaData);
-        } catch (Exception exception) {
-            log.error(exception.getMessage(), exception);
-        }
+    public void registerService(MetaData metaData) throws Exception {
+        registry.register(metaData);
     }
 
     @Override
     public void subscribe(Collection<String> vipList, String stage) throws Exception {
-        this.registry.subscribe(vipList, stage);
+        registry.subscribe(vipList, stage);
     }
 
     @Deprecated
@@ -66,11 +62,11 @@ public class ZookeeperNameService extends BaseNameService {
 
     @Override
     public Optional<RpcInvoker> lookupInvoker(String serviceVIP, String version) {
-        return this.registry.lookup(serviceVIP, version);
+        return registry.lookup(serviceVIP, version);
     }
 
     @Override
-    protected void doInit() {
+    protected void doInit() throws TomatoRpcException {
         registry = new ZookeeperRegistry(
                 ZookeeperConfig.builder()
                         .namespace(ZK_NAME_SPACE)
@@ -81,16 +77,15 @@ public class ZookeeperNameService extends BaseNameService {
     }
 
     @Override
-    protected void doStart() {
+    protected void doStart() throws TomatoRpcException {
         registry.start();
     }
 
     @Override
-    protected void doStop() {
+    protected void doStop() throws TomatoRpcException {
         try {
             registry.close();
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
             throw new TomatoRpcException(
                     TomatoRegistryErrorEnum.RPC_REGISTRY_CLOSE_ERROR.create(), e);
         }

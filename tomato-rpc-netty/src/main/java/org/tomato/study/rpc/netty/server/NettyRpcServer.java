@@ -27,10 +27,12 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.base.BaseRpcServer;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.observer.LifeCycle;
 import org.tomato.study.rpc.netty.codec.netty.NettyFrameDecoder;
 import org.tomato.study.rpc.netty.codec.netty.NettyFrameEncoder;
 import org.tomato.study.rpc.netty.codec.netty.NettyProtoDecoder;
+import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.handler.CommandHandler;
 
 /**
@@ -64,7 +66,7 @@ public class NettyRpcServer extends BaseRpcServer {
     }
 
     @Override
-    protected void doInit() {
+    protected void doInit() throws TomatoRpcException {
         this.commandHandler = new CommandHandler();
         if (Epoll.isAvailable()) {
             this.bossGroup = new EpollEventLoopGroup();
@@ -90,16 +92,19 @@ public class NettyRpcServer extends BaseRpcServer {
     }
 
     @Override
-    protected void doStart() {
+    protected void doStart() throws TomatoRpcException {
         try {
             channel = serverBootstrap.bind(getPort()).sync().channel();
-        } catch (InterruptedException e) {
-            log.error(e.getMessage(), e);
+        } catch (InterruptedException exception) {
+            throw new TomatoRpcException(NettyRpcErrorEnum.CORE_SERVICE_START_ERROR.create(
+                    "thread was interrupted when bind"),
+                    exception
+            );
         }
     }
 
     @Override
-    protected void doStop() {
+    protected void doStop() throws TomatoRpcException {
         this.channel.close();
         this.bossGroup.shutdownGracefully();
         this.workerGroup.shutdownGracefully();

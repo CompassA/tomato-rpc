@@ -20,9 +20,10 @@ import org.tomato.study.rpc.core.NameService;
 import org.tomato.study.rpc.core.Response;
 import org.tomato.study.rpc.core.StubFactory;
 import org.tomato.study.rpc.core.data.StubConfig;
-import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.netty.data.Code;
 import org.tomato.study.rpc.netty.data.RpcRequest;
+import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -70,12 +71,19 @@ public class JdkStubFactory implements StubFactory {
                     .parameters(args)
                     .build();
             Response response = this.nameService.lookupInvoker(this.vip, this.version)
-                    .orElseThrow(() -> new TomatoRpcException(
-                            "invoker not found, vip=" + this.version + ",version=" + this.version))
+                    .orElseThrow(() -> new TomatoRpcRuntimeException(
+                            NettyRpcErrorEnum.STUB_INVOKER_SEARCH_ERROR.create(
+                                    "invoker not found, vip=" + this.version + ",version=" + this.version)
+                            )
+                    )
                     .invoke(invocation)
                     .getResultSync();
             if (!Code.SUCCESS.equals(response.getCode())) {
-                throw new TomatoRpcException("rpc failed, server message: " + response.getMessage());
+                throw new TomatoRpcRuntimeException(
+                        NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create(
+                                "rpc failed, server message: " + response.getMessage()
+                        )
+                );
             }
             return response.getData();
         }

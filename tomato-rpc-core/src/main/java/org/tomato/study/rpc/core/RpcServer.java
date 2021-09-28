@@ -31,4 +31,10 @@ public interface RpcServer {
      * @return port
      */
     int getPort();
+
+    /**
+     * is rpc server closed
+     * @return true: closed
+     */
+    boolean isClosed();
 }
