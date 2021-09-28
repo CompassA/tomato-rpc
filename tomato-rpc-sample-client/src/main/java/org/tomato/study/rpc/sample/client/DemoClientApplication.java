@@ -89,5 +89,7 @@ public class DemoClientApplication {
             }
             Thread.sleep(3000);
         }
+
+        System.exit(0);
     }
 }
