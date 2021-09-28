@@ -15,7 +15,7 @@
         <module>tomato-rpc-sample-server</module>
         <module>tomato-rpc-sample-client</module>
         <module>tomato-rpc-sample-api</module>
-        <module>tomato-rpc-registry</module>
+        <module>tomato-rpc-registry-zookeeper</module>
         <module>tomato-rpc-config</module>
     </modules>
 
@@ -61,7 +61,7 @@
 
             <dependency>
                 <groupId>org.tomato.study.rpc</groupId>
-                <artifactId>tomato-rpc-registry</artifactId>
+                <artifactId>tomato-rpc-registry-zookeeper</artifactId>
                 <version>${project.version}</version>
             </dependency>
 

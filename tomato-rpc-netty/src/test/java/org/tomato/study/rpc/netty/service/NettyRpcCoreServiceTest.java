@@ -42,6 +42,7 @@ import org.tomato.study.rpc.core.RpcServer;
 import org.tomato.study.rpc.core.StubFactory;
 import org.tomato.study.rpc.core.base.BaseNameService;
 import org.tomato.study.rpc.core.data.RpcConfig;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
@@ -146,7 +147,7 @@ public class NettyRpcCoreServiceTest {
         try {
             nettyRpcCoreService.init();
             nettyRpcCoreService.start();
-        } catch (TomatoRpcRuntimeException e) {
+        } catch (TomatoRpcException e) {
             Assert.assertEquals(
                     e.getMessage(),
                     NettyRpcErrorEnum.CORE_SERVICE_START_ERROR.create().getMessage());

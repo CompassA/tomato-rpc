@@ -33,7 +33,7 @@
     <dependencies>
         <dependency>
             <groupId>org.tomato.study.rpc</groupId>
-            <artifactId>tomato-rpc-registry</artifactId>
+            <artifactId>tomato-rpc-registry-zookeeper</artifactId>
             <exclusions>
                 <exclusion>
                     <artifactId>log4j</artifactId>
@@ -95,20 +95,6 @@
         <dependency>
             <groupId>org.slf4j</groupId>
             <artifactId>slf4j-api</artifactId>
-        </dependency>
-
-        <!-- log4j2 -->
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-core</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-api</artifactId>
-        </dependency>
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j-impl</artifactId>
         </dependency>
 
     </dependencies>
