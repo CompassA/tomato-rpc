@@ -23,10 +23,11 @@ import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
 import org.tomato.study.rpc.core.data.Header;
-import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.netty.data.RpcRequest;
 import org.tomato.study.rpc.netty.data.RpcResponse;
+import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.serializer.SerializerHolder;
 
 import java.lang.reflect.InvocationTargetException;
@@ -59,24 +60,36 @@ public class RpcRequestHandler implements ServerHandler {
             Class<?> providerInterface;
             try {
                 providerInterface = Class.forName(interfaceName);
-            } catch (ClassNotFoundException e) {
-                log.error(e.getMessage(), e);
-                throw new TomatoRpcException("provider interface not found: " +interfaceName);
+            } catch (ClassNotFoundException exception) {
+                throw new TomatoRpcRuntimeException(
+                        NettyRpcErrorEnum.NETTY_HANDLER_PROVIDER_NOT_FOUND.create(
+                                "provider interface not found: " +interfaceName
+                        ),
+                        exception
+                );
             }
 
             // search the RPC service provider
             Object provider = this.providerRegistry.getProvider(request.getServiceVIP(), providerInterface);
             if (provider == null) {
-                throw new TomatoRpcException("provider not found: " + interfaceName);
+                throw new TomatoRpcRuntimeException(
+                        NettyRpcErrorEnum.NETTY_HANDLER_PROVIDER_NOT_FOUND.create(
+                                "provider not found: " + interfaceName
+                        )
+                );
             }
 
             // search the method of the provider
             Method method;
             try {
                 method = providerInterface.getMethod(request.getMethodName(), request.getArgsType());
-            } catch (NoSuchMethodException | SecurityException e) {
-                log.error(e.getMessage(), e);
-                throw new TomatoRpcException("provider method not found: " + request.getMethodName());
+            } catch (NoSuchMethodException | SecurityException exception) {
+                throw new TomatoRpcRuntimeException(
+                        NettyRpcErrorEnum.NETTY_HANDLER_PROVIDER_NOT_FOUND.create(
+                                "provider method not found: " + request.getMethodName()
+                        ),
+                        exception
+                );
             }
 
             // invoke the method and write response data
@@ -87,17 +100,22 @@ public class RpcRequestHandler implements ServerHandler {
                         RpcResponse.success(result),
                         serializer,
                         CommandType.RPC_RESPONSE);
-            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
-                log.error(e.getMessage(), e);
-                throw new TomatoRpcException("rpc method call failed: " + method.getName());
+            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException exception) {
+                throw new TomatoRpcRuntimeException(
+                        NettyRpcErrorEnum.NETTY_HANDLER_RPC_INVOKER_ERROR.create(
+                                "rpc method call failed: " + method.getName()
+                        ),
+                        exception
+                );
             }
-        } catch (TomatoRpcException exception) {
+        } catch (TomatoRpcRuntimeException exception) {
             log.error(exception.getMessage(), exception);
             return CommandFactory.INSTANCE.response(
                     header.getId(),
                     RpcResponse.fail(exception),
                     serializer,
-                    CommandType.RPC_REQUEST);
+                    CommandType.RPC_REQUEST
+            );
 
         }
     }

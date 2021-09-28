@@ -3,7 +3,7 @@ package org.tomato.study.rpc.core.base;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
-import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.observer.BaseLifeCycleComponent;
 
 import java.util.List;
@@ -21,7 +21,7 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
 
     public BaseRpcCoreService(RpcConfig rpcConfig) {
         if (rpcConfig == null) {
-            throw new TomatoRpcException(
+            throw new TomatoRpcRuntimeException(
                     TomatoRpcCoreErrorEnum.RPC_CONFIG_INITIALIZING_ERROR.create());
         }
         this.rpcConfig = rpcConfig;

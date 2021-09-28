@@ -14,21 +14,24 @@
 
 package org.tomato.study.rpc.netty.service;
 
+import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.NameServerFactory;
+import org.tomato.study.rpc.core.NameService;
 import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.StubFactory;
-import org.tomato.study.rpc.core.base.BaseNameService;
 import org.tomato.study.rpc.core.base.BaseRpcCoreService;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.NameServerConfig;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.data.StubConfig;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
+import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.server.NettyRpcServer;
 import org.tomato.study.rpc.utils.NetworkUtil;
 
 import java.net.URI;
-import java.util.Collection;
 
 /**
  * Functions:
@@ -37,6 +40,7 @@ import java.util.Collection;
  * @author Tomato
  * Created on 2021.04.17
  */
+@Slf4j
 public class NettyRpcCoreService extends BaseRpcCoreService {
 
     /**
@@ -47,7 +51,12 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
     /**
      * name service for service registry and discovery
      */
-    private final BaseNameService nameService;
+    private final NameService nameService;
+
+    /**
+     * stub factory for creating client stub
+     */
+    private final StubFactory stubFactory;
 
     /**
      * application exported rpc server
@@ -57,6 +66,7 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
     public NettyRpcCoreService(RpcConfig rpcConfig) {
         super(rpcConfig);
         providerRegistry = SpiLoader.getLoader(ProviderRegistry.class).load();
+        stubFactory = SpiLoader.getLoader(StubFactory.class).load();
         nameService = SpiLoader.getLoader(NameServerFactory.class).load()
                 .createNameService(
                         NameServerConfig.builder()
@@ -68,62 +78,89 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
 
     @Override
     public <T> URI registerProvider(T serviceInstance, Class<T> serviceInterface) {
-        this.providerRegistry.register(
+        if (serviceInstance == null || serviceInterface == null ||
+                !serviceInterface.isInterface()) {
+            throw new TomatoRpcRuntimeException(NettyRpcErrorEnum.CORE_SERVICE_REGISTER_PROVIDER_ERROR.create());
+        }
+
+        providerRegistry.register(
                 getServiceVIP(),
                 serviceInstance,
                 serviceInterface
         );
-        return NetworkUtil.createURI(
+        URI providerURI = NetworkUtil.createURI(
                 getProtocol(),
                 server.getHost(),
                 server.getPort()
         );
+        log.info("provider registered, URI[" + providerURI + "]");
+        return providerURI;
     }
 
     @Override
-    public <T> T createStub(String serviceVIP, Class<T> serviceInterface) {
-        StubConfig<T> stubConfig = new StubConfig<>(
-                nameService,
-                serviceInterface,
-                serviceVIP,
-                getVersion()
+    public <T> T createStub(String targetServiceVIP, Class<T> serviceInterface) {
+        if (!serviceInterface.isInterface()) {
+            throw new TomatoRpcRuntimeException(NettyRpcErrorEnum.CORE_SERVICE_STUB_CREATE_ERROR.create());
+        }
+        T stub = stubFactory.createStub(
+                new StubConfig<>(
+                        nameService,
+                        serviceInterface,
+                        targetServiceVIP,
+                        getVersion()
+                )
         );
-        return SpiLoader.getLoader(StubFactory.class)
-                .load()
-                .createStub(stubConfig);
+        log.info("stub " + serviceInterface.getCanonicalName() + " created");
+        return stub;
     }
 
     @Override
-    public void subscribe(Collection<String> vipList) throws Exception {
-        this.nameService.subscribe(vipList, getStage());
-    }
-
-    @Override
-    protected void doInit() {
+    protected void doInit() throws TomatoRpcException {
         server.init();
         nameService.init();
+        log.info("netty rpc core service initialized");
     }
 
     @Override
-    protected void doStart() {
-        server.start();
+    protected void doStart() throws TomatoRpcException {
+        try {
+            // start rpc server
+            server.start();
 
-        nameService.start();
-        export(NetworkUtil.createURI(getProtocol(), server.getHost(), server.getPort()));
+            // connected to name service
+            nameService.start();
 
+            // export self
+            export(NetworkUtil.createURI(getProtocol(), server.getHost(), server.getPort()));
+
+            // subscribe others
+            nameService.subscribe(getSubscribedVIP(), getStage());
+        } catch (Exception e) {
+            throw new TomatoRpcException(NettyRpcErrorEnum.CORE_SERVICE_START_ERROR.create(), e);
+        }
+
+        // add shutdown hook
         Runtime.getRuntime().addShutdownHook(
-                new Thread(NettyRpcCoreService.this::stop)
+                new Thread(() -> {
+                    try {
+                        stop();
+                    } catch (TomatoRpcException e) {
+                        log.error(e.getMessage(), e);
+                    }
+                })
         );
+        log.info("netty rpc core service started");
     }
 
     @Override
-    protected void doStop() {
+    protected void doStop() throws TomatoRpcException {
         server.stop();
         nameService.stop();
+        log.info("netty rpc core service stopped");
     }
 
-    private void export(URI rpcServerURI) {
-        this.nameService.registerService(
+    private void export(URI rpcServerURI) throws Exception {
+        nameService.registerService(
                 MetaData.builder()
                         .protocol(rpcServerURI.getScheme())
                         .host(rpcServerURI.getHost())
@@ -133,5 +170,6 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
                         .version(getVersion())
                         .build()
         );
+        log.info("rpc node URI[" + rpcServerURI + "] exported");
     }
 }

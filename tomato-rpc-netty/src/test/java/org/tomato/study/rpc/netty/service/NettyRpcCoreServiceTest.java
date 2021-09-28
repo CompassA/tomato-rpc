@@ -28,7 +28,6 @@
 
 package org.tomato.study.rpc.netty.service;
 
-import lombok.extern.slf4j.Slf4j;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -37,112 +36,123 @@ import org.mockito.Mock;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.tomato.study.rpc.core.NameService;
+import org.tomato.study.rpc.core.NameServerFactory;
 import org.tomato.study.rpc.core.ProviderRegistry;
-import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.RpcServer;
+import org.tomato.study.rpc.core.StubFactory;
+import org.tomato.study.rpc.core.base.BaseNameService;
+import org.tomato.study.rpc.core.data.RpcConfig;
+import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
-import org.tomato.study.rpc.netty.core.test.TestService;
-
-import java.net.URI;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
+import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
+import org.tomato.study.rpc.netty.proxy.JdkStubFactory;
+import org.tomato.study.rpc.netty.server.NettyRpcServer;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.powermock.api.mockito.PowerMockito.doThrow;
+import static org.powermock.api.mockito.PowerMockito.mock;
 import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.when;
+import static org.powermock.api.mockito.PowerMockito.whenNew;
 
 /**
- * todo: refactor
  * @author Tomato
  * Created on 2021.04.17
  */
-@PowerMockIgnore({"com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*"})
+@PowerMockIgnore({"com.sun.org.apache.xerces.*", "javax.xml.*", "org.xml.*", "javax.management.*", "org.w3c.*"})
 @RunWith(PowerMockRunner.class)
+@PrepareForTest({SpiLoader.class, NettyRpcServer.class})
 public class NettyRpcCoreServiceTest {
 
-    private Logger logger = LoggerFactory.getLogger(NettyRpcCoreServiceTest.class);
+    private NettyRpcCoreService nettyRpcCoreService;
 
-    @Test
-    public void t() {
-        logger.info("info");
+    @Mock
+    private ProviderRegistry mockProviderRegistry;
+
+    @Mock
+    private BaseNameService mockNameService;
+
+    @Mock
+    private NettyRpcServer mockNettyRpcServer;
+
+    private final JdkStubFactory jdkStubFactory = new JdkStubFactory();
+
+    @Before
+    public void init() throws Exception {
+        mockStatic(SpiLoader.class);
+        SpiLoader<ProviderRegistry> providerLoader = (SpiLoader<ProviderRegistry>) mock(SpiLoader.class);
+        SpiLoader<NameServerFactory> nameServerLoader = (SpiLoader<NameServerFactory>) mock(SpiLoader.class);
+        SpiLoader<StubFactory> stubFactoryLoader = (SpiLoader<StubFactory>) mock(SpiLoader.class);
+
+        NameServerFactory mockNameServerFactory = mock(NameServerFactory.class);
+        when(providerLoader.load()).thenReturn(mockProviderRegistry);
+        when(nameServerLoader.load()).thenReturn(mockNameServerFactory);
+        when(stubFactoryLoader.load()).thenReturn(jdkStubFactory);
+
+        when(SpiLoader.getLoader(eq(ProviderRegistry.class))).thenReturn(providerLoader);
+        when(SpiLoader.getLoader(eq(NameServerFactory.class))).thenReturn(nameServerLoader);
+        when(SpiLoader.getLoader(eq(StubFactory.class))).thenReturn(stubFactoryLoader);
+
+        when(mockNameServerFactory.createNameService(any())).thenReturn(mockNameService);
+        whenNew(NettyRpcServer.class).withAnyArguments().thenReturn(mockNettyRpcServer);
+
+        RpcConfig rpcConfig = RpcConfig.builder()
+                .serviceVIP("org.tomato.study.rpc.netty.service.NettyRpcCoreServiceTest")
+                .port(1234)
+                .build();
+        nettyRpcCoreService = new NettyRpcCoreService(rpcConfig);
     }
 
-//    @Mock
-//    private NameService mockNameService;
-//
-//    @Mock
-//    private SpiLoader<NameService> mockNameServiceLoader;
-//
-//    private int port;
-//
-//    private RpcCoreService rpcCoreService;
-//
-//    @Before
-//    public void init() {
-//        this.rpcCoreService = new NettyRpcCoreService(
-//                RpcConfig.builder()
-//                        .serviceVIP("mockVIP")
-//                        .subscribedVIP(Collections.emptyList())
-//                        .nameServiceURI("mock")
-//                        .build()
-//        );
-//        this.port = 1234;
-//    }
-//
-//    /**
-//     * mock the process:
-//     * 1.call the client stub
-//     * 2.the client stub generate the rpc request command
-//     * 3.the client receive the response and deserialize the data
-//     * @throws Exception ignore
-//     */
-//    @Test
-//    @PrepareForTest({SpiLoader.class})
-//    public void executionChainTest() throws Exception {
-//        // mock name service
-//        mockStatic(SpiLoader.class);
-//        when(SpiLoader.getLoader(eq(NameService.class))).thenReturn(mockNameServiceLoader);
-//        when(SpiLoader.getLoader(eq(NameService.class))).thenReturn(mockNameServiceLoader);
-//        when(mockNameServiceLoader.load()).thenReturn(mockNameService);
-//        when(mockNameServiceLoader.load()).thenReturn(mockNameService);
-//        when(SpiLoader.getLoader(eq(ProviderRegistry.class))).thenCallRealMethod();
-//
-//        //1. export rpc server
-//        RpcServer rpcServer = rpcCoreService.startRpcServer(port);
-//        String serviceVIP = "mockVIP";
-//        TestService serverService = new TestServiceImpl();
-//
-//        //2. mock name service look up
-//        URI serviceURI = rpcCoreService.registerProvider(serverService, TestService.class);
-//        when(mockNameService.lookupService(any())).thenReturn(Optional.of(serviceURI));
-//
-//        //3. create stub
-//        TestService clientStub = rpcCoreService.createStub(serviceVIP, TestService.class);
-//
-//        List<Integer> testList = Arrays.stream(new Integer[]{1, 2, 3, 4}).collect(Collectors.toList());
-//        Assert.assertEquals(clientStub.sum(testList), serverService.sum(testList));
-//
-//        rpcServer.close();
-//        Assert.assertTrue(rpcServer.isClosed());
-//    }
-//
-//    public static class TestServiceImpl implements TestService {
-//
-//        @Override
-//        public Integer sum(List<Integer> nums) {
-//            if (nums == null) {
-//                return 0;
-//            }
-//            return nums.stream().reduce(0, Integer::sum);
-//        }
-//    }
+    /**
+     * 测试正常注册provider以及错误传参是否抛出异常
+     */
+    @Test
+    public void registerProviderTest() {
+        nettyRpcCoreService.registerProvider(mockNettyRpcServer, RpcServer.class);
 
+        try {
+            nettyRpcCoreService.registerProvider(mockNettyRpcServer, NettyRpcServer.class);
+        } catch (TomatoRpcRuntimeException e) {
+            Assert.assertEquals(
+                    e.getMessage(),
+                    NettyRpcErrorEnum.CORE_SERVICE_REGISTER_PROVIDER_ERROR.create().getMessage());
+            return;
+        }
+        Assert.fail();
+    }
 
+    /**
+     * 测试正常创建stub以及异常传参
+     */
+    @Test
+    public void stubCreateTest() {
+        Assert.assertNotNull(nettyRpcCoreService.createStub("mock", RpcServer.class));
+
+        try {
+            nettyRpcCoreService.createStub("mock", NettyRpcServer.class);
+        } catch (TomatoRpcRuntimeException e) {
+            Assert.assertEquals(
+                    e.getMessage(),
+                    NettyRpcErrorEnum.CORE_SERVICE_STUB_CREATE_ERROR.create().getMessage());
+            return;
+        }
+        Assert.fail();
+    }
+
+    @Test
+    public void startTest() throws Exception {
+        doThrow(new Exception("mock error")).when(mockNameService, "subscribe", any(), any());
+        try {
+            nettyRpcCoreService.init();
+            nettyRpcCoreService.start();
+        } catch (TomatoRpcRuntimeException e) {
+            Assert.assertEquals(
+                    e.getMessage(),
+                    NettyRpcErrorEnum.CORE_SERVICE_START_ERROR.create().getMessage());
+            return;
+        }
+
+        Assert.fail();
+    }
 }

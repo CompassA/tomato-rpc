@@ -14,18 +14,18 @@
 
 package org.tomato.study.rpc.sample.server;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
-import org.tomato.study.rpc.core.base.BaseRpcCoreService;
+import org.tomato.study.rpc.core.RpcCoreService;
+import org.tomato.study.rpc.core.RpcCoreServiceFactory;
 import org.tomato.study.rpc.core.data.RpcConfig;
-import org.tomato.study.rpc.netty.service.NettyRpcCoreService;
+import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.sample.api.EchoService;
+import org.tomato.study.rpc.sample.api.data.Constant;
 
 /**
  * @author Tomato
  * Created on 2021.06.20
  */
-@Slf4j
 public class DemoServerApplication {
 
     public static void main(String[] args) throws Exception {
@@ -33,16 +33,16 @@ public class DemoServerApplication {
         if (StringUtils.isBlank(zkURL)) {
             zkURL = "127.0.0.1:2181";
         }
-        BaseRpcCoreService coreService = new NettyRpcCoreService(
-                RpcConfig.builder()
-                        .serviceVIP("org.tomato.study.rpc.demo.server")
+        RpcCoreService coreService = SpiLoader.getLoader(RpcCoreServiceFactory.class)
+                .load()
+                .create(RpcConfig.builder()
+                        .serviceVIP(Constant.serviceVIP)
                         .nameServiceURI(zkURL)
                         .port(4567)
                         .build()
-        );
+                );
         coreService.registerProvider(new EchoServiceImpl(coreService), EchoService.class);
         coreService.init();
         coreService.start();
-        log.info("rpc server started");
     }
 }

@@ -14,6 +14,8 @@
 
 package org.tomato.study.rpc.core.observer;
 
+import org.tomato.study.rpc.core.error.TomatoRpcException;
+
 import java.util.List;
 
 /**
@@ -45,18 +47,21 @@ public interface LifeCycle {
 
     /**
      * 组件初始化方法
+     * @throws TomatoRpcException 初始化时抛出异常
      */
-    void init();
+    void init() throws TomatoRpcException;
 
     /**
      * 组件启动方法
+     * @throws TomatoRpcException 启动时抛出异常
      */
-    void start();
+    void start() throws TomatoRpcException;
 
     /**
      * 组件关闭方法
+     * @throws TomatoRpcException 停止时时抛出异常
      */
-    void stop();
+    void stop() throws TomatoRpcException;
 
     /**
      * 获取组件的所有监听者

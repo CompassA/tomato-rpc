@@ -15,6 +15,7 @@
 package org.tomato.study.rpc.core;
 
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.observer.LifeCycle;
 import org.tomato.study.rpc.core.router.RpcInvoker;
 import org.tomato.study.rpc.core.spi.SpiInterface;
 
@@ -28,13 +29,14 @@ import java.util.Optional;
  * Created on 2021.03.31
  */
 @SpiInterface(paramName = "nameService")
-public interface NameService {
+public interface NameService extends LifeCycle {
 
     /**
      * register service vip
      * @param metaData service identification、service address
+     * @throws Exception register exception
      */
-    void registerService(MetaData metaData);
+    void registerService(MetaData metaData) throws Exception;
 
     /**
      * subscribe vip

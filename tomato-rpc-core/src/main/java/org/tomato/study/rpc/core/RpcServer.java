@@ -14,11 +14,13 @@
 
 package org.tomato.study.rpc.core;
 
+import org.tomato.study.rpc.core.observer.LifeCycle;
+
 /**
  * @author Tomato
  * Created on 2021.04.18
  */
-public interface RpcServer {
+public interface RpcServer extends LifeCycle {
 
     /**
      * get rpc server ip
@@ -31,4 +33,10 @@ public interface RpcServer {
      * @return port
      */
     int getPort();
+
+    /**
+     * is rpc server closed
+     * @return true: closed
+     */
+    boolean isClosed();
 }

@@ -15,10 +15,10 @@
 package org.tomato.study.rpc.core.spi;
 
 import lombok.Getter;
+import lombok.SneakyThrows;
 import org.tomato.study.rpc.core.utils.ClassUtil;
 
 import java.io.BufferedReader;
-import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -89,12 +89,7 @@ public class SpiLoader<T> {
      */
     @SuppressWarnings("unchecked")
     public static <T> SpiLoader<T> getLoader(Class<T> spiInterface) {
-        SpiLoader<?> spiLoader = LOADER_MAP.get(spiInterface);
-        if (spiLoader == null) {
-            LOADER_MAP.putIfAbsent(spiInterface, new SpiLoader<>(spiInterface));
-            spiLoader = LOADER_MAP.get(spiInterface);
-        }
-        return (SpiLoader<T>) spiLoader;
+        return (SpiLoader<T>) LOADER_MAP.computeIfAbsent(spiInterface, SpiLoader::new);
     }
 
     public SpiLoader(Class<T> clazz) {
@@ -103,10 +98,11 @@ public class SpiLoader<T> {
         }
         SpiInterface spiInfo = clazz.getAnnotation(SpiInterface.class);
         this.spiInterface = clazz;
-        this.paramName = spiInfo.paramName();
+        this.paramName = "".equals(spiInfo.paramName())
+                ? clazz.getSimpleName()
+                : spiInfo.paramName();
         this.defaultClassFullName = spiInfo.defaultSpiValue();
         this.singletonInstance = spiInfo.singleton();
-
     }
 
     /**
@@ -130,6 +126,7 @@ public class SpiLoader<T> {
         return instance;
     }
 
+    @SneakyThrows
     @SuppressWarnings("unchecked")
     private T createSpiInstance(final String spiParameterName) {
         Map<String, Class<?>> spiConfigMap = this.getSpiConfigMap();
@@ -137,12 +134,7 @@ public class SpiLoader<T> {
         if (spiImplClass == null) {
             return null;
         }
-        try {
-            return (T) spiImplClass.getConstructor().newInstance();
-        } catch (Throwable e) {
-            e.printStackTrace();
-            return null;
-        }
+        return (T) spiImplClass.getConstructor().newInstance();
     }
 
     private Map<String, Class<?>> getSpiConfigMap() {
@@ -165,6 +157,7 @@ public class SpiLoader<T> {
      * load spi config file
      * @return {@link SpiLoader#paramName} -> implement class of spi interface
      */
+    @SneakyThrows
     private Map<String, Class<?>> loadSpiConfigFile() {
         // get classloader
         String path = SPI_CONFIG_DICTIONARY + this.spiInterface.getCanonicalName();
@@ -179,16 +172,11 @@ public class SpiLoader<T> {
         // if config is empty, load default implement class
         Map<String, Class<?>> spiConfigMap = new HashMap<>(0);
         if (resourceUrl == null) {
-            try {
-                spiConfigMap.put(
-                        this.paramName,
-                        Class.forName(this.defaultClassFullName, true, classLoader)
-                );
-                return spiConfigMap;
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-                return Collections.emptyMap();
-            }
+            spiConfigMap.put(
+                    this.paramName,
+                    Class.forName(this.defaultClassFullName, true, classLoader)
+            );
+            return spiConfigMap;
         }
 
         try (BufferedReader reader = new BufferedReader(
@@ -208,15 +196,9 @@ public class SpiLoader<T> {
                 if (paramName.isEmpty() || implClassName.isEmpty()) {
                     continue;
                 }
-                try {
-                    Class<?> clazz = Class.forName(implClassName, true, classLoader);
-                    spiConfigMap.put(paramName, clazz);
-                } catch (ClassNotFoundException e) {
-                    e.printStackTrace();
-                }
+                Class<?> clazz = Class.forName(implClassName, true, classLoader);
+                spiConfigMap.put(paramName, clazz);
             }
-        } catch (IOException e) {
-            e.printStackTrace();
         }
         return spiConfigMap;
     }

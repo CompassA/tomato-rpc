@@ -23,8 +23,9 @@ import org.tomato.study.rpc.core.ServerHandler;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
-import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.netty.data.RpcResponse;
+import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.serializer.SerializerHolder;
 
 import java.util.Optional;
@@ -38,11 +39,11 @@ import java.util.concurrent.ConcurrentMap;
  */
 @Slf4j
 @ChannelHandler.Sharable
-public class CommandHandler extends SimpleChannelInboundHandler<Command> {
+public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
 
     private final ConcurrentMap<CommandType, ServerHandler> providerMap = new ConcurrentHashMap<>(0);
 
-    public CommandHandler() {
+    public DispatcherHandler() {
         ServiceLoader<ServerHandler> serviceHandlers = ServiceLoader.load(ServerHandler.class);
         for (ServerHandler serviceHandler : serviceHandlers) {
             this.register(serviceHandler);
@@ -65,7 +66,8 @@ public class CommandHandler extends SimpleChannelInboundHandler<Command> {
                             ctx.channel().writeAndFlush(
                                     CommandFactory.INSTANCE.response(
                                             msg.getHeader().getId(),
-                                            RpcResponse.fail(new TomatoRpcException("netty response write failed")),
+                                            RpcResponse.fail(new TomatoRpcRuntimeException(
+                                                    NettyRpcErrorEnum.NETTY_HANDLER_WRITE_ERROR.create())),
                                             SerializerHolder.getSerializer(msg.getHeader().getSerializeType()),
                                             CommandType.RPC_RESPONSE
                                     )
@@ -78,7 +80,8 @@ public class CommandHandler extends SimpleChannelInboundHandler<Command> {
             ctx.channel().writeAndFlush(
                     CommandFactory.INSTANCE.response(
                             msg.getHeader().getId(),
-                            RpcResponse.fail(new TomatoRpcException("netty response write failed")),
+                            RpcResponse.fail(new TomatoRpcRuntimeException(
+                                    NettyRpcErrorEnum.NETTY_HANDLER_WRITE_ERROR.create())),
                             SerializerHolder.getSerializer(msg.getHeader().getSerializeType()),
                             CommandType.RPC_RESPONSE)
             );
