@@ -138,17 +138,6 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
         } catch (Exception e) {
             throw new TomatoRpcException(NettyRpcErrorEnum.CORE_SERVICE_START_ERROR.create(), e);
         }
-
-        // add shutdown hook
-        Runtime.getRuntime().addShutdownHook(
-                new Thread(() -> {
-                    try {
-                        stop();
-                    } catch (TomatoRpcException e) {
-                        log.error(e.getMessage(), e);
-                    }
-                })
-        );
         log.info("netty rpc core service started");
     }
 

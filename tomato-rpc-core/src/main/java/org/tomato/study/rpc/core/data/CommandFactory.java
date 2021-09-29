@@ -28,6 +28,9 @@ public enum CommandFactory {
     INSTANCE,
     ;
 
+    /**
+     * request id generator
+     */
     private static final AtomicLong ID_GENERATOR = new AtomicLong(0);
 
     /**

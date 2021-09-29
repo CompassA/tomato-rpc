@@ -14,6 +14,8 @@
 
 package org.tomato.study.rpc.core.error;
 
+import lombok.Getter;
+
 /**
  * rpc异常
  * @author Tomato
@@ -21,6 +23,7 @@ package org.tomato.study.rpc.core.error;
  */
 public class TomatoRpcRuntimeException extends RuntimeException {
 
+    @Getter
     private final TomatoRpcErrorInfo errorInfo;
 
     public TomatoRpcRuntimeException(TomatoRpcErrorInfo errorInfo) {

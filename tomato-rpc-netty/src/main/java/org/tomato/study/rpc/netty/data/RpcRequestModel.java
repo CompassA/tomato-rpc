@@ -18,7 +18,6 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.tomato.study.rpc.core.Invocation;
 
 import java.util.Arrays;
 
@@ -30,7 +29,7 @@ import java.util.Arrays;
 @Setter
 @Getter
 @NoArgsConstructor
-public class RpcRequest implements Invocation {
+public class RpcRequestModel {
 
     /**
      * rpc service vip in the service name registry
@@ -41,7 +40,7 @@ public class RpcRequest implements Invocation {
      * RPC interface class full name,
      * rpc server maintains the mapping: interfaceName -> Server Provider Instance
      */
-    private String interfaceName;
+    private Class<?> rpcInterFace;
 
     /**
      * RPC method name
@@ -67,14 +66,14 @@ public class RpcRequest implements Invocation {
     private Object[] parameters;
 
     @Builder
-    public RpcRequest(String serviceVIP,
-                      String interfaceName,
-                      String methodName,
-                      Class<?>[] argsType,
-                      Class<?> returnType,
-                      Object... parameters) {
+    public RpcRequestModel(String serviceVIP,
+                           Class<?> rpcInterFace,
+                           String methodName,
+                           Class<?>[] argsType,
+                           Class<?> returnType,
+                           Object... parameters) {
         this.serviceVIP = serviceVIP;
-        this.interfaceName = interfaceName;
+        this.rpcInterFace = rpcInterFace;
         this.methodName = methodName;
         this.argsType = argsType;
         this.returnType = returnType;
@@ -83,15 +82,5 @@ public class RpcRequest implements Invocation {
         } else {
             this.parameters = Arrays.copyOf(parameters, parameters.length);
         }
-    }
-
-    @Override
-    public Class<?>[] getArgsTypes() {
-        return this.argsType;
-    }
-
-    @Override
-    public Object[] getArgs() {
-        return this.parameters;
     }
 }

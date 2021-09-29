@@ -1,11 +1,14 @@
 package org.tomato.study.rpc.core.error;
 
+import lombok.Getter;
+
 /**
  * @author Tomato
  * Created on 2021.09.28
  */
 public class TomatoRpcException extends Exception {
 
+    @Getter
     private final TomatoRpcErrorInfo errorInfo;
 
     public TomatoRpcException(TomatoRpcErrorInfo errorInfo) {

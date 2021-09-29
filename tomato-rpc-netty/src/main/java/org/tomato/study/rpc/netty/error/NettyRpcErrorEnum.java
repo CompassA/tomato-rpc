@@ -20,6 +20,8 @@ public enum NettyRpcErrorEnum {
 
     STUB_INVOKER_SEARCH_ERROR(30001, "invoker not found"),
     STUB_INVOKER_RPC_ERROR(30002, "client rpc failed"),
+
+    MODEL_DTO_CONVERT_ERROR(40001, "rpc request convert error"),
     ;
 
     private int code;

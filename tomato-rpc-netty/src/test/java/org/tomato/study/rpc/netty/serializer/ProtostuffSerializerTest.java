@@ -21,7 +21,7 @@ import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandModel;
 import org.tomato.study.rpc.core.data.CommandType;
 import org.tomato.study.rpc.core.data.Parameter;
-import org.tomato.study.rpc.netty.data.RpcRequest;
+import org.tomato.study.rpc.netty.data.RpcRequestDTO;
 import org.tomato.study.rpc.netty.utils.CommandUtil;
 
 import java.time.LocalDateTime;
@@ -49,14 +49,14 @@ public class ProtostuffSerializerTest {
         List<List<Parameter>> listList = new ArrayList<>();
         listList.add(list);
 
-        RpcRequest rpcRequest = RpcRequest.builder()
+        RpcRequestDTO rpcRequest = RpcRequestDTO.builder()
                 .interfaceName("c.s.f.wd.w.dw.d")
                 .methodName("mockMethodName")
-                .parameters(new Object[] { "mockString", 1, LocalDateTime.now(), listList, map})
+                .args(new Object[] { "mockString", 1, LocalDateTime.now(), listList, map})
                 .build();
         Command mockCommand = CommandFactory.INSTANCE.request(
                 rpcRequest, list, SerializerHolder.getSerializer((byte) 0), CommandType.RPC_REQUEST);
-        CommandModel<RpcRequest> commandModel = CommandUtil.toModel(mockCommand, RpcRequest.class);
+        CommandModel<RpcRequestDTO> commandModel = CommandUtil.toModel(mockCommand, RpcRequestDTO.class);
         Assert.assertNotNull(commandModel);
         Assert.assertEquals(2, commandModel.getExtension().size());
         Assert.assertTrue(commandModel.getExtension()

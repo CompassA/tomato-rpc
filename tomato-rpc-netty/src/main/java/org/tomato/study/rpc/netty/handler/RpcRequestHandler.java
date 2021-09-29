@@ -23,15 +23,18 @@ import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
 import org.tomato.study.rpc.core.data.Header;
-import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
-import org.tomato.study.rpc.netty.data.RpcRequest;
+import org.tomato.study.rpc.netty.data.RpcRequestDTO;
+import org.tomato.study.rpc.netty.data.RpcRequestModel;
 import org.tomato.study.rpc.netty.data.RpcResponse;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.serializer.SerializerHolder;
+import org.tomato.study.rpc.netty.utils.ConvertUtils;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.concurrent.ConcurrentMap;
 
 /**
  * @author Tomato
@@ -50,65 +53,23 @@ public class RpcRequestHandler implements ServerHandler {
     @Override
     public Command handle(Command command) {
         Header header = command.getHeader();
-        Serializer serializer = SerializerHolder.getSerializer(header.getSerializeType());
+        Serializer serializer = SerializerHolder.getSerializer(command.getHeader().getSerializeType());
         try {
-            // deserialize the RPC request
-            RpcRequest request = serializer.deserialize(command.getBody(), RpcRequest.class);
+            // 根据请求中的序列化算法类型，进行反序列化
+            RpcRequestModel request = getRpcRequestModel(command, serializer);
 
-            // get class interface
-            String interfaceName = request.getInterfaceName();
-            Class<?> providerInterface;
-            try {
-                providerInterface = Class.forName(interfaceName);
-            } catch (ClassNotFoundException exception) {
-                throw new TomatoRpcRuntimeException(
-                        NettyRpcErrorEnum.NETTY_HANDLER_PROVIDER_NOT_FOUND.create(
-                                "provider interface not found: " +interfaceName
-                        ),
-                        exception
-                );
-            }
+            // 得到接口
+            Class<?> providerInterface = request.getRpcInterFace();
 
-            // search the RPC service provider
-            Object provider = this.providerRegistry.getProvider(request.getServiceVIP(), providerInterface);
-            if (provider == null) {
-                throw new TomatoRpcRuntimeException(
-                        NettyRpcErrorEnum.NETTY_HANDLER_PROVIDER_NOT_FOUND.create(
-                                "provider not found: " + interfaceName
-                        )
-                );
-            }
+            // 根据客户端提供的目标vip值和目标接口查找服务端的实现类
+            Object provider = providerRegistry.getProvider(request.getServiceVIP(), providerInterface);
 
-            // search the method of the provider
-            Method method;
-            try {
-                method = providerInterface.getMethod(request.getMethodName(), request.getArgsType());
-            } catch (NoSuchMethodException | SecurityException exception) {
-                throw new TomatoRpcRuntimeException(
-                        NettyRpcErrorEnum.NETTY_HANDLER_PROVIDER_NOT_FOUND.create(
-                                "provider method not found: " + request.getMethodName()
-                        ),
-                        exception
-                );
-            }
+            // 查找目标方法
+            Method method = searchMethod(request, providerInterface, provider);
 
-            // invoke the method and write response data
-            try {
-                Object result = method.invoke(provider, request.getParameters());
-                return CommandFactory.INSTANCE.response(
-                        header.getId(),
-                        RpcResponse.success(result),
-                        serializer,
-                        CommandType.RPC_RESPONSE);
-            } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException exception) {
-                throw new TomatoRpcRuntimeException(
-                        NettyRpcErrorEnum.NETTY_HANDLER_RPC_INVOKER_ERROR.create(
-                                "rpc method call failed: " + method.getName()
-                        ),
-                        exception
-                );
-            }
-        } catch (TomatoRpcRuntimeException exception) {
+            // 反射调用
+            return invoke(header, serializer, request, provider, method);
+        } catch (TomatoRpcException exception) {
             log.error(exception.getMessage(), exception);
             return CommandFactory.INSTANCE.response(
                     header.getId(),
@@ -116,12 +77,66 @@ public class RpcRequestHandler implements ServerHandler {
                     serializer,
                     CommandType.RPC_REQUEST
             );
-
         }
     }
 
     @Override
     public CommandType getType() {
         return CommandType.RPC_REQUEST;
+    }
+
+    private Method searchMethod(RpcRequestModel request,
+                                Class<?> providerInterface,
+                                Object provider) throws TomatoRpcException {
+        if (provider == null) {
+            throw new TomatoRpcException(
+                    NettyRpcErrorEnum.NETTY_HANDLER_PROVIDER_NOT_FOUND.create(
+                            "provider not found: " + providerInterface.getName()));
+        }
+
+        Method method;
+        try {
+            method = providerInterface.getMethod(request.getMethodName(), request.getArgsType());
+        } catch (NoSuchMethodException | SecurityException exception) {
+            throw new TomatoRpcException(
+                    NettyRpcErrorEnum.NETTY_HANDLER_PROVIDER_NOT_FOUND.create(
+                            "provider method not found: " + request.getMethodName()),
+                    exception
+            );
+        }
+        return method;
+    }
+
+    private RpcRequestModel getRpcRequestModel(Command command, Serializer serializer) throws TomatoRpcException {
+        RpcRequestModel request;
+        try {
+            request = ConvertUtils.convert(
+                    serializer.deserialize(command.getBody(), RpcRequestDTO.class));
+        } catch (ClassNotFoundException e) {
+            throw new TomatoRpcException(
+                    NettyRpcErrorEnum.MODEL_DTO_CONVERT_ERROR.create());
+        }
+        return request;
+    }
+
+    private Command invoke(Header header,
+                           Serializer serializer,
+                           RpcRequestModel request,
+                           Object provider,
+                           Method method) throws TomatoRpcException {
+        try {
+            Object result = method.invoke(provider, request.getParameters());
+            return CommandFactory.INSTANCE.response(
+                    header.getId(),
+                    RpcResponse.success(result),
+                    serializer,
+                    CommandType.RPC_RESPONSE);
+        } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException exception) {
+            throw new TomatoRpcException(
+                    NettyRpcErrorEnum.NETTY_HANDLER_RPC_INVOKER_ERROR.create(
+                            "rpc method call failed: " + method.getName()),
+                    exception
+            );
+        }
     }
 }

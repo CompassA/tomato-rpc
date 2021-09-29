@@ -22,7 +22,7 @@ import org.tomato.study.rpc.core.StubFactory;
 import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.netty.data.Code;
-import org.tomato.study.rpc.netty.data.RpcRequest;
+import org.tomato.study.rpc.netty.data.RpcRequestDTO;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 
 import java.lang.reflect.InvocationHandler;
@@ -75,30 +75,39 @@ public class JdkStubFactory implements StubFactory {
 
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            Invocation invocation = RpcRequest.builder()
-                    .serviceVIP(this.vip)
-                    .interfaceName(this.serviceInterface.getName())
-                    .methodName(method.getName())
-                    .argsType(method.getParameterTypes())
-                    .returnType(method.getReturnType())
-                    .parameters(args)
-                    .build();
-            Response response = this.nameService.lookupInvoker(this.vip, this.version)
+            Invocation invocation = createInvocation(method, args);
+            Response response = nameService.lookupInvoker(vip, version)
                     .orElseThrow(() -> new TomatoRpcRuntimeException(
                             NettyRpcErrorEnum.STUB_INVOKER_SEARCH_ERROR.create(
-                                    "invoker not found, vip=" + this.version + ",version=" + this.version)
-                            )
-                    )
+                                    "invoker not found, vip=" + vip + ",version=" + version)))
                     .invoke(invocation)
                     .getResultSync();
             if (!Code.SUCCESS.equals(response.getCode())) {
                 throw new TomatoRpcRuntimeException(
                         NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create(
-                                "rpc failed, server message: " + response.getMessage()
-                        )
-                );
+                                "rpc failed, server message: " + response.getMessage()));
             }
             return response.getData();
+        }
+
+        private Invocation createInvocation(Method method, Object[] args) {
+            RpcRequestDTO.RpcRequestDTOBuilder builder = RpcRequestDTO.builder()
+                    .serviceVIP(vip)
+                    .interfaceName(serviceInterface.getName())
+                    .methodName(method.getName())
+                    .returnType(method.getReturnType().getName())
+                    .args(args == null ? new Object[0] : args);
+            Class<?>[] parameterTypes = method.getParameterTypes();
+            if (parameterTypes.length == 0) {
+                builder.argsTypes(new String[0]);
+            } else {
+                String[] parameterTypeNames = new String[parameterTypes.length];
+                for (int i = 0; i < parameterTypeNames.length; i++) {
+                    parameterTypeNames[i] = parameterTypes[i].getName();
+                }
+                builder.argsTypes(parameterTypeNames);
+            }
+            return builder.build();
         }
     }
 }

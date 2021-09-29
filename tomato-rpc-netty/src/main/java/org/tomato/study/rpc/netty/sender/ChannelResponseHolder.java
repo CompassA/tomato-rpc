@@ -75,7 +75,7 @@ public class ChannelResponseHolder {
         // register timeout task
         this.timer.newTimeout(timeout -> {
             NettyResponseFuture timeoutFuture = this.responseMap.remove(messageId);
-            if (timeout == null) {
+            if (timeoutFuture == null) {
                 return;
             }
             timeoutFuture.changeStateToTimeout();

@@ -16,20 +16,25 @@ package org.tomato.study.rpc.netty.serializer;
 
 import org.tomato.study.rpc.core.Serializer;
 
+import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
+ * 所有序列化器单例
  * @author Tomato
  * Created on 2021.04.01
  */
 public final class SerializerHolder {
 
+    /**
+     * 序列化器id -> 序列化器
+     */
     private static final ConcurrentMap<Byte, Serializer> SERIALIZER_MAP = new ConcurrentHashMap<>();
 
     static {
-        ProtostuffSerializer protostuffSerializer = new ProtostuffSerializer();
-        SERIALIZER_MAP.put(protostuffSerializer.serializerIndex(), protostuffSerializer);
+        ServiceLoader.load(Serializer.class).forEach(
+                serializer -> SERIALIZER_MAP.put(serializer.serializerIndex(), serializer));
     }
 
     public static Serializer getSerializer(final byte key) {

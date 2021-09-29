@@ -43,7 +43,7 @@ public interface Invocation {
      * get method parameter types
      * @return parameter type array
      */
-    Class<?>[] getArgsTypes();
+    String[] getArgsTypes();
 
     /**
      * get parameters of the method
@@ -55,5 +55,5 @@ public interface Invocation {
      * get rpc api method return type
      * @return api method return type
      */
-    Class<?> getReturnType();
+    String getReturnType();
 }

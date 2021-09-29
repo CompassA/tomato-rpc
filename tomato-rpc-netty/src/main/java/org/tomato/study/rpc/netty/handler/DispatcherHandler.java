@@ -28,12 +28,12 @@ import org.tomato.study.rpc.netty.data.RpcResponse;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.serializer.SerializerHolder;
 
-import java.util.Optional;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
+ * 请求分发器，根据请求中的CommandType将请求转发到对应的ServerHandler中
  * @author Tomato
  * Created on 2021.04.18
  */
@@ -44,25 +44,33 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
     private final ConcurrentMap<CommandType, ServerHandler> providerMap = new ConcurrentHashMap<>(0);
 
     public DispatcherHandler() {
-        ServiceLoader<ServerHandler> serviceHandlers = ServiceLoader.load(ServerHandler.class);
-        for (ServerHandler serviceHandler : serviceHandlers) {
-            this.register(serviceHandler);
+        // 通过jdk spi加在依赖的ServerHandler
+        ServiceLoader<ServerHandler> serverHandlers = ServiceLoader.load(ServerHandler.class);
+        for (ServerHandler serverHandler : serverHandlers) {
+            providerMap.put(serverHandler.getType(), serverHandler);
         }
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Command msg) throws Exception {
         try {
+            // 查找匹配的ServerHandler
             CommandType type = CommandType.value(msg.getHeader().getMessageType());
-            Optional<ServerHandler> matchHandler = match(type);
-            if (matchHandler.isEmpty()) {
+            ServerHandler matchHandler = providerMap.get(type);
+            if (matchHandler == null) {
                 throw new IllegalStateException("rpc server handler not found, type: " + type);
             }
-            Command handleResult = matchHandler.get().handle(msg);
+
+            // 处理具体逻辑
+            Command handleResult = matchHandler.handle(msg);
+
+            // 将结果写入缓存
             ctx.channel().writeAndFlush(handleResult).addListener(
+                    // 若出现异常，log错误信息，给客户端返回RPC异常
                     (ChannelFutureListener) listener -> {
                         if (!listener.isSuccess()) {
-                            listener.cause().printStackTrace();
+                            Throwable cause = listener.cause();
+                            log.error(cause.getMessage(), cause);
                             ctx.channel().writeAndFlush(
                                     CommandFactory.INSTANCE.response(
                                             msg.getHeader().getId(),
@@ -83,17 +91,10 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
                             RpcResponse.fail(new TomatoRpcRuntimeException(
                                     NettyRpcErrorEnum.NETTY_HANDLER_WRITE_ERROR.create())),
                             SerializerHolder.getSerializer(msg.getHeader().getSerializeType()),
-                            CommandType.RPC_RESPONSE)
+                            CommandType.RPC_RESPONSE
+                    )
             );
             ctx.channel().close();
         }
-    }
-
-    private Optional<ServerHandler> match(CommandType type) {
-        return Optional.ofNullable(this.providerMap.get(type));
-    }
-
-    private void register(ServerHandler serverHandler) {
-        this.providerMap.put(serverHandler.getType(), serverHandler);
     }
 }

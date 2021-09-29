@@ -24,6 +24,11 @@ import java.util.Arrays;
 import java.util.Objects;
 
 /**
+ * +-------------+-----------------------+---------+---------------------+---------+-----------+---------+------------+------------+
+ * | magic number| length exclude magic  | version | extension parameter | command | serialize | message | extension  |   body     |
+ * |             | number and this filed  |         |      length         |   type  |    type   |   id    | 0 - MaxInt | 0 - MaxInt |
+ * |   1 byte    |       4 bytes         | 4 bytes |      4 bytes        | 2 bytes |   1 byte  | 8 bytes |  bytes     |   bytes    |
+ * +-------------+-----------------------+---------+---------------------+---------+-----------+---------+------------+------------+
  * rpc protocol frame
  * every rpc request/response will send a command to server/client
  * @author Tomato

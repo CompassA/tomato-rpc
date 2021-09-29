@@ -17,15 +17,22 @@ package org.tomato.study.rpc.netty.codec.netty;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 
 /**
+ * 解析二进制数据帧
  * @author Tomato
  * Created on 2021.04.16
  */
 public class NettyFrameDecoder extends LengthFieldBasedFrameDecoder {
 
-    private static final Integer LENGTH_FILED_OFFSET = 1;
-    private static final Integer LENGTH_FILED_BYTE = 4;
-
     public NettyFrameDecoder() {
-        super(Integer.MAX_VALUE, LENGTH_FILED_OFFSET, LENGTH_FILED_BYTE, 0, 0);
+        super(  // 数据帧最大长度
+                Integer.MAX_VALUE,
+                // 记录数据长度的字段 相对数据帧启始位置 的偏移
+                1,
+                // 记录数据长度的字段的字段大小
+                4,
+                // 可以配置一个增量字节，Netty将[数据长度字段存储的长度 + 增量字节]作为最终数据帧长度
+                0,
+                // 收到数据帧后跳过多少字节
+                0);
     }
 }

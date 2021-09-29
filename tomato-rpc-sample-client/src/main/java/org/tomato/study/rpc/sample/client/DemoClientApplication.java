@@ -55,7 +55,7 @@ public class DemoClientApplication {
         // call RPC method 3 seconds a time
         invokerRpc(stub);
 
-        System.exit(0);
+        rpcCoreService.stop();
     }
 
     private static RpcCoreService createCoreService(String zkURL) throws TomatoRpcException {
@@ -89,7 +89,5 @@ public class DemoClientApplication {
             }
             Thread.sleep(3000);
         }
-
-        System.exit(0);
     }
 }
