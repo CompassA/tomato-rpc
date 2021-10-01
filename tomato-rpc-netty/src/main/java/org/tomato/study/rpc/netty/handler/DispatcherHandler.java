@@ -72,7 +72,7 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
                             Throwable cause = listener.cause();
                             log.error(cause.getMessage(), cause);
                             ctx.channel().writeAndFlush(
-                                    CommandFactory.INSTANCE.response(
+                                    CommandFactory.response(
                                             msg.getHeader().getId(),
                                             RpcResponse.fail(new TomatoRpcRuntimeException(
                                                     NettyRpcErrorEnum.NETTY_HANDLER_WRITE_ERROR.create())),
@@ -86,7 +86,7 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
         } catch (Exception exception) {
             log.error(exception.getMessage(), exception);
             ctx.channel().writeAndFlush(
-                    CommandFactory.INSTANCE.response(
+                    CommandFactory.response(
                             msg.getHeader().getId(),
                             RpcResponse.fail(new TomatoRpcRuntimeException(
                                     NettyRpcErrorEnum.NETTY_HANDLER_WRITE_ERROR.create())),
@@ -96,5 +96,11 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
             );
             ctx.channel().close();
         }
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+        super.exceptionCaught(ctx, cause);
+        log.error(cause.getMessage(), cause);
     }
 }

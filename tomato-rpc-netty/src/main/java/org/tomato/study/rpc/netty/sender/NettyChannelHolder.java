@@ -18,20 +18,25 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import org.apache.commons.collections4.CollectionUtils;
+import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.netty.codec.netty.NettyFrameEncoder;
 import org.tomato.study.rpc.netty.codec.netty.NettyProtoDecoder;
-import org.tomato.study.rpc.netty.handler.ResponseHandler;
+import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -42,9 +47,7 @@ import java.util.concurrent.TimeoutException;
  * @author Tomato
  * Created on 2021.04.08
  */
-public class ChannelHolder {
-
-    public static final ChannelHolder INSTANCE = new ChannelHolder();
+public class NettyChannelHolder {
 
     /**
      * connection timeout, time unit: ms
@@ -63,10 +66,21 @@ public class ChannelHolder {
      */
     private final EventLoopGroup eventLoopGroup;
 
-    public ChannelHolder() {
+    /**
+     * rpc client response handler list
+     */
+    private final List<ChannelHandler> responseHandlers;
+
+    public NettyChannelHolder(List<ChannelHandler> responseHandlers) {
+        if (CollectionUtils.isEmpty(responseHandlers)) {
+            throw new TomatoRpcRuntimeException(
+                    NettyRpcErrorEnum.CORE_SERVICE_START_ERROR.create("without response handler list"));
+        }
         this.channelMap = new ConcurrentHashMap<>(0);
         this.eventLoopGroup = Epoll.isAvailable() ?
                 new EpollEventLoopGroup() : new NioEventLoopGroup();
+        this.responseHandlers = responseHandlers;
+
     }
 
     /**
@@ -77,37 +91,47 @@ public class ChannelHolder {
      * @throws Exception any exception during service discovery and connection register.
      */
     public ChannelWrapper getChannelWrapper(URI uri) throws Exception {
-        ChannelWrapper channelWrapper = this.channelMap.get(uri);
+        ChannelWrapper channelWrapper = channelMap.get(uri);
         if (channelWrapper == null) {
-            synchronized (ChannelHolder.class) {
-                channelWrapper = this.channelMap.get(uri);
-                if (channelWrapper == null) {
-                    channelWrapper = this.registerChannel(uri);
+            synchronized (NettyChannelHolder.class) {
+                channelWrapper = channelMap.get(uri);
+                if (channelWrapper == null || !channelWrapper.isActiveChannel()) {
+                    channelWrapper = createChannel(uri);
+                    channelMap.put(uri, channelWrapper);
                 }
             }
         }
         return channelWrapper;
     }
 
-    private ChannelWrapper registerChannel(URI serverNodeURI)
+    public void removeChannel(URI uri) {
+        ChannelWrapper channelWrapper = channelMap.get(uri);
+        if (channelWrapper != null) {
+            channelWrapper.closeChannel();
+        }
+    }
+
+    private ChannelWrapper createChannel(URI serverNodeURI)
             throws InterruptedException, TimeoutException {
-        Bootstrap bootstrap = new Bootstrap()
+        ChannelFuture connectFuture = new Bootstrap()
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .group(this.eventLoopGroup)
-                .channel(Epoll.isAvailable() ?
-                        EpollSocketChannel.class : NioSocketChannel.class)
+                .channel(Epoll.isAvailable() ? EpollSocketChannel.class : NioSocketChannel.class)
                 .handler(new ChannelInitializer<>() {
                     @Override
                     protected void initChannel(Channel channel) throws Exception {
-                        channel.pipeline()
-                                .addLast(new NettyFrameEncoder())
-                                .addLast(new NettyProtoDecoder())
-                                .addLast(ResponseHandler.INSTANCE)
-                                .addLast(new NettyFrameEncoder());
+                        ChannelPipeline channelPipeline = channel.pipeline();
+                        channelPipeline.addLast(new NettyFrameEncoder())
+                                .addLast(new NettyProtoDecoder());
+
+                        for (ChannelHandler responseHandler : responseHandlers) {
+                            channelPipeline.addLast(responseHandler);
+                        }
+
+                        channelPipeline.addLast(new NettyFrameEncoder());
                     }
-                });
-        ChannelFuture connectFuture = bootstrap.connect(
-                new InetSocketAddress(serverNodeURI.getHost(), serverNodeURI.getPort()));
+                })
+                .connect(new InetSocketAddress(serverNodeURI.getHost(), serverNodeURI.getPort()));
         if (!connectFuture.await(CONNECTION_TIMEOUT, TimeUnit.SECONDS)) {
             throw new TimeoutException("netty connect timeout");
         }
@@ -115,9 +139,7 @@ public class ChannelHolder {
         if (channel == null || !channel.isActive()) {
             throw new IllegalStateException("netty channel is not active");
         }
-        ChannelWrapper channelWrapper = new ChannelWrapper(channel);
-        this.channelMap.put(serverNodeURI, channelWrapper);
-        return channelWrapper;
+        return new ChannelWrapper(channel);
     }
 
     public synchronized void close() {

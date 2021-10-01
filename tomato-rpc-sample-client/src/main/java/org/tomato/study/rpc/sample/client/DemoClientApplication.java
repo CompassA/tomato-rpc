@@ -31,6 +31,7 @@ import org.tomato.study.rpc.sample.api.data.DemoResponse;
 
 import java.util.Collections;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
 
 /**
  * @author Tomato
@@ -80,14 +81,28 @@ public class DemoClientApplication {
     }
 
     private static void invokerRpc(EchoService stub) throws InterruptedException {
-        for (int i = 0; i < 20; ++i) {
+        int threadNum = 100;
+        CountDownLatch mainThreadWait = new CountDownLatch(threadNum);
+        CountDownLatch subThreadWait = new CountDownLatch(1);
+        Runnable runnable = () -> {
             try {
-                DemoResponse response = stub.echo(new DemoRequest("hello world"));
-                LOGGER.info(response.getData());
-            } catch (TomatoRpcRuntimeException exception) {
-                LOGGER.error(exception.getMessage(), exception);
+                subThreadWait.await();
+                for (int i = 0; i < 20; ++i) {
+                    DemoResponse response = stub.echo(new DemoRequest("hello world"));
+                    LOGGER.info(response.getData());
+                    Thread.sleep(500);
+                }
+                mainThreadWait.countDown();
+            } catch (InterruptedException | TomatoRpcRuntimeException e) {
+                LOGGER.error(e.getMessage(), e);
             }
-            Thread.sleep(3000);
+        };
+
+
+        for (int i = 0; i < threadNum; ++i) {
+            new Thread(runnable).start();
         }
+        subThreadWait.countDown();
+        mainThreadWait.await();
     }
 }

@@ -30,10 +30,12 @@ import java.util.concurrent.TimeUnit;
  * @author Tomato
  * Created on 2021.04.08
  */
-public class ChannelResponseHolder {
+public class NettyResponseHolder {
 
-    @Deprecated
-    public static final ChannelResponseHolder INSTANCE = new ChannelResponseHolder(20);
+    /**
+     * client method call default timeout seconds
+     */
+    private static final long DEFAULT_TIMEOUT_SECONDS = 20;
 
     /**
      * message id -> response future
@@ -45,41 +47,37 @@ public class ChannelResponseHolder {
      */
     private final HashedWheelTimer timer = new HashedWheelTimer(100, TimeUnit.MILLISECONDS);
 
-    /**
-     * timeout seconds
-     */
-    private final long timeoutSeconds;
-
-    public ChannelResponseHolder(long timeoutSeconds) {
-        this.timeoutSeconds = timeoutSeconds;
+    public void putFeatureResponse(long id, CompletableFuture<Command> future) {
+        putFeatureResponse(id, future, DEFAULT_TIMEOUT_SECONDS);
     }
 
-    public void putFeatureResponse(long id, CompletableFuture<Command> future) {
-        this.responseMap.computeIfAbsent(
-                id,
-                messageId -> this.createFuture(messageId, future)
+    public void putFeatureResponse(
+            long id,
+            CompletableFuture<Command> future,
+            long timeoutSeconds) {
+        responseMap.computeIfAbsent(
+                id, messageId -> createFuture(messageId, future, timeoutSeconds)
         );
     }
 
     public Optional<NettyResponseFuture> getAndRemove(long id) {
-        return Optional.ofNullable(
-                this.responseMap.remove(id)
-        );
+        return Optional.ofNullable(responseMap.remove(id));
     }
 
-    private NettyResponseFuture createFuture(long messageId, CompletableFuture<Command> future) {
+    private NettyResponseFuture createFuture(long messageId,
+                                             CompletableFuture<Command> future,
+                                             long timeoutSeconds) {
         // create future
-        NettyResponseFuture responseFuture =
-                new NettyResponseFuture(messageId, future, System.nanoTime());
+        NettyResponseFuture responseFuture = new NettyResponseFuture(messageId, future, System.nanoTime());
 
         // register timeout task
-        this.timer.newTimeout(timeout -> {
-            NettyResponseFuture timeoutFuture = this.responseMap.remove(messageId);
+        timer.newTimeout(timeout -> {
+            NettyResponseFuture timeoutFuture = responseMap.remove(messageId);
             if (timeoutFuture == null) {
                 return;
             }
             timeoutFuture.changeStateToTimeout();
-        }, this.timeoutSeconds, TimeUnit.SECONDS);
+        }, timeoutSeconds, TimeUnit.SECONDS);
 
         return responseFuture;
     }

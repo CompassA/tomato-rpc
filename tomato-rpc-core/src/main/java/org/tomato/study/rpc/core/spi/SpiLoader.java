@@ -92,9 +92,39 @@ public class SpiLoader<T> {
         return (SpiLoader<T>) LOADER_MAP.computeIfAbsent(spiInterface, SpiLoader::new);
     }
 
+    /**
+     * 编程式注入SPI实例
+     * @param clazz 接口类型
+     * @param instance 接口实例
+     * @param <T> 接口类型
+     */
+    public static <T> void registerLoader(Class<T> clazz, T instance) {
+        if (!clazz.isInterface() || !clazz.isAssignableFrom(instance.getClass())) {
+            throw new IllegalArgumentException();
+        }
+        LOADER_MAP.put(clazz, new SpiLoader<>(clazz, instance));
+    }
+
+    /**
+     * 编程式配置SPI实例
+     * @param clazz 接口类型
+     * @param instance 接口实例
+     */
+    private SpiLoader(Class<T> clazz, T instance) {
+        this.singleton.set(instance);
+        this.spiInterface = clazz;
+        this.paramName = "";
+        this.defaultClassFullName = "";
+        this.singletonInstance = true;
+    }
+
+    /**
+     * 注解式SPI
+     * @param clazz 接口类型
+     */
     public SpiLoader(Class<T> clazz) {
         if (!clazz.isAnnotationPresent(SpiInterface.class)) {
-            throw new IllegalStateException("not spi interface");
+            throw new IllegalArgumentException("not spi interface");
         }
         SpiInterface spiInfo = clazz.getAnnotation(SpiInterface.class);
         this.spiInterface = clazz;

@@ -14,29 +14,32 @@
 
 package org.tomato.study.rpc.netty.service;
 
+import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
-import org.tomato.study.rpc.core.NameServerFactory;
 import org.tomato.study.rpc.core.NameService;
-import org.tomato.study.rpc.core.ProviderRegistry;
-import org.tomato.study.rpc.core.StubFactory;
 import org.tomato.study.rpc.core.base.BaseRpcCoreService;
 import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.data.NameServerConfig;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
+import org.tomato.study.rpc.core.router.ServiceProviderFactory;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
+import org.tomato.study.rpc.netty.handler.ResponseHandler;
+import org.tomato.study.rpc.netty.router.NettyServiceProviderFactory;
+import org.tomato.study.rpc.netty.sender.NettyChannelHolder;
+import org.tomato.study.rpc.netty.sender.NettyResponseHolder;
 import org.tomato.study.rpc.netty.server.NettyRpcServer;
 import org.tomato.study.rpc.utils.NetworkUtil;
 
 import java.net.URI;
 
 /**
+ * 基于Netty实现的RPC服务入口类
  * Functions:
- *   1.start rpc server
- *   2.create client stub
+ * 1.根据设置的VIP，将自己作为一个RPC服务暴露给其他服务
+ * 2.将自己作为一个RPC客户端节点，订阅其他RPC服务
  * @author Tomato
  * Created on 2021.04.17
  */
@@ -44,36 +47,27 @@ import java.net.URI;
 public class NettyRpcCoreService extends BaseRpcCoreService {
 
     /**
-     * application provider object mapper
-     */
-    private final ProviderRegistry providerRegistry;
-
-    /**
-     * name service for service registry and discovery
-     */
-    private final NameService nameService;
-
-    /**
-     * stub factory for creating client stub
-     */
-    private final StubFactory stubFactory;
-
-    /**
-     * application exported rpc server
+     * RPC服务器，接收客户端请求
      */
     private final NettyRpcServer server;
 
+    /**
+     * 管理与RPC服务端建立的所有连接
+     */
+    private final NettyChannelHolder channelHolder;
+
+    /**
+     * 管理所有响应Future
+     */
+    private final NettyResponseHolder responseHolder;
+
     public NettyRpcCoreService(RpcConfig rpcConfig) {
         super(rpcConfig);
-        providerRegistry = SpiLoader.getLoader(ProviderRegistry.class).load();
-        stubFactory = SpiLoader.getLoader(StubFactory.class).load();
-        nameService = SpiLoader.getLoader(NameServerFactory.class).load()
-                .createNameService(
-                        NameServerConfig.builder()
-                                .connString(rpcConfig.getNameServiceURI())
-                                .build()
-                );
-        server = new NettyRpcServer(NetworkUtil.getLocalHost(), getPort());
+        this.server = new NettyRpcServer(NetworkUtil.getLocalHost(), getPort());
+        this.responseHolder = new NettyResponseHolder();
+        this.channelHolder = new NettyChannelHolder(
+                Lists.newArrayList(new ResponseHandler(this.responseHolder))
+        );
     }
 
     @Override
@@ -83,7 +77,7 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
             throw new TomatoRpcRuntimeException(NettyRpcErrorEnum.CORE_SERVICE_REGISTER_PROVIDER_ERROR.create());
         }
 
-        providerRegistry.register(
+        getProviderRegistry().register(
                 getServiceVIP(),
                 serviceInstance,
                 serviceInterface
@@ -102,9 +96,9 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
         if (!serviceInterface.isInterface()) {
             throw new TomatoRpcRuntimeException(NettyRpcErrorEnum.CORE_SERVICE_STUB_CREATE_ERROR.create());
         }
-        T stub = stubFactory.createStub(
+        T stub = getStubFactory().createStub(
                 new StubConfig<>(
-                        nameService,
+                        getNameService(),
                         serviceInterface,
                         targetServiceVIP,
                         getVersion()
@@ -117,24 +111,30 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
     @Override
     protected void doInit() throws TomatoRpcException {
         server.init();
-        nameService.init();
+        getNameService().init();
+        SpiLoader.registerLoader(
+                ServiceProviderFactory.class,
+                new NettyServiceProviderFactory(channelHolder, responseHolder)
+        );
         log.info("netty rpc core service initialized");
     }
 
     @Override
     protected void doStart() throws TomatoRpcException {
+        NameService nameService = getNameService();
         try {
-            // start rpc server
+            // 启动RPC服务器
             server.start();
 
-            // connected to name service
+            // 与注册中心建立连接
             nameService.start();
 
-            // export self
+            // 将自己的元数据上报至注册中心
             export(NetworkUtil.createURI(getProtocol(), server.getHost(), server.getPort()));
 
-            // subscribe others
+            // 订阅其余RPC服务
             nameService.subscribe(getSubscribedVIP(), getStage());
+
         } catch (Exception e) {
             throw new TomatoRpcException(NettyRpcErrorEnum.CORE_SERVICE_START_ERROR.create(), e);
         }
@@ -144,12 +144,13 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
     @Override
     protected void doStop() throws TomatoRpcException {
         server.stop();
-        nameService.stop();
+        getNameService().stop();
+        channelHolder.close();
         log.info("netty rpc core service stopped");
     }
 
     private void export(URI rpcServerURI) throws Exception {
-        nameService.registerService(
+        getNameService().registerService(
                 MetaData.builder()
                         .protocol(rpcServerURI.getScheme())
                         .host(rpcServerURI.getHost())

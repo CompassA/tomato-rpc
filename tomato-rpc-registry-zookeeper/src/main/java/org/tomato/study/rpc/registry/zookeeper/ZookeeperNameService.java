@@ -14,7 +14,6 @@
 
 package org.tomato.study.rpc.registry.zookeeper;
 
-import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.base.BaseNameService;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.NameServerConfig;
@@ -25,7 +24,6 @@ import org.tomato.study.rpc.registry.zookeeper.error.TomatoRegistryErrorEnum;
 import org.tomato.study.rpc.registry.zookeeper.impl.ZookeeperRegistry;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -33,7 +31,6 @@ import java.util.Optional;
  * @author Tomato
  * Created on 2021.06.19
  */
-@Slf4j
 public class ZookeeperNameService extends BaseNameService {
 
     private static final String ZK_NAME_SPACE = "tomato";
@@ -52,12 +49,6 @@ public class ZookeeperNameService extends BaseNameService {
     @Override
     public void subscribe(Collection<String> vipList, String stage) throws Exception {
         registry.subscribe(vipList, stage);
-    }
-
-    @Deprecated
-    @Override
-    public Optional<URI> lookupService(String serviceVIP) throws Exception {
-        return Optional.empty();
     }
 
     @Override

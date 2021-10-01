@@ -17,6 +17,7 @@ package org.tomato.study.rpc.registry.zookeeper.impl;
 import lombok.Getter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.zookeeper.KeeperException;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.router.RpcInvoker;
 import org.tomato.study.rpc.core.router.ServiceProvider;
@@ -114,7 +115,13 @@ public class ZookeeperRegistry {
                 metaData.getStage(),
                 PROVIDER_DICTIONARY,
                 uriOpt.get().toString());
-        this.curatorWrapper.createEphemeral(zNodePath);
+        try {
+            curatorWrapper.createEphemeral(zNodePath);
+        } catch (KeeperException.NodeExistsException exception) {
+            // 若存在同名节点，先删除节点，再创建临时节点
+            curatorWrapper.delete(zNodePath);
+            curatorWrapper.createEphemeral(zNodePath);
+        }
     }
 
     /**

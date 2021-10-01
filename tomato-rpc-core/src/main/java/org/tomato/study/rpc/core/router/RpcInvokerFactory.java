@@ -14,7 +14,6 @@
 
 package org.tomato.study.rpc.core.router;
 
-import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.spi.SpiInterface;
 
 import java.util.Optional;
@@ -31,8 +30,8 @@ public interface RpcInvokerFactory {
 
     /**
      * create rpc invoker by service provider metadata
-     * @param metadata service provider metadata
+     * @param invokerConfig necessary data for create rpc invoker
      * @return prc invoker
      */
-    Optional<RpcInvoker> create(MetaData metadata);
+    Optional<RpcInvoker> create(InvokerConfig invokerConfig);
 }

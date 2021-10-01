@@ -30,6 +30,10 @@ public class ChannelWrapper {
         this.channel = channel;
     }
 
+    public boolean isActiveChannel() {
+        return channel.isActive();
+    }
+
     public void closeChannel() {
         this.channel.close();
     }

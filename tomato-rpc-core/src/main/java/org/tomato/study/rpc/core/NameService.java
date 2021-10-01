@@ -19,7 +19,6 @@ import org.tomato.study.rpc.core.observer.LifeCycle;
 import org.tomato.study.rpc.core.router.RpcInvoker;
 import org.tomato.study.rpc.core.spi.SpiInterface;
 
-import java.net.URI;
 import java.util.Collection;
 import java.util.Optional;
 
@@ -45,14 +44,6 @@ public interface NameService extends LifeCycle {
      * @exception Exception subscribe exception
      */
     void subscribe(Collection<String> vipList, String stage) throws Exception;
-
-    /**
-     * get service address
-     * @param serviceVIP service identification
-     * @return service address
-     * @throws Exception any exception during look up
-     */
-    Optional<URI> lookupService(String serviceVIP) throws Exception;
 
     /**
      * search service invoker

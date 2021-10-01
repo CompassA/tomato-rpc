@@ -25,6 +25,11 @@ public class NameServerConfig {
      */
     private final Charset charset;
 
+    /**
+     * 当前RPC node的环境，name server会订阅同环境的其余provider
+     */
+    private final String stage;
+
     public static Builder builder() {
         return new Builder();
     }
@@ -32,6 +37,7 @@ public class NameServerConfig {
     public static class Builder {
         private String connString;
         private Charset charset = StandardCharsets.UTF_8;
+        private String stage = "default";
 
         public Builder connString(String connString) {
             this.connString = connString;
@@ -43,8 +49,13 @@ public class NameServerConfig {
             return this;
         }
 
+        public Builder stage(String stage) {
+            this.stage = stage;
+            return this;
+        }
+
         public NameServerConfig build() {
-            return new NameServerConfig(connString, charset);
+            return new NameServerConfig(connString, charset, stage);
         }
     }
 }

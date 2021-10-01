@@ -12,11 +12,11 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.registry.zookeeper.impl;
+package org.tomato.study.rpc.core.base;
 
 import org.junit.Assert;
-import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.base.BaseServiceProvider;
+import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.router.RpcInvoker;
 import org.tomato.study.rpc.core.router.ServiceProvider;
 import org.tomato.study.rpc.utils.ReflectUtils;

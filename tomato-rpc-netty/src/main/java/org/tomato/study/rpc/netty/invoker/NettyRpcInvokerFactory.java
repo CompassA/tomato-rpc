@@ -16,8 +16,11 @@ package org.tomato.study.rpc.netty.invoker;
 
 import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.router.InvokerConfig;
 import org.tomato.study.rpc.core.router.RpcInvoker;
 import org.tomato.study.rpc.core.router.RpcInvokerFactory;
+import org.tomato.study.rpc.netty.sender.NettyChannelHolder;
+import org.tomato.study.rpc.netty.sender.NettyResponseHolder;
 
 import java.util.Optional;
 
@@ -28,16 +31,27 @@ import java.util.Optional;
 @Slf4j
 public class NettyRpcInvokerFactory implements RpcInvokerFactory {
 
+    public static final String RESPONSE_HOLDER_PARAM_KEY = "responseHolderKey";
+    public static final String CHANNEL_HOLDER_PARAM_KEY = "channelHolderKey";
+
     @Override
-    public Optional<RpcInvoker> create(MetaData metadata) {
-        try {
-            return metadata.isValid()
-                    ? Optional.of(new NettyRpcInvoker(metadata))
-                    : Optional.empty();
-        } catch (Exception e) {
-            log.error(e.getMessage(), e);
+    public Optional<RpcInvoker> create(InvokerConfig invokerConfig) {
+        MetaData nodeInfo = invokerConfig.getNodeInfo();
+        if (!nodeInfo.isValid()) {
             return Optional.empty();
         }
 
+        NettyChannelHolder channelHolder = invokerConfig.getParameter(CHANNEL_HOLDER_PARAM_KEY);
+        if (channelHolder == null) {
+            return Optional.empty();
+        }
+
+        NettyResponseHolder responseHolder = invokerConfig.getParameter(RESPONSE_HOLDER_PARAM_KEY);
+        if (responseHolder == null) {
+            return Optional.empty();
+        }
+
+        return Optional.of(
+                new NettyRpcInvoker(nodeInfo, channelHolder, responseHolder));
     }
 }

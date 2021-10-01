@@ -1,10 +1,17 @@
 package org.tomato.study.rpc.core.base;
 
+import lombok.Getter;
+import org.tomato.study.rpc.core.NameServerFactory;
+import org.tomato.study.rpc.core.NameService;
+import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.RpcCoreService;
+import org.tomato.study.rpc.core.StubFactory;
+import org.tomato.study.rpc.core.data.NameServerConfig;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.observer.BaseLifeCycleComponent;
+import org.tomato.study.rpc.core.spi.SpiLoader;
 
 import java.util.List;
 
@@ -13,6 +20,24 @@ import java.util.List;
  * Created on 2021.09.27
  */
 public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implements RpcCoreService {
+
+    /**
+     * application provider object mapper
+     */
+    @Getter
+    private final ProviderRegistry providerRegistry;
+
+    /**
+     * name service for service registry and discovery
+     */
+    @Getter
+    private final NameService nameService;
+
+    /**
+     * stub factory for creating client stub
+     */
+    @Getter
+    private final StubFactory stubFactory;
 
     /**
      * rpc configuration
@@ -25,6 +50,14 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
                     TomatoRpcCoreErrorEnum.RPC_CONFIG_INITIALIZING_ERROR.create());
         }
         this.rpcConfig = rpcConfig;
+        this.providerRegistry = SpiLoader.getLoader(ProviderRegistry.class).load();
+        this.stubFactory = SpiLoader.getLoader(StubFactory.class).load();
+        this.nameService = SpiLoader.getLoader(NameServerFactory.class).load()
+                .createNameService(
+                        NameServerConfig.builder()
+                                .connString(rpcConfig.getNameServiceURI())
+                                .build()
+                );
     }
 
     @Override

@@ -1,1 +1,0 @@
-senderFactory : org.tomato.study.rpc.netty.sender.NettySenderFactory
