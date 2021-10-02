@@ -14,7 +14,7 @@ public enum NettyRpcErrorEnum {
     CORE_SERVICE_STUB_CREATE_ERROR(10001, "create stub parameter error"),
     CORE_SERVICE_START_ERROR(10002, "start rpc core service error"),
 
-    NETTY_HANDLER_WRITE_ERROR(20001, "netty response write failed"),
+    NETTY_REQUEST_HANDLE_ERROR(20001, "rpc server handler request error"),
     NETTY_HANDLER_PROVIDER_NOT_FOUND(20002, "provider interface not found"),
     NETTY_HANDLER_RPC_INVOKER_ERROR(20003, "rpc invoke error"),
 
@@ -33,5 +33,10 @@ public enum NettyRpcErrorEnum {
 
     public TomatoRpcErrorInfo create(String customMessage) {
         return new TomatoRpcErrorInfo(this.code, customMessage);
+    }
+
+    @Override
+    public String toString() {
+        return String.format("[error code: %d, error message: %s]", this.code, this.message);
     }
 }

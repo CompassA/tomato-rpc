@@ -30,6 +30,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.apache.commons.collections4.CollectionUtils;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
+import org.tomato.study.rpc.netty.codec.netty.NettyFrameDecoder;
 import org.tomato.study.rpc.netty.codec.netty.NettyFrameEncoder;
 import org.tomato.study.rpc.netty.codec.netty.NettyProtoDecoder;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
@@ -54,6 +55,9 @@ public class NettyChannelHolder {
      */
     private static final long CONNECTION_TIMEOUT = 30;
 
+    /**
+     * is channel holder closed
+     */
     public boolean close = false;
 
     /**
@@ -67,9 +71,9 @@ public class NettyChannelHolder {
     private final EventLoopGroup eventLoopGroup;
 
     /**
-     * rpc client response handler list
+     * netty client bootstrap
      */
-    private final List<ChannelHandler> responseHandlers;
+    private final Bootstrap bootstrap;
 
     public NettyChannelHolder(List<ChannelHandler> responseHandlers) {
         if (CollectionUtils.isEmpty(responseHandlers)) {
@@ -79,7 +83,22 @@ public class NettyChannelHolder {
         this.channelMap = new ConcurrentHashMap<>(0);
         this.eventLoopGroup = Epoll.isAvailable() ?
                 new EpollEventLoopGroup() : new NioEventLoopGroup();
-        this.responseHandlers = responseHandlers;
+        this.bootstrap = new Bootstrap()
+                .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+                .group(this.eventLoopGroup)
+                .channel(Epoll.isAvailable() ? EpollSocketChannel.class : NioSocketChannel.class)
+                .handler(new ChannelInitializer<>() {
+                    @Override
+                    protected void initChannel(Channel channel) throws Exception {
+                        ChannelPipeline channelPipeline = channel.pipeline();
+                        channelPipeline.addLast(new NettyFrameDecoder());
+                        channelPipeline.addLast(new NettyProtoDecoder());
+                        channelPipeline.addLast(new NettyFrameEncoder());
+                        for (ChannelHandler responseHandler : responseHandlers) {
+                            channelPipeline.addLast(responseHandler);
+                        }
+                    }
+                });
 
     }
 
@@ -113,25 +132,8 @@ public class NettyChannelHolder {
 
     private ChannelWrapper createChannel(URI serverNodeURI)
             throws InterruptedException, TimeoutException {
-        ChannelFuture connectFuture = new Bootstrap()
-                .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
-                .group(this.eventLoopGroup)
-                .channel(Epoll.isAvailable() ? EpollSocketChannel.class : NioSocketChannel.class)
-                .handler(new ChannelInitializer<>() {
-                    @Override
-                    protected void initChannel(Channel channel) throws Exception {
-                        ChannelPipeline channelPipeline = channel.pipeline();
-                        channelPipeline.addLast(new NettyFrameEncoder())
-                                .addLast(new NettyProtoDecoder());
-
-                        for (ChannelHandler responseHandler : responseHandlers) {
-                            channelPipeline.addLast(responseHandler);
-                        }
-
-                        channelPipeline.addLast(new NettyFrameEncoder());
-                    }
-                })
-                .connect(new InetSocketAddress(serverNodeURI.getHost(), serverNodeURI.getPort()));
+        ChannelFuture connectFuture = bootstrap.connect(
+                new InetSocketAddress(serverNodeURI.getHost(), serverNodeURI.getPort()));
         if (!connectFuture.await(CONNECTION_TIMEOUT, TimeUnit.SECONDS)) {
             throw new TimeoutException("netty connect timeout");
         }

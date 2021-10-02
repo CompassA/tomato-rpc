@@ -93,7 +93,9 @@ public class DemoClientApplication {
                     Thread.sleep(500);
                 }
                 mainThreadWait.countDown();
-            } catch (InterruptedException | TomatoRpcRuntimeException e) {
+            } catch (TomatoRpcRuntimeException e) {
+                LOGGER.error(e.getErrorInfo().toString(), e);
+            } catch (InterruptedException e) {
                 LOGGER.error(e.getMessage(), e);
             }
         };

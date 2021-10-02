@@ -30,9 +30,6 @@ import org.tomato.study.rpc.netty.sender.NettyResponseHolder;
 @ChannelHandler.Sharable
 public class ResponseHandler extends SimpleChannelInboundHandler<Command> {
 
-    @Deprecated
-    public static final ResponseHandler INSTANCE = new ResponseHandler(null);
-
     /**
      * RPC客户端所有的ResponseFuture
      */
@@ -53,13 +50,11 @@ public class ResponseHandler extends SimpleChannelInboundHandler<Command> {
         try {
             // 将结果注入future使客户端停止等待
             responseHolder.getAndRemove(id)
-                    .ifPresent(nettyResponse ->
-                            nettyResponse.getFuture().complete(msg));
-        } catch (RuntimeException exception) {
+                    .ifPresent(nettyResponse -> nettyResponse.complete(msg));
+        } catch (Throwable exception) {
+            // 出现异常注入异常使客户端停止等待
             responseHolder.getAndRemove(id)
-                    .ifPresent(nettyResponse ->
-                            nettyResponse.getFuture()
-                                    .completeExceptionally(exception));
+                    .ifPresent(nettyResponse -> nettyResponse.completeExceptionally(exception));
             throw exception;
         }
     }

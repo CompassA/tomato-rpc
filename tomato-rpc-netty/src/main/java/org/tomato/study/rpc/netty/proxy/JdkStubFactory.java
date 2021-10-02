@@ -79,13 +79,13 @@ public class JdkStubFactory implements StubFactory {
             Response response = nameService.lookupInvoker(vip, version)
                     .orElseThrow(() -> new TomatoRpcRuntimeException(
                             NettyRpcErrorEnum.STUB_INVOKER_SEARCH_ERROR.create(
-                                    "invoker not found, vip=" + vip + ",version=" + version)))
+                                    "[invoker not found, vip=" + vip + ",version=" + version + "]")))
                     .invoke(invocation)
                     .getResultSync();
             if (!Code.SUCCESS.equals(response.getCode())) {
                 throw new TomatoRpcRuntimeException(
                         NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create(
-                                "rpc failed, server message: " + response.getMessage()));
+                                "[rpc invoke failed, server response: " + response.getMessage() + "]"));
             }
             return response.getData();
         }
