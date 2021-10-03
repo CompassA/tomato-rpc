@@ -54,6 +54,7 @@ public class NettyRpcServer extends BaseRpcServer {
 
     private static final String BOSS_GROUP_THREAD_NAME = "rpc-server-boss-thread";
     private static final String WORKER_GROUP_THREAD_NAME = "rpc-server-worker-thread";
+    private static final String BUSINESS_GROUP_THREAD_NAME = "rpc-server-business-thread";
 
     /**
      * RPC服务主题业务逻辑
@@ -109,7 +110,10 @@ public class NettyRpcServer extends BaseRpcServer {
             this.workerGroup = new NioEventLoopGroup(new DefaultThreadFactory(WORKER_GROUP_THREAD_NAME));
         }
         if (isUseBusinessPool()) {
-            this.businessGroup = new UnorderedThreadPoolEventExecutor(getBusinessPoolSize());
+            this.businessGroup = new UnorderedThreadPoolEventExecutor(
+                    getBusinessPoolSize(),
+                    new DefaultThreadFactory(BOSS_GROUP_THREAD_NAME)
+            );
         }
         this.metricHolder = new MetricHolder();
         this.metricHandler = new MetricHandler(this.metricHolder);
