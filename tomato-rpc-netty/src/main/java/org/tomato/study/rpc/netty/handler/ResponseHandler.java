@@ -19,7 +19,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.data.Command;
-import org.tomato.study.rpc.netty.sender.NettyResponseHolder;
+import org.tomato.study.rpc.netty.client.NettyResponseHolder;
 
 /**
  * 处理RPC服务端的响应数据

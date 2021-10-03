@@ -12,7 +12,7 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.netty.sender;
+package org.tomato.study.rpc.netty.client;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

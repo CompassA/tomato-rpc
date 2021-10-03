@@ -12,7 +12,7 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.netty.sender;
+package org.tomato.study.rpc.netty.client;
 
 import io.netty.util.HashedWheelTimer;
 import org.tomato.study.rpc.core.data.Command;

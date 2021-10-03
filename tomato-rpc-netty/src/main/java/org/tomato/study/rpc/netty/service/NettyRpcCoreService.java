@@ -28,8 +28,8 @@ import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.handler.ResponseHandler;
 import org.tomato.study.rpc.netty.router.NettyServiceProviderFactory;
-import org.tomato.study.rpc.netty.sender.NettyChannelHolder;
-import org.tomato.study.rpc.netty.sender.NettyResponseHolder;
+import org.tomato.study.rpc.netty.client.NettyChannelHolder;
+import org.tomato.study.rpc.netty.client.NettyResponseHolder;
 import org.tomato.study.rpc.netty.server.NettyRpcServer;
 import org.tomato.study.rpc.utils.NetworkUtil;
 

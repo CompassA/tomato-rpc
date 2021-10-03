@@ -12,7 +12,7 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.netty.sender;
+package org.tomato.study.rpc.netty.client;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -28,6 +28,7 @@ import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.util.concurrent.DefaultThreadFactory;
 import org.apache.commons.collections4.CollectionUtils;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.netty.codec.netty.NettyFrameDecoder;
@@ -35,7 +36,6 @@ import org.tomato.study.rpc.netty.codec.netty.NettyFrameEncoder;
 import org.tomato.study.rpc.netty.codec.netty.NettyProtoDecoder;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -50,10 +50,12 @@ import java.util.concurrent.TimeoutException;
  */
 public class NettyChannelHolder {
 
+    private static final String RPC_CLIENT_THREAD_NAME = "rpc-client-worker-thread";
+
     /**
      * connection timeout, time unit: ms
      */
-    private static final long CONNECTION_TIMEOUT = 30;
+    private static final long CONNECTION_TIMEOUT = 10000;
 
     /**
      * is channel holder closed
@@ -81,21 +83,26 @@ public class NettyChannelHolder {
                     NettyRpcErrorEnum.CORE_SERVICE_START_ERROR.create("without response handler list"));
         }
         this.channelMap = new ConcurrentHashMap<>(0);
-        this.eventLoopGroup = Epoll.isAvailable() ?
-                new EpollEventLoopGroup() : new NioEventLoopGroup();
+        this.eventLoopGroup = Epoll.isAvailable()
+                ? new EpollEventLoopGroup(new DefaultThreadFactory(RPC_CLIENT_THREAD_NAME))
+                : new NioEventLoopGroup(new DefaultThreadFactory(RPC_CLIENT_THREAD_NAME));
         this.bootstrap = new Bootstrap()
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
+                .option(ChannelOption.TCP_NODELAY, true)
                 .group(this.eventLoopGroup)
                 .channel(Epoll.isAvailable() ? EpollSocketChannel.class : NioSocketChannel.class)
                 .handler(new ChannelInitializer<>() {
                     @Override
                     protected void initChannel(Channel channel) throws Exception {
                         ChannelPipeline channelPipeline = channel.pipeline();
-                        channelPipeline.addLast(new NettyFrameDecoder());
-                        channelPipeline.addLast(new NettyProtoDecoder());
-                        channelPipeline.addLast(new NettyFrameEncoder());
+                        channelPipeline.addLast("frame-decoder", new NettyFrameDecoder());
+                        channelPipeline.addLast("proto-decoder", new NettyProtoDecoder());
+                        channelPipeline.addLast("frame-encoder", new NettyFrameEncoder());
                         for (ChannelHandler responseHandler : responseHandlers) {
-                            channelPipeline.addLast(responseHandler);
+                            channelPipeline.addLast(
+                                    responseHandler.getClass().getSimpleName(),
+                                    responseHandler
+                            );
                         }
                     }
                 });
@@ -133,8 +140,10 @@ public class NettyChannelHolder {
     private ChannelWrapper createChannel(URI serverNodeURI)
             throws InterruptedException, TimeoutException {
         ChannelFuture connectFuture = bootstrap.connect(
-                new InetSocketAddress(serverNodeURI.getHost(), serverNodeURI.getPort()));
-        if (!connectFuture.await(CONNECTION_TIMEOUT, TimeUnit.SECONDS)) {
+                serverNodeURI.getHost(),
+                serverNodeURI.getPort()
+        );
+        if (!connectFuture.await(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)) {
             throw new TimeoutException("netty connect timeout");
         }
         Channel channel = connectFuture.channel();

@@ -6,8 +6,8 @@ import org.tomato.study.rpc.core.router.InvokerConfig;
 import org.tomato.study.rpc.core.router.RpcInvoker;
 import org.tomato.study.rpc.core.router.RpcInvokerFactory;
 import org.tomato.study.rpc.netty.invoker.NettyRpcInvokerFactory;
-import org.tomato.study.rpc.netty.sender.NettyChannelHolder;
-import org.tomato.study.rpc.netty.sender.NettyResponseHolder;
+import org.tomato.study.rpc.netty.client.NettyChannelHolder;
+import org.tomato.study.rpc.netty.client.NettyResponseHolder;
 
 import static org.tomato.study.rpc.netty.invoker.NettyRpcInvokerFactory.CHANNEL_HOLDER_PARAM_KEY;
 import static org.tomato.study.rpc.netty.invoker.NettyRpcInvokerFactory.RESPONSE_HOLDER_PARAM_KEY;

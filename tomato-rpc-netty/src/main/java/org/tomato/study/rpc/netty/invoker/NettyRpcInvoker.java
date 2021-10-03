@@ -29,8 +29,8 @@ import org.tomato.study.rpc.core.router.RpcInvoker;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.netty.data.NettyInvocationResult;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
-import org.tomato.study.rpc.netty.sender.NettyChannelHolder;
-import org.tomato.study.rpc.netty.sender.NettyResponseHolder;
+import org.tomato.study.rpc.netty.client.NettyChannelHolder;
+import org.tomato.study.rpc.netty.client.NettyResponseHolder;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
@@ -116,6 +116,7 @@ public class NettyRpcInvoker implements RpcInvoker, MessageSender {
                         }
                     });
         } catch (Exception e) {
+            responseHolder.getAndRemove(id);
             throw new TomatoRpcRuntimeException(
                     NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create("channel fetch error"), e);
         }

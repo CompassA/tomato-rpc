@@ -12,7 +12,7 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.netty.sender;
+package org.tomato.study.rpc.netty.client;
 
 import io.netty.channel.Channel;
 import lombok.Getter;

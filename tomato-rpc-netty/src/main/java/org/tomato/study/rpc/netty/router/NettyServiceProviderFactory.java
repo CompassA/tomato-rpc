@@ -2,8 +2,8 @@ package org.tomato.study.rpc.netty.router;
 
 import org.tomato.study.rpc.core.router.ServiceProvider;
 import org.tomato.study.rpc.core.router.ServiceProviderFactory;
-import org.tomato.study.rpc.netty.sender.NettyChannelHolder;
-import org.tomato.study.rpc.netty.sender.NettyResponseHolder;
+import org.tomato.study.rpc.netty.client.NettyChannelHolder;
+import org.tomato.study.rpc.netty.client.NettyResponseHolder;
 
 /**
  * @author Tomato

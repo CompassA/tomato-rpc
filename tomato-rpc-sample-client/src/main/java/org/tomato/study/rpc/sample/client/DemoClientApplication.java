@@ -47,13 +47,13 @@ public class DemoClientApplication {
             zkURL = "127.0.0.1:2181";
         }
 
-        // create rpc core service
+        // 创建RPC核心接口
         RpcCoreService rpcCoreService = createCoreService(zkURL);
 
-        // create stub
+        // 创建动态代理
         EchoService stub = createStub(rpcCoreService);
 
-        // call RPC method 3 seconds a time
+        // RPC调用
         invokerRpc(stub);
 
         rpcCoreService.stop();

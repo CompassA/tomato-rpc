@@ -64,13 +64,13 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
             Command handleResult = matchHandler.handle(msg);
 
             // 将结果写入缓存
-            ctx.channel().writeAndFlush(handleResult).addListener(
+            ctx.writeAndFlush(handleResult).addListener(
                     // 若出现异常，log错误信息，给客户端返回RPC异常
                     (ChannelFutureListener) listener -> {
                         if (!listener.isSuccess()) {
                             Throwable cause = listener.cause();
                             log.error(cause.getMessage(), cause);
-                            ctx.channel().writeAndFlush(
+                            ctx.writeAndFlush(
                                     CommandFactory.response(
                                             msg.getHeader().getId(),
                                             RpcResponse.fail(NettyRpcErrorEnum.NETTY_REQUEST_HANDLE_ERROR.create()),
@@ -78,12 +78,12 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
                                             CommandType.RPC_RESPONSE
                                     )
                             );
-                            ctx.channel().close();
+                            ctx.close();
                         }
                     });
         } catch (Exception exception) {
             log.error(exception.getMessage(), exception);
-            ctx.channel().writeAndFlush(
+            ctx.writeAndFlush(
                     CommandFactory.response(
                             msg.getHeader().getId(),
                             RpcResponse.fail(NettyRpcErrorEnum.NETTY_REQUEST_HANDLE_ERROR.create()),
@@ -91,7 +91,7 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
                             CommandType.RPC_RESPONSE
                     )
             );
-            ctx.channel().close();
+            ctx.close();
         }
     }
 
