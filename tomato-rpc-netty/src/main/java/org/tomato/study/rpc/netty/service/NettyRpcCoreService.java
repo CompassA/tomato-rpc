@@ -20,6 +20,7 @@ import org.tomato.study.rpc.core.NameService;
 import org.tomato.study.rpc.core.base.BaseRpcCoreService;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RpcConfig;
+import org.tomato.study.rpc.core.data.RpcServerConfig;
 import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
@@ -63,7 +64,14 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
 
     public NettyRpcCoreService(RpcConfig rpcConfig) {
         super(rpcConfig);
-        this.server = new NettyRpcServer(NetworkUtil.getLocalHost(), getPort());
+        this.server = new NettyRpcServer(
+                RpcServerConfig.builder()
+                        .host(NetworkUtil.getLocalHost())
+                        .port(getPort())
+                        .useBusinessThreadPool(rpcConfig.getBusinessThreadPoolSize() > 1)
+                        .businessThreadPoolSize(rpcConfig.getBusinessThreadPoolSize())
+                        .build()
+        );
         this.responseHolder = new NettyResponseHolder();
         this.channelHolder = new NettyChannelHolder(
                 Lists.newArrayList(new ResponseHandler(this.responseHolder))

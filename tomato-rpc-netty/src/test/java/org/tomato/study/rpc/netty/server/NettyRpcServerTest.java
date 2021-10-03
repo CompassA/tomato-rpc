@@ -31,6 +31,7 @@ package org.tomato.study.rpc.netty.server;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.tomato.study.rpc.core.data.RpcServerConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 
 import static org.mockito.Mockito.spy;
@@ -48,7 +49,7 @@ public class NettyRpcServerTest {
 
     @Before
     public void init() {
-        this.nettyRpcServer = spy(new NettyRpcServer("127.0.0.1", 6454));
+        this.nettyRpcServer = spy(new NettyRpcServer(RpcServerConfig.builder().port(6454).build()));
     }
 
     /**

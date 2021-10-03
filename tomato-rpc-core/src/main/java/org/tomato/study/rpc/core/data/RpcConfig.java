@@ -64,6 +64,11 @@ public class RpcConfig {
      */
     private final int port;
 
+    /**
+     * thread pool configuration
+     */
+    private final int businessThreadPoolSize;
+
     public static Builder builder() {
         return new Builder();
     }
@@ -76,6 +81,7 @@ public class RpcConfig {
         private List<String> subscribedVIP = Collections.emptyList();
         private String nameServiceURI;
         private int port = 9090;
+        private int businessThreadPoolSize = 0;
 
         public Builder protocol(String protocol) {
             this.protocol = protocol;
@@ -112,6 +118,11 @@ public class RpcConfig {
             return this;
         }
 
+        public Builder businessThreadPoolSize(int businessThreadPoolSize) {
+            this.businessThreadPoolSize = businessThreadPoolSize;
+            return this;
+        }
+
         public RpcConfig build() {
             return new RpcConfig(
                     this.protocol,
@@ -120,7 +131,8 @@ public class RpcConfig {
                     this.version,
                     this.subscribedVIP,
                     this.nameServiceURI,
-                    this.port
+                    this.port,
+                    this.businessThreadPoolSize
             );
         }
     }

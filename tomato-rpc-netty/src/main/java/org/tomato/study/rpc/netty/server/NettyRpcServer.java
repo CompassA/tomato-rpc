@@ -19,6 +19,7 @@ import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
@@ -26,8 +27,11 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
+import io.netty.util.concurrent.EventExecutorGroup;
+import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
 import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.base.BaseRpcServer;
+import org.tomato.study.rpc.core.data.RpcServerConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.observer.LifeCycle;
 import org.tomato.study.rpc.netty.codec.netty.NettyFrameDecoder;
@@ -41,7 +45,7 @@ import org.tomato.study.rpc.utils.MetricHolder;
 import java.util.concurrent.TimeUnit;
 
 /**
- * netty rpc server, receive client rpc requests
+ * Netty RPC服务器, 接收RPC客户端的请求并响应
  * @author Tomato
  * Created on 2021.04.18
  */
@@ -52,29 +56,47 @@ public class NettyRpcServer extends BaseRpcServer {
     private static final String WORKER_GROUP_THREAD_NAME = "rpc-server-worker-thread";
 
     /**
-     * handler with dispatcher logic
+     * RPC服务主题业务逻辑
      */
     private DispatcherHandler dispatcherHandler;
 
+    /**
+     * RPC服务监控项管理
+     */
     private MetricHolder metricHolder;
 
+    /**
+     * 监控一些数据
+     */
     private MetricHandler metricHandler;
 
+    /**
+     * 服务端启动引导类
+     */
     private ServerBootstrap serverBootstrap;
 
+    /**
+     * server socket channel
+     */
     private Channel channel;
 
-    private EventLoopGroup bossGroup;
-
-    private EventLoopGroup workerGroup;
+    /**
+     * 业务线程池
+     */
+    private EventExecutorGroup businessGroup;
 
     /**
-     * create a rpc server by host and port
-     * @param host application host
-     * @param port rpc server port to be exported
+     * IO线程池
      */
-    public NettyRpcServer(String host, int port) {
-        super(host, port);
+    private EventLoopGroup bossGroup;
+
+    /**
+     * accept线程池
+     */
+    private EventLoopGroup workerGroup;
+
+    public NettyRpcServer(RpcServerConfig rpcServerConfig) {
+        super(rpcServerConfig);
     }
 
     @Override
@@ -85,6 +107,9 @@ public class NettyRpcServer extends BaseRpcServer {
         } else {
             this.bossGroup = new NioEventLoopGroup(1, new DefaultThreadFactory(BOSS_GROUP_THREAD_NAME));
             this.workerGroup = new NioEventLoopGroup(new DefaultThreadFactory(WORKER_GROUP_THREAD_NAME));
+        }
+        if (isUseBusinessPool()) {
+            this.businessGroup = new UnorderedThreadPoolEventExecutor(getBusinessPoolSize());
         }
         this.metricHolder = new MetricHolder();
         this.metricHandler = new MetricHandler(this.metricHolder);
@@ -98,12 +123,20 @@ public class NettyRpcServer extends BaseRpcServer {
                 .childHandler(new ChannelInitializer<>() {
                     @Override
                     protected void initChannel(Channel ch) throws Exception {
-                        ch.pipeline()
-                                .addLast("frame-decoder",new NettyFrameDecoder())
-                                .addLast("proto-decoder", new NettyProtoDecoder())
-                                .addLast("frame-encoder", new NettyFrameEncoder())
-                                .addLast("metric-handler", NettyRpcServer.this.metricHandler)
-                                .addLast("dispatcher-handler", NettyRpcServer.this.dispatcherHandler);
+                        ChannelPipeline pipeline = ch.pipeline();
+                        pipeline.addLast("frame-decoder",new NettyFrameDecoder());
+                        pipeline.addLast("proto-decoder", new NettyProtoDecoder());
+                        pipeline.addLast("frame-encoder", new NettyFrameEncoder());
+                        pipeline.addLast("metric-handler", NettyRpcServer.this.metricHandler);
+                        if (NettyRpcServer.this.isUseBusinessPool()) {
+                            pipeline.addLast(
+                                    NettyRpcServer.this.businessGroup,
+                                    "dispatcher-handler",
+                                    NettyRpcServer.this.dispatcherHandler
+                            );
+                        } else {
+                            pipeline.addLast("dispatcher-handler", NettyRpcServer.this.dispatcherHandler);
+                        }
                     }
                 });
     }
@@ -130,6 +163,9 @@ public class NettyRpcServer extends BaseRpcServer {
         workerGroup.shutdownGracefully();
         channel.close();
         metricHolder.stop();
+        if (businessGroup != null) {
+            businessGroup.shutdownGracefully();
+        }
     }
 
     @Override

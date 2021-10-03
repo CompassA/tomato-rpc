@@ -39,6 +39,7 @@ public class DemoServerApplication {
                         .serviceVIP(Constant.serviceVIP)
                         .nameServiceURI(zkURL)
                         .port(4567)
+                        .businessThreadPoolSize(4)
                         .build()
                 );
         coreService.registerProvider(new EchoServiceImpl(coreService), EchoService.class);
