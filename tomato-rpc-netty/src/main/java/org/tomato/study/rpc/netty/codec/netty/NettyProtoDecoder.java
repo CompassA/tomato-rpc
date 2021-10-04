@@ -22,6 +22,7 @@ import org.tomato.study.rpc.netty.utils.CommandUtil;
 import java.util.List;
 
 /**
+ * 二进制字节 ---解码---> {@link org.tomato.study.rpc.core.data.Command}
  * @author Tomato
  * Created on 2021.04.16
  */

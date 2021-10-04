@@ -89,4 +89,8 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
     public String getProtocol() {
         return rpcConfig.getProtocol();
     }
+
+    public RpcConfig getRpcConfig() {
+        return rpcConfig;
+    }
 }

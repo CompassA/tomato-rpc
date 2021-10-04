@@ -19,26 +19,26 @@ package org.tomato.study.rpc.core.data;
  * @author Tomato
  * Created on 2021.04.03
  */
-public interface ProtoConstants {
+public final class ProtoConstants {
 
     /**
      * command magic number num
      */
-    byte MAGIC_NUMBER = (byte) 0xac;
+    public static final byte MAGIC_NUMBER = (byte) 0xac;
 
     /**
      * command version 1
      */
-    int VERSION1 = 20210403;
+    public static final int VERSION1 = 20210403;
 
     /**
      * command current header
      */
-    int CURRENT_VERSION = VERSION1;
+    public static final int CURRENT_VERSION = VERSION1;
 
     /**
      * command header fixed length
      */
-    int HEAD_FIX_LENGTH = 19;
+    public static final int HEAD_FIX_LENGTH = 19;
 
 }

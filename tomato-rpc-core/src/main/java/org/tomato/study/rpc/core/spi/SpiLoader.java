@@ -20,6 +20,7 @@ import org.tomato.study.rpc.core.utils.ClassUtil;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.lang.reflect.Constructor;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
@@ -52,6 +53,11 @@ public class SpiLoader<T> {
     private static final ConcurrentMap<Class<?>, SpiLoader<?>> LOADER_MAP = new ConcurrentHashMap<>(0);
 
     /**
+     * interface -> wrapper class constructor
+     */
+    private static final ConcurrentMap<Class<?>, Constructor<?>> WRAPPER_MAP = new ConcurrentHashMap<>();
+
+    /**
      * spi key -> implementation class
      */
     private final ObjectHolder<Map<String, Class<?>>> spiConfigHolder = new ObjectHolder<>();
@@ -67,7 +73,7 @@ public class SpiLoader<T> {
     private final Class<T> spiInterface;
 
     /**
-     * spi config parameter name
+     * spi config parameter name，indicate that user chose which impl class
      */
     private final String paramName;
 
@@ -103,6 +109,20 @@ public class SpiLoader<T> {
             throw new IllegalArgumentException();
         }
         LOADER_MAP.put(clazz, new SpiLoader<>(clazz, instance));
+    }
+
+    /**
+     * 注册装饰器
+     * @param interfaceClass 接口类型
+     * @param wrapper 装饰器类型
+     * @param <T> 接口类型
+     */
+    public static <T> void registerWrapper(Class<T> interfaceClass, Class<? extends T> wrapper) {
+        try {
+            WRAPPER_MAP.put(interfaceClass, wrapper.getConstructor(interfaceClass));
+        } catch (NoSuchMethodException e) {
+            // do nothing
+        }
     }
 
     /**
@@ -160,11 +180,22 @@ public class SpiLoader<T> {
     @SuppressWarnings("unchecked")
     private T createSpiInstance(final String spiParameterName) {
         Map<String, Class<?>> spiConfigMap = this.getSpiConfigMap();
+        // 获取实现类
         Class<?> spiImplClass = spiConfigMap.get(spiParameterName);
         if (spiImplClass == null) {
             return null;
         }
-        return (T) spiImplClass.getConstructor().newInstance();
+
+        // 创建实现类实例
+        final Object spiInstance = spiImplClass.getConstructor().newInstance();
+
+        // 构建包装器
+        final Constructor<?> constructor = WRAPPER_MAP.get(spiInterface);
+        if (constructor != null) {
+            return (T) constructor.newInstance(spiInstance);
+        }
+
+        return (T) spiInstance;
     }
 
     private Map<String, Class<?>> getSpiConfigMap() {

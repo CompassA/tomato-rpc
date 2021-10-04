@@ -17,6 +17,7 @@ package org.tomato.study.rpc.netty.service;
 import com.google.common.collect.Lists;
 import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.NameService;
+import org.tomato.study.rpc.core.Serializer;
 import org.tomato.study.rpc.core.base.BaseRpcCoreService;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RpcConfig;
@@ -26,11 +27,13 @@ import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.router.ServiceProviderFactory;
 import org.tomato.study.rpc.core.spi.SpiLoader;
+import org.tomato.study.rpc.netty.client.NettyChannelHolder;
+import org.tomato.study.rpc.netty.client.NettyResponseHolder;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.handler.ResponseHandler;
 import org.tomato.study.rpc.netty.router.NettyServiceProviderFactory;
-import org.tomato.study.rpc.netty.client.NettyChannelHolder;
-import org.tomato.study.rpc.netty.client.NettyResponseHolder;
+import org.tomato.study.rpc.netty.serializer.GzipWrapper;
+import org.tomato.study.rpc.netty.serializer.SerializerHolder;
 import org.tomato.study.rpc.netty.server.NettyRpcServer;
 import org.tomato.study.rpc.utils.NetworkUtil;
 
@@ -118,12 +121,24 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
 
     @Override
     protected void doInit() throws TomatoRpcException {
+        // 初始化本地服务
         server.init();
+
+        // 初始化注册中心
         getNameService().init();
+
+        // 注册Invoker创建对象
         SpiLoader.registerLoader(
                 ServiceProviderFactory.class,
                 new NettyServiceProviderFactory(channelHolder, responseHolder)
         );
+
+        // 配置压缩
+        if (getRpcConfig().isUseGzip()) {
+            SerializerHolder.configWrapper(GzipWrapper.class);
+            SpiLoader.registerWrapper(Serializer.class, GzipWrapper.class);
+        }
+
         log.info("netty rpc core service initialized");
     }
 

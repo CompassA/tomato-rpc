@@ -54,7 +54,11 @@ public class DemoClientApplication {
         EchoService stub = createStub(rpcCoreService);
 
         // RPC调用
-        invokerRpc(stub);
+        if (System.getenv("PERF") == null) {
+            invokerRpc(stub);
+        } else {
+            invokerRpcPref(stub);
+        }
 
         rpcCoreService.stop();
     }
@@ -81,16 +85,43 @@ public class DemoClientApplication {
     }
 
     private static void invokerRpc(EchoService stub) throws InterruptedException {
-        int threadNum = 100;
+        int threadNum = 10;
+        int messageNum = 100;
         CountDownLatch mainThreadWait = new CountDownLatch(threadNum);
         CountDownLatch subThreadWait = new CountDownLatch(1);
         Runnable runnable = () -> {
             try {
                 subThreadWait.await();
-                for (int i = 0; i < 20; ++i) {
+                for (int i = 0; i < messageNum; ++i) {
                     DemoResponse response = stub.echo(new DemoRequest("hello world"));
                     LOGGER.info(response.getData());
-                    Thread.sleep(500);
+                }
+                mainThreadWait.countDown();
+            } catch (TomatoRpcRuntimeException e) {
+                LOGGER.error(e.getErrorInfo().toString(), e);
+            } catch (InterruptedException e) {
+                LOGGER.error(e.getMessage(), e);
+            }
+        };
+
+        for (int i = 0; i < threadNum; ++i) {
+            new Thread(runnable).start();
+        }
+
+        subThreadWait.countDown();
+        mainThreadWait.await();
+    }
+
+    private static void invokerRpcPref(EchoService stub) throws InterruptedException {
+        int threadNum = 50;
+        int messageNum = 1000;
+        CountDownLatch mainThreadWait = new CountDownLatch(threadNum);
+        CountDownLatch subThreadWait = new CountDownLatch(1);
+        Runnable runnable = () -> {
+            try {
+                subThreadWait.await();
+                for (int i = 0; i < messageNum; ++i) {
+                    DemoResponse response = stub.echo(new DemoRequest("hello world"));
                 }
                 mainThreadWait.countDown();
             } catch (TomatoRpcRuntimeException e) {
@@ -104,7 +135,19 @@ public class DemoClientApplication {
         for (int i = 0; i < threadNum; ++i) {
             new Thread(runnable).start();
         }
+
+
+        LOGGER.info(
+                "RPC perf test started, thread num: {}, messages per thread {}",
+                threadNum,
+                messageNum
+        );
+        long start = System.nanoTime();
         subThreadWait.countDown();
         mainThreadWait.await();
+        long end = System.nanoTime();
+        LOGGER.info(
+                "RPC perf test stopped, invoke {} times RPC cost {} s",threadNum * messageNum,
+                (end - start) / 1_000_000_000.0);
     }
 }

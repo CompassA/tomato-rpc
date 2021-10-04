@@ -14,8 +14,11 @@
 
 package org.tomato.study.rpc.netty.serializer;
 
+import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.Serializer;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -25,6 +28,7 @@ import java.util.concurrent.ConcurrentMap;
  * @author Tomato
  * Created on 2021.04.01
  */
+@Slf4j
 public final class SerializerHolder {
 
     /**
@@ -39,5 +43,21 @@ public final class SerializerHolder {
 
     public static Serializer getSerializer(final byte key) {
         return SERIALIZER_MAP.get(key);
+    }
+
+    /**
+     * 给所有序列化器添加包装器
+     * @param wrapper 包装器
+     */
+    public static void configWrapper(Class<? extends Serializer> wrapper) {
+        try {
+            final Constructor<? extends Serializer> constructor = wrapper.getConstructor(Serializer.class);
+            for (Serializer value : SERIALIZER_MAP.values()) {
+                SERIALIZER_MAP.put(value.serializerIndex(), constructor.newInstance(value));
+            }
+        } catch (NoSuchMethodException | InvocationTargetException
+                | InstantiationException | IllegalAccessException e) {
+            log.error(e.getMessage(), e);
+        }
     }
 }

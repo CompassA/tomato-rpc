@@ -21,7 +21,7 @@ import java.util.Collections;
 import java.util.List;
 
 /**
- * necessary config data for rpc
+ * RPC配置
  * @author Tomato
  * Created on 2021.07.11
  */
@@ -30,44 +30,49 @@ import java.util.List;
 public class RpcConfig {
 
     /**
-     * network proto
+     * RPC协议
      */
     private final String protocol;
 
     /**
-     * a rpc application has a unique vip
+     * 当前服务的唯一标识，别的服务通过该标识订阅服务
      */
     private final String serviceVIP;
 
     /**
-     * rpc application stage
+     * 当前服务所在的环境，用于环境隔离
      */
     private final String stage;
 
     /**
-     * rpc application version
+     * 当前服务的接口版本，用于同环境间不同服务版本的隔离
      */
     private final String version;
 
     /**
-     * other vips subscribed by current rpc application
+     * 当前服务订阅的其他RPC服务
      */
     private final List<String> subscribedVIP;
 
     /**
-     * name server connect uri
+     * 注册中心的连接URI
      */
     private final String nameServiceURI;
 
     /**
-     * rpc local server port
+     * RPC服务暴露在哪个端口
      */
     private final int port;
 
     /**
-     * thread pool configuration
+     * 业务线程池配置
      */
     private final int businessThreadPoolSize;
+
+    /**
+     * rpc body体是否使用Gzip压缩
+     */
+    private final boolean useGzip;
 
     public static Builder builder() {
         return new Builder();
@@ -82,6 +87,7 @@ public class RpcConfig {
         private String nameServiceURI;
         private int port = 9090;
         private int businessThreadPoolSize = 0;
+        private boolean useGzip = false;
 
         public Builder protocol(String protocol) {
             this.protocol = protocol;
@@ -123,6 +129,11 @@ public class RpcConfig {
             return this;
         }
 
+        public Builder useGzip(boolean useGzip) {
+            this.useGzip = useGzip;
+            return this;
+        }
+
         public RpcConfig build() {
             return new RpcConfig(
                     this.protocol,
@@ -132,7 +143,8 @@ public class RpcConfig {
                     this.subscribedVIP,
                     this.nameServiceURI,
                     this.port,
-                    this.businessThreadPoolSize
+                    this.businessThreadPoolSize,
+                    this.useGzip
             );
         }
     }
