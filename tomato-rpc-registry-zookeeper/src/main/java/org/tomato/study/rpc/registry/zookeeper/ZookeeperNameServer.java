@@ -14,7 +14,7 @@
 
 package org.tomato.study.rpc.registry.zookeeper;
 
-import org.tomato.study.rpc.core.base.BaseNameService;
+import org.tomato.study.rpc.core.base.BaseNameServer;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.NameServerConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
@@ -31,13 +31,13 @@ import java.util.Optional;
  * @author Tomato
  * Created on 2021.06.19
  */
-public class ZookeeperNameService extends BaseNameService {
+public class ZookeeperNameServer extends BaseNameServer {
 
     private static final String ZK_NAME_SPACE = "tomato";
 
     private ZookeeperRegistry registry;
 
-    public ZookeeperNameService(NameServerConfig nameServerConfig) {
+    public ZookeeperNameServer(NameServerConfig nameServerConfig) {
         super(nameServerConfig);
     }
 

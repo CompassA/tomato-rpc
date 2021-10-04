@@ -1,1 +1,1 @@
-providerRegistry : org.tomato.study.rpc.netty.server.NettyProviderRegistry
+netty-provider-registry : org.tomato.study.rpc.netty.server.NettyProviderRegistry

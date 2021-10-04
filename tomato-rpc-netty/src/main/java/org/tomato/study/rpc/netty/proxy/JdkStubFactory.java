@@ -16,7 +16,7 @@ package org.tomato.study.rpc.netty.proxy;
 
 import lombok.AllArgsConstructor;
 import org.tomato.study.rpc.core.Invocation;
-import org.tomato.study.rpc.core.NameService;
+import org.tomato.study.rpc.core.NameServer;
 import org.tomato.study.rpc.core.Response;
 import org.tomato.study.rpc.core.StubFactory;
 import org.tomato.study.rpc.core.data.StubConfig;
@@ -45,7 +45,7 @@ public class JdkStubFactory implements StubFactory {
                 new StubHandler(
                         config.getServiceVIP(),
                         config.getVersion(),
-                        config.getNameService(),
+                        config.getNameServer(),
                         config.getServiceInterface())
         );
     }
@@ -66,7 +66,7 @@ public class JdkStubFactory implements StubFactory {
         /**
          * 注册中心
          */
-        private final NameService nameService;
+        private final NameServer nameServer;
 
         /**
          * 服务接口
@@ -76,7 +76,7 @@ public class JdkStubFactory implements StubFactory {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             Invocation invocation = createInvocation(method, args);
-            Response response = nameService.lookupInvoker(vip, version)
+            Response response = nameServer.lookupInvoker(vip, version)
                     .orElseThrow(() -> new TomatoRpcRuntimeException(
                             NettyRpcErrorEnum.STUB_INVOKER_SEARCH_ERROR.create(
                                     "[invoker not found, vip=" + vip + ",version=" + version + "]")))

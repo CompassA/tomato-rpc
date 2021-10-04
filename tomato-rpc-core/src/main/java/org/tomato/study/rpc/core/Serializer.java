@@ -23,7 +23,7 @@ import java.util.List;
  * @author Tomato
  * Created on 2021.03.31
  */
-@SpiInterface(paramName = "serializer")
+@SpiInterface("json")
 public interface Serializer {
 
     /**

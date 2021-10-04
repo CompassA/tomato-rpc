@@ -1,6 +1,6 @@
 package org.tomato.study.rpc.core.base;
 
-import org.tomato.study.rpc.core.NameService;
+import org.tomato.study.rpc.core.NameServer;
 import org.tomato.study.rpc.core.data.NameServerConfig;
 import org.tomato.study.rpc.core.observer.BaseLifeCycleComponent;
 
@@ -10,11 +10,11 @@ import java.nio.charset.Charset;
  * @author Tomato
  * Created on 2021.09.27
  */
-public abstract class BaseNameService extends BaseLifeCycleComponent implements NameService {
+public abstract class BaseNameServer extends BaseLifeCycleComponent implements NameServer {
 
     private final NameServerConfig nameServerConfig;
 
-    public BaseNameService(NameServerConfig nameServerConfig) {
+    public BaseNameServer(NameServerConfig nameServerConfig) {
         this.nameServerConfig = nameServerConfig;
     }
 

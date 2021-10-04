@@ -40,7 +40,7 @@ import org.tomato.study.rpc.core.NameServerFactory;
 import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.RpcServer;
 import org.tomato.study.rpc.core.StubFactory;
-import org.tomato.study.rpc.core.base.BaseNameService;
+import org.tomato.study.rpc.core.base.BaseNameServer;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
@@ -72,7 +72,7 @@ public class NettyRpcCoreServiceTest {
     private ProviderRegistry mockProviderRegistry;
 
     @Mock
-    private BaseNameService mockNameService;
+    private BaseNameServer mockNameService;
 
     @Mock
     private NettyRpcServer mockNettyRpcServer;

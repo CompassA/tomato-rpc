@@ -22,7 +22,7 @@ import org.tomato.study.rpc.core.spi.SpiInterface;
  * @author Tomato
  * Created on 2021.09.28
  */
-@SpiInterface
+@SpiInterface("netty")
 public interface RpcCoreServiceFactory {
 
     /**

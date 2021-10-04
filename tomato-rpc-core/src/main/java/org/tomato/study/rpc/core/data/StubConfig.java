@@ -16,7 +16,7 @@ package org.tomato.study.rpc.core.data;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import org.tomato.study.rpc.core.NameService;
+import org.tomato.study.rpc.core.NameServer;
 
 /**
  * necessary data for creating stub
@@ -30,7 +30,7 @@ public class StubConfig<T> {
     /**
      * name service
      */
-    private final NameService nameService;
+    private final NameServer nameServer;
 
     /**
      * interface of service provider

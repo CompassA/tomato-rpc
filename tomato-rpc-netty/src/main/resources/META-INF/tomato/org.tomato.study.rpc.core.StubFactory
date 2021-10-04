@@ -1,1 +1,1 @@
-stubFactory : org.tomato.study.rpc.netty.proxy.JdkStubFactory
+jdk : org.tomato.study.rpc.netty.proxy.JdkStubFactory

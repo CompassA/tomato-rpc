@@ -14,18 +14,12 @@
 
 package org.tomato.study.rpc.core.router;
 
-import org.tomato.study.rpc.core.spi.SpiInterface;
-
 import java.util.Optional;
 
 /**
  * @author Tomato
  * Created on 2021.07.11
  */
-@SpiInterface(
-        paramName = "rpcInvokerFactory",
-        defaultSpiValue = "org.tomato.study.rpc.netty.invoker.NettyRpcInvokerFactory"
-)
 public interface RpcInvokerFactory {
 
     /**

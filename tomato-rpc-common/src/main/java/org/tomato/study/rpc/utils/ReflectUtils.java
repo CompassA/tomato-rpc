@@ -34,10 +34,8 @@ public final class ReflectUtils {
      * @param value value to set
      * @param <T> target object type
      */
-    public static <T> void reflectSet(T instance,
-                                  Class<T> clazz,
-                                  String fieldName,
-                                  Object value) {
+    public static <T> void reflectSet(
+            T instance, Class<T> clazz, String fieldName, Object value) {
         try {
             Field declaredField = clazz.getDeclaredField(fieldName);
             declaredField.setAccessible(true);
@@ -57,9 +55,8 @@ public final class ReflectUtils {
      * @return file value
      */
     @SuppressWarnings("unchecked")
-    public static <T, U> U reflectGet(T instance,
-                            Class<? extends T> clazz,
-                            String fieldName) {
+    public static <T, U> U reflectGet(
+            T instance, Class<? extends T> clazz, String fieldName) {
         try {
             Field declaredField = clazz.getDeclaredField(fieldName);
             declaredField.setAccessible(true);

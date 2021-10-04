@@ -38,59 +38,56 @@ import java.util.concurrent.ConcurrentMap;
 public class SpiLoader<T> {
 
     /**
-     * path of spi config dictionary
+     * SPI配置文件路径
      */
     private static final String SPI_CONFIG_DICTIONARY = "META-INF/tomato/";
 
     /**
+     * 配置的键值对分隔符
      * parameterName : org.study.xxx.xx.ClassType
      */
     private static final int DELIMITER = ':';
 
     /**
-     * interface class marked with @SpiInterface -> spi loader
+     * SPI接口 -> SPI接口对应的类
      */
     private static final ConcurrentMap<Class<?>, SpiLoader<?>> LOADER_MAP = new ConcurrentHashMap<>(0);
 
     /**
-     * interface -> wrapper class constructor
+     * SPI接口 -> 接口包装器
      */
     private static final ConcurrentMap<Class<?>, Constructor<?>> WRAPPER_MAP = new ConcurrentHashMap<>();
 
+    //==================================================================================================================
     /**
-     * spi key -> implementation class
+     * SPI配置文件中的组件Key -> 组件全类名
      */
     private final ObjectHolder<Map<String, Class<?>>> spiConfigHolder = new ObjectHolder<>();
 
     /**
-     * spi implementation class singleton holder
+     * 组件单例Map[SPI配置中的key -> 组件单例]
      */
-    private final ObjectHolder<T> singleton = new ObjectHolder<>();
+    private final ConcurrentMap<String, T> singletonMap = new ConcurrentHashMap<>(0);
 
     /**
-     * interface class marked with @SpiInterface
+     * SPI接口
      */
     private final Class<T> spiInterface;
 
     /**
-     * spi config parameter name，indicate that user chose which impl class
+     * 接口配置的默认实现参数
      */
     private final String paramName;
 
     /**
-     * default implement class name
-     */
-    private final String defaultClassFullName;
-
-    /**
-     * is implement class instance singleton
+     * 是否是单例
      */
     private final boolean singletonInstance;
 
     /**
-     * [get] or [create and get] a spi loader of a spi interface
-     * @param spiInterface interface class marked with @SpiInterface
-     * @param <T> extension interface type
+     * 得到一个SPI接口的加载器，采用懒加载，第一次要使用一个SPI接口加载器时才去初始化
+     * @param spiInterface 被标记@SpiInterface的接口
+     * @param <T> SPI接口类型
      * @return spi loader
      */
     @SuppressWarnings("unchecked")
@@ -99,16 +96,17 @@ public class SpiLoader<T> {
     }
 
     /**
-     * 编程式注入SPI实例
+     * 编程式注入SPI默认实例
      * @param clazz 接口类型
      * @param instance 接口实例
      * @param <T> 接口类型
      */
-    public static <T> void registerLoader(Class<T> clazz, T instance) {
-        if (!clazz.isInterface() || !clazz.isAssignableFrom(instance.getClass())) {
-            throw new IllegalArgumentException();
+    public static <T> void registerSpiInstance(Class<T> clazz, T instance) {
+        SpiLoader<T> loader = getLoader(clazz);
+        if (loader == null) {
+            return;
         }
-        LOADER_MAP.put(clazz, new SpiLoader<>(clazz, instance));
+        loader.getSingletonMap().put(loader.getParamName(), instance);
     }
 
     /**
@@ -126,19 +124,6 @@ public class SpiLoader<T> {
     }
 
     /**
-     * 编程式配置SPI实例
-     * @param clazz 接口类型
-     * @param instance 接口实例
-     */
-    private SpiLoader(Class<T> clazz, T instance) {
-        this.singleton.set(instance);
-        this.spiInterface = clazz;
-        this.paramName = "";
-        this.defaultClassFullName = "";
-        this.singletonInstance = true;
-    }
-
-    /**
      * 注解式SPI
      * @param clazz 接口类型
      */
@@ -148,38 +133,36 @@ public class SpiLoader<T> {
         }
         SpiInterface spiInfo = clazz.getAnnotation(SpiInterface.class);
         this.spiInterface = clazz;
-        this.paramName = "".equals(spiInfo.paramName())
-                ? clazz.getSimpleName()
-                : spiInfo.paramName();
-        this.defaultClassFullName = spiInfo.defaultSpiValue();
+        this.paramName = spiInfo.value();
         this.singletonInstance = spiInfo.singleton();
     }
 
     /**
-     * lazy: [get] or [create and get] spi instance
+     * 加载key为 {@link SpiLoader#getParamName()} 对应的默认实现类
      * @return spi instance
      */
     public T load() {
-        if (!this.singletonInstance) {
-            return this.createSpiInstance(this.paramName);
+        return load(paramName);
+    }
+
+    /**
+     * SPI配置文件中的组件参数名
+     * @param paramName 参数名
+     * @return spi实例
+     */
+    public T load(String paramName) {
+        if (!singletonInstance) {
+            return createSpiInstance(paramName);
         }
-        T instance = this.singleton.get();
-        if (instance == null) {
-            synchronized (this.singleton) {
-                instance = this.singleton.get();
-                if (instance == null) {
-                    instance = this.createSpiInstance(this.paramName);
-                    this.singleton.set(instance);
-                }
-            }
-        }
-        return instance;
+        return singletonMap.computeIfAbsent(paramName, this::createSpiInstance);
     }
 
     @SneakyThrows
     @SuppressWarnings("unchecked")
     private T createSpiInstance(final String spiParameterName) {
-        Map<String, Class<?>> spiConfigMap = this.getSpiConfigMap();
+        // 加载配置文件，转为Map
+        Map<String, Class<?>> spiConfigMap = getSpiConfigMap();
+
         // 获取实现类
         Class<?> spiImplClass = spiConfigMap.get(spiParameterName);
         if (spiImplClass == null) {
@@ -187,26 +170,25 @@ public class SpiLoader<T> {
         }
 
         // 创建实现类实例
-        final Object spiInstance = spiImplClass.getConstructor().newInstance();
+        Object spiInstance = spiImplClass.getConstructor().newInstance();
 
-        // 构建包装器
-        final Constructor<?> constructor = WRAPPER_MAP.get(spiInterface);
+        // 如果该类对象有包装器，构建包装器
+        Constructor<?> constructor = WRAPPER_MAP.get(spiInterface);
         if (constructor != null) {
             return (T) constructor.newInstance(spiInstance);
         }
-
         return (T) spiInstance;
     }
 
     private Map<String, Class<?>> getSpiConfigMap() {
-        Map<String, Class<?>> spiConfigMap = this.spiConfigHolder.get();
+        Map<String, Class<?>> spiConfigMap = spiConfigHolder.get();
         if (spiConfigMap == null) {
-            synchronized (this.spiConfigHolder) {
-                spiConfigMap = this.spiConfigHolder.get();
+            synchronized (spiConfigHolder) {
+                spiConfigMap = spiConfigHolder.get();
                 if (spiConfigMap == null) {
-                    spiConfigMap = this.loadSpiConfigFile();
+                    spiConfigMap = loadSpiConfigFile();
                     if (!spiConfigMap.isEmpty()) {
-                        this.spiConfigHolder.set(spiConfigMap);
+                        spiConfigHolder.set(spiConfigMap);
                     }
                 }
             }
@@ -220,29 +202,23 @@ public class SpiLoader<T> {
      */
     @SneakyThrows
     private Map<String, Class<?>> loadSpiConfigFile() {
-        // get classloader
-        String path = SPI_CONFIG_DICTIONARY + this.spiInterface.getCanonicalName();
-        ClassLoader classLoader = ClassUtil.getClassLoader(this.spiInterface);
+        // 获取类加载器
+        String path = SPI_CONFIG_DICTIONARY + spiInterface.getCanonicalName();
+        ClassLoader classLoader = ClassUtil.getClassLoader(spiInterface);
         if (classLoader == null) {
             return Collections.emptyMap();
         }
 
-        // open spi config file
+        // 打开SPI配置文件
         URL resourceUrl = classLoader.getResource(path);
-
-        // if config is empty, load default implement class
-        Map<String, Class<?>> spiConfigMap = new HashMap<>(0);
         if (resourceUrl == null) {
-            spiConfigMap.put(
-                    this.paramName,
-                    Class.forName(this.defaultClassFullName, true, classLoader)
-            );
-            return spiConfigMap;
+            return Collections.emptyMap();
         }
 
+        // 一行一行解析文件，存入Map[组件key -> 组件类型]
+        Map<String, Class<?>> spiConfigMap = new HashMap<>(0);
         try (BufferedReader reader = new BufferedReader(
                 new InputStreamReader(resourceUrl.openStream(), StandardCharsets.UTF_8))) {
-            // resolve config line
             String line;
             while ((line = reader.readLine()) != null) {
                 line = line.trim();

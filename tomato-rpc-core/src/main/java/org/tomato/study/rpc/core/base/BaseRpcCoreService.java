@@ -2,7 +2,7 @@ package org.tomato.study.rpc.core.base;
 
 import lombok.Getter;
 import org.tomato.study.rpc.core.NameServerFactory;
-import org.tomato.study.rpc.core.NameService;
+import org.tomato.study.rpc.core.NameServer;
 import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.StubFactory;
@@ -31,7 +31,7 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
      * name service for service registry and discovery
      */
     @Getter
-    private final NameService nameService;
+    private final NameServer nameServer;
 
     /**
      * stub factory for creating client stub
@@ -52,7 +52,7 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
         this.rpcConfig = rpcConfig;
         this.providerRegistry = SpiLoader.getLoader(ProviderRegistry.class).load();
         this.stubFactory = SpiLoader.getLoader(StubFactory.class).load();
-        this.nameService = SpiLoader.getLoader(NameServerFactory.class).load()
+        this.nameServer = SpiLoader.getLoader(NameServerFactory.class).load()
                 .createNameService(
                         NameServerConfig.builder()
                                 .connString(rpcConfig.getNameServiceURI())

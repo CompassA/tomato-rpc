@@ -1,1 +1,1 @@
-RpcCoreServiceFactory : org.tomato.study.rpc.netty.service.NettyRpcCoreServiceFactory
+netty : org.tomato.study.rpc.netty.service.NettyRpcCoreServiceFactory

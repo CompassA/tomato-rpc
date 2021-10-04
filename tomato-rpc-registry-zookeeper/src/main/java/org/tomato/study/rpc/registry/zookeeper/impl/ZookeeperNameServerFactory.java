@@ -15,9 +15,9 @@
 package org.tomato.study.rpc.registry.zookeeper.impl;
 
 import org.tomato.study.rpc.core.NameServerFactory;
-import org.tomato.study.rpc.core.base.BaseNameService;
+import org.tomato.study.rpc.core.base.BaseNameServer;
 import org.tomato.study.rpc.core.data.NameServerConfig;
-import org.tomato.study.rpc.registry.zookeeper.ZookeeperNameService;
+import org.tomato.study.rpc.registry.zookeeper.ZookeeperNameServer;
 
 /**
  * @author Tomato
@@ -26,7 +26,7 @@ import org.tomato.study.rpc.registry.zookeeper.ZookeeperNameService;
 public class ZookeeperNameServerFactory implements NameServerFactory {
 
     @Override
-    public BaseNameService createNameService(NameServerConfig config) {
-        return new ZookeeperNameService(config);
+    public BaseNameServer createNameService(NameServerConfig config) {
+        return new ZookeeperNameServer(config);
     }
 }

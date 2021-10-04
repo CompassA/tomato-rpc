@@ -44,7 +44,7 @@ public interface ServiceProvider extends Closeable {
     /**
      * refresh provider data by metaDataList
      * @param metadataSet all rpc node metadata of a provider with same vip and stage
-     * @throws IOException IOException during refresh invoker data
+     * @throws IOException IO Exception during refresh invoker data
      */
     void refresh(Set<MetaData> metadataSet) throws IOException;
 

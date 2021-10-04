@@ -14,10 +14,13 @@
 
 package org.tomato.study.rpc.core.router;
 
+import org.tomato.study.rpc.core.spi.SpiInterface;
+
 /**
  * @author Tomato
  * Created on 2021.07.10
  */
+@SpiInterface("netty-service-provider")
 public interface ServiceProviderFactory {
 
     /**

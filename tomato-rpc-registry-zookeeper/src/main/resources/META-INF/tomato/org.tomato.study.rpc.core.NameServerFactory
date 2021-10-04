@@ -1,1 +1,1 @@
-nameServerFactory : org.tomato.study.rpc.registry.zookeeper.impl.ZookeeperNameServerFactory
+zookeeper-factory : org.tomato.study.rpc.registry.zookeeper.impl.ZookeeperNameServerFactory

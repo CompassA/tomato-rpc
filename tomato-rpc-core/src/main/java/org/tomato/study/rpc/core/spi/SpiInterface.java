@@ -30,9 +30,15 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 public @interface SpiInterface {
 
-    String paramName() default "";
+    /**
+     * 配置一个SPI文件中的组件的key
+     * @return 组件的key
+     */
+    String value();
 
-    String defaultSpiValue() default "";
-
+    /**
+     * 是否是单例
+     * @return true 单例
+     */
     boolean singleton() default true;
 }

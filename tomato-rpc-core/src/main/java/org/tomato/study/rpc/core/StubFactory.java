@@ -22,7 +22,7 @@ import org.tomato.study.rpc.core.spi.SpiInterface;
  * @author Tomato
  * Created on 2021.03.31
  */
-@SpiInterface(paramName = "stubFactory")
+@SpiInterface("jdk")
 public interface StubFactory {
 
     /**
