@@ -21,12 +21,12 @@
   <Properties>
     <!-- 终端日志输出格式 -->
     <Property name="TERMINAL_PATTERN">
-      %d{yyyy-MM-dd HH:mm:ss.SSS} %highlight{-%5p} [%15.15t] %highlight{%-40.40logger{39}} : %m%n
+      %d{yyyy-MM-dd HH:mm:ss.SSS} %highlight{-%5p} [%15t] %highlight{%-40.40logger{39}} : %m%n
     </Property>
 
     <!-- 日志文件输出格式 -->
     <Property name="FILE_PATTERN">
-      %d{yyyy-MM-dd HH:mm:ss.SSS} -%5p [%15.15t] %-40.40logger{39} : %m%n
+      %d{yyyy-MM-dd HH:mm:ss.SSS} -%5p [%15t] %-40.40logger{39} : %m%n
     </Property>
 
     <!-- 日志目录 -->

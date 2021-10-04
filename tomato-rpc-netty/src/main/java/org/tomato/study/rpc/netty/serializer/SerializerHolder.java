@@ -47,13 +47,14 @@ public final class SerializerHolder {
 
     /**
      * 给所有序列化器添加包装器
-     * @param wrapper 包装器
+     * @param wrapperClazz 包装器
      */
-    public static void configWrapper(Class<? extends Serializer> wrapper) {
+    public static void configWrapper(Class<? extends Serializer> wrapperClazz) {
         try {
-            final Constructor<? extends Serializer> constructor = wrapper.getConstructor(Serializer.class);
+            final Constructor<? extends Serializer> constructor = wrapperClazz.getConstructor(Serializer.class);
             for (Serializer value : SERIALIZER_MAP.values()) {
-                SERIALIZER_MAP.put(value.serializerIndex(), constructor.newInstance(value));
+                final Serializer wrapper = constructor.newInstance(value);
+                SERIALIZER_MAP.put(wrapper.serializerIndex(), wrapper);
             }
         } catch (NoSuchMethodException | InvocationTargetException
                 | InstantiationException | IllegalAccessException e) {

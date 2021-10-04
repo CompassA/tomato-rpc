@@ -49,7 +49,7 @@ public class GzipWrapper implements Serializer {
 
     @Override
     public byte serializerIndex() {
-        return serializer.serializerIndex();
+        return (byte) (Byte.MAX_VALUE - serializer.serializerIndex());
     }
 
     @Override

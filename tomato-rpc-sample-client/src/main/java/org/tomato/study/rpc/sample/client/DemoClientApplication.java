@@ -31,6 +31,7 @@ import org.tomato.study.rpc.sample.api.data.DemoResponse;
 
 import java.util.Collections;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
 /**
@@ -71,6 +72,7 @@ public class DemoClientApplication {
                         .subscribedVIP(Collections.singletonList(Constant.serviceVIP))
                         .nameServiceURI(zkURL)
                         .port(7890)
+                        .useGzip(true)
                         .build()
                 );
         rpcCoreService.init();
@@ -117,11 +119,12 @@ public class DemoClientApplication {
         int messageNum = 1000;
         CountDownLatch mainThreadWait = new CountDownLatch(threadNum);
         CountDownLatch subThreadWait = new CountDownLatch(1);
+        String bigBody = bigBody();
         Runnable runnable = () -> {
             try {
                 subThreadWait.await();
                 for (int i = 0; i < messageNum; ++i) {
-                    DemoResponse response = stub.echo(new DemoRequest("hello world"));
+                    DemoResponse response = stub.echo(new DemoRequest(bigBody));
                 }
                 mainThreadWait.countDown();
             } catch (TomatoRpcRuntimeException e) {
@@ -149,5 +152,13 @@ public class DemoClientApplication {
         LOGGER.info(
                 "RPC perf test stopped, invoke {} times RPC cost {} s",threadNum * messageNum,
                 (end - start) / 1_000_000_000.0);
+    }
+
+    private static String bigBody() {
+        final StringBuilder builder = new StringBuilder();
+        for (int i = 0; i < 1000; ++i) {
+            builder.append(UUID.randomUUID());
+        }
+        return builder.toString();
     }
 }

@@ -135,9 +135,11 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
 
         // 配置压缩
         if (getRpcConfig().isUseGzip()) {
-            SerializerHolder.configWrapper(GzipWrapper.class);
+            // 客户端配置压缩，Gzip类替换原来的序列化类
             SpiLoader.registerWrapper(Serializer.class, GzipWrapper.class);
         }
+        // 服务端配置压缩, Gzip类与原始类共存，id不同
+        SerializerHolder.configWrapper(GzipWrapper.class);
 
         log.info("netty rpc core service initialized");
     }
