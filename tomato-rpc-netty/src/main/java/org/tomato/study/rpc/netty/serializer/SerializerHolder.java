@@ -19,6 +19,8 @@ import org.tomato.study.rpc.core.Serializer;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -52,8 +54,11 @@ public final class SerializerHolder {
     public static void configWrapper(Class<? extends Serializer> wrapperClazz) {
         try {
             final Constructor<? extends Serializer> constructor = wrapperClazz.getConstructor(Serializer.class);
+            final List<Serializer> wrapperList = new ArrayList<>(0);
             for (Serializer value : SERIALIZER_MAP.values()) {
-                final Serializer wrapper = constructor.newInstance(value);
+                wrapperList.add(constructor.newInstance(value));
+            }
+            for (Serializer wrapper : wrapperList) {
                 SERIALIZER_MAP.put(wrapper.serializerIndex(), wrapper);
             }
         } catch (NoSuchMethodException | InvocationTargetException

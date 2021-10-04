@@ -97,6 +97,7 @@ public class DemoClientApplication {
                 for (int i = 0; i < messageNum; ++i) {
                     DemoResponse response = stub.echo(new DemoRequest("hello world"));
                     LOGGER.info(response.getData());
+                    Thread.sleep(500);
                 }
                 mainThreadWait.countDown();
             } catch (TomatoRpcRuntimeException e) {
