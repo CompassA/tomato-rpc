@@ -14,6 +14,8 @@
 
 package org.tomato.study.rpc.registry.zookeeper;
 
+import org.apache.curator.framework.api.CuratorWatcher;
+
 import java.io.IOException;
 import java.util.List;
 
@@ -21,13 +23,18 @@ import java.util.List;
  * @author Tomato
  * Created on 2021.07.10
  */
-public interface ChildrenListener {
+public interface ChildrenListener extends CuratorWatcher {
 
     /**
-     * call back when path children changed
-     * @param path path subscribed
-     * @param children children of path
+     * 当目标路径发送变动时，回调当前函数
+     * @param path 被订阅的目标路径
+     * @param children 目标路径更新后的子节点
      * @throws IOException exception during children changed callback
      */
     void childrenChanged(String path, List<String> children) throws IOException;
+
+    /**
+     * 取消订阅
+     */
+    void unwatch();
 }

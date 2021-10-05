@@ -80,7 +80,7 @@ public class NettyChannelHolder {
     public NettyChannelHolder(List<ChannelHandler> responseHandlers) {
         if (CollectionUtils.isEmpty(responseHandlers)) {
             throw new TomatoRpcRuntimeException(
-                    NettyRpcErrorEnum.CORE_SERVICE_START_ERROR.create("without response handler list"));
+                    NettyRpcErrorEnum.LIFE_CYCLE_START_ERROR.create("without response handler list"));
         }
         this.channelMap = new ConcurrentHashMap<>(0);
         this.eventLoopGroup = Epoll.isAvailable()

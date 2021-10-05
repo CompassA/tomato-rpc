@@ -56,6 +56,11 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
     private final NettyRpcServer server;
 
     /**
+     * RPC 服务元数据
+     */
+    private final MetaData rpcServerMetaData;
+
+    /**
      * 管理与RPC服务端建立的所有连接
      */
     private final NettyChannelHolder channelHolder;
@@ -75,6 +80,14 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
                         .businessThreadPoolSize(rpcConfig.getBusinessThreadPoolSize())
                         .build()
         );
+        this.rpcServerMetaData = MetaData.builder()
+                .protocol(getProtocol())
+                .host(server.getHost())
+                .port(server.getPort())
+                .vip(getServiceVIP())
+                .stage(getStage())
+                .version(getVersion())
+                .build();
         this.responseHolder = new NettyResponseHolder();
         this.channelHolder = new NettyChannelHolder(
                 Lists.newArrayList(new ResponseHandler(this.responseHolder))
@@ -155,36 +168,28 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
             nameServer.start();
 
             // 将自己的元数据上报至注册中心
-            export(NetworkUtil.createURI(getProtocol(), server.getHost(), server.getPort()));
+            nameServer.registerService(rpcServerMetaData);
 
             // 订阅其余RPC服务
             nameServer.subscribe(getSubscribedVIP(), getStage());
 
         } catch (Exception e) {
-            throw new TomatoRpcException(NettyRpcErrorEnum.CORE_SERVICE_START_ERROR.create(), e);
+            throw new TomatoRpcException(NettyRpcErrorEnum.LIFE_CYCLE_START_ERROR.create(), e);
         }
         log.info("netty rpc core service started");
     }
 
     @Override
     protected void doStop() throws TomatoRpcException {
+        try {
+            getNameServer().unsubscribe(getSubscribedVIP(), getStage());
+            getNameServer().unregisterService(rpcServerMetaData);
+        } catch (Exception e) {
+            log.error("name server unregister service failed", e);
+        }
         server.stop();
         getNameServer().stop();
         channelHolder.close();
         log.info("netty rpc core service stopped");
-    }
-
-    private void export(URI rpcServerURI) throws Exception {
-        getNameServer().registerService(
-                MetaData.builder()
-                        .protocol(rpcServerURI.getScheme())
-                        .host(rpcServerURI.getHost())
-                        .port(rpcServerURI.getPort())
-                        .vip(getServiceVIP())
-                        .stage(getStage())
-                        .version(getVersion())
-                        .build()
-        );
-        log.info("rpc node URI[" + rpcServerURI + "] exported");
     }
 }

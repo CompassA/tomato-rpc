@@ -14,10 +14,12 @@
 
 package org.tomato.study.rpc.sample.server;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.RpcCoreServiceFactory;
 import org.tomato.study.rpc.core.data.RpcConfig;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.sample.api.EchoService;
 import org.tomato.study.rpc.sample.api.data.Constant;
@@ -26,6 +28,7 @@ import org.tomato.study.rpc.sample.api.data.Constant;
  * @author Tomato
  * Created on 2021.06.20
  */
+@Slf4j
 public class DemoServerApplication {
 
     public static void main(String[] args) throws Exception {
@@ -45,5 +48,13 @@ public class DemoServerApplication {
         coreService.registerProvider(new EchoServiceImpl(coreService), EchoService.class);
         coreService.init();
         coreService.start();
+
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                coreService.stop();
+            } catch (TomatoRpcException e) {
+                log.error(e.getMessage(), e);
+            }
+        }));
     }
 }

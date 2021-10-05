@@ -42,11 +42,6 @@ public abstract class BaseServiceProvider implements ServiceProvider {
      */
     private final String vip;
 
-//    /**
-//     * SPI invoker factory
-//     */
-//    private final RpcInvokerFactory invokerFactory = SpiLoader.getLoader(RpcInvokerFactory.class).load();
-
     /**
      * 一个RPC服务的所有实例节点，一个RpcInvoker持有一个与服务实例节点的连接并与其通信
      * 实例节点ip端口等元数据信息 -> 对应的Invoker
@@ -114,7 +109,8 @@ public abstract class BaseServiceProvider implements ServiceProvider {
             for (MetaData metadata : newMetadataSet) {
                 RpcInvoker rpcInvoker = invokerRegistry.computeIfAbsent(
                         metadata,
-                        metaData -> createInvoker(metaData)
+                        // 不改成方法引用形式, 便于debug
+                        metadataKey -> createInvoker(metadataKey)
                 );
                 if (rpcInvoker != null) {
                     newInvokers.add(rpcInvoker);

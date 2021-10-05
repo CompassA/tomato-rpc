@@ -22,27 +22,28 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
+ * 代表一个微服务对象
  * @author Tomato
  * Created on 2021.07.07
  */
 public interface ServiceProvider extends Closeable {
 
     /**
-     * get service vip
+     * 微服务唯一标识
      * ex. "org.study.rpc.service"
      * @return vip
      */
     String getVIP();
 
     /**
-     * lock up invoker by version
+     * 根据微服务版本找到匹配的一个微服务调用实例
      * @param version service version
      * @return invoker
      */
     Optional<RpcInvoker> lookUp(String version);
 
     /**
-     * refresh provider data by metaDataList
+     * 刷新节点信息
      * @param metadataSet all rpc node metadata of a provider with same vip and stage
      * @throws IOException IO Exception during refresh invoker data
      */

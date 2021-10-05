@@ -16,40 +16,30 @@ package org.tomato.study.rpc.registry.zookeeper.impl;
 
 import org.apache.zookeeper.WatchedEvent;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
-import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
-import org.tomato.study.rpc.core.Invocation;
-import org.tomato.study.rpc.core.Response;
-import org.tomato.study.rpc.core.Result;
 import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.router.RpcInvoker;
-import org.tomato.study.rpc.core.router.RpcInvokerFactory;
-import org.tomato.study.rpc.core.router.ServiceProvider;
-import org.tomato.study.rpc.core.router.ServiceProviderFactory;
-import org.tomato.study.rpc.core.spi.SpiLoader;
+import org.tomato.study.rpc.registry.zookeeper.CuratorClient;
 import org.tomato.study.rpc.registry.zookeeper.data.ZookeeperConfig;
 import org.tomato.study.rpc.utils.ReflectUtils;
-import org.tomato.study.rpc.zookeeper.CuratorClient;
 
-import java.io.IOException;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.powermock.api.mockito.PowerMockito.mock;
-import static org.powermock.api.mockito.PowerMockito.mockStatic;
 import static org.powermock.api.mockito.PowerMockito.spy;
 import static org.powermock.api.mockito.PowerMockito.when;
 import static org.powermock.api.mockito.PowerMockito.whenNew;
@@ -64,14 +54,13 @@ public class ListenerTest extends BaseTest {
 
     private final String mockVIP = "mock_vip";
 
-    private PathChildrenWatcher watcher;
+    private final String stage = "default";
 
     private PathChildrenListener listener;
 
     private List<MetaData> mockChildren;
 
-    @Mock
-    private ZookeeperRegistry mockRegistry;
+    private ZookeeperRegistry spyRegistry;
 
     @Mock
     private CuratorClient mockClient;
@@ -81,55 +70,49 @@ public class ListenerTest extends BaseTest {
 
     @Before
     public void init() throws Exception {
-        whenNew(CuratorClient.class).withAnyArguments().thenReturn(this.mockClient);
-        this.mockRegistry = spy(
+        whenNew(CuratorClient.class).withAnyArguments().thenReturn(mockClient);
+        spyRegistry = spy(
                 new ZookeeperRegistry(
                         ZookeeperConfig.builder()
                                 .connString("mock")
                                 .namespace("tomato")
                                 .charset(StandardCharsets.UTF_8)
-                                .build()
-                )
-        );
+                                .build()));
         ReflectUtils.reflectSet(
-                this.mockRegistry,
+                spyRegistry,
                 ZookeeperRegistry.class,
                 "curatorWrapper",
                 mock(CuratorClient.class));
-        this.listener = new PathChildrenListener(this.mockRegistry);
-        this.watcher = PathChildrenWatcher.builder()
-                .zkClient(this.mockClient)
-                .childrenListener(this.listener)
-                .build();
+        this.listener = new PathChildrenListener(spyRegistry, mockClient);
         this.mockChildren = new ArrayList<>(mockMetadataSet(mockVIP));
     }
 
     @After
     public void destroy() {
-        this.watcher = null;
         this.listener = null;
         this.mockChildren = null;
     }
 
     @Test
-    public void notifyTest() throws Exception {
-        //todo refactor
-//        when(this.mockEvent.getPath()).thenReturn("/tomato/mock_vip/stage/providers");
-//        when(this.mockClient.getChildrenAndAddWatcher(any(), any())).thenReturn(
-//                mockChildren.stream()
-//                        .map(MetaData::convert)
-//                        .filter(Optional::isPresent)
-//                        .map(Optional::get)
-//                        .map(URI::toString)
-//                        .collect(Collectors.toList())
-//        );
-//
-//        this.watcher.process(this.mockEvent);
-//        Assert.assertTrue(this.mockRegistry.lookup(mockVIP, "default").isPresent());
-//
-//        ConcurrentMap<String, ServiceProvider> providerMap = ReflectUtils.reflectGet(
-//                this.mockRegistry, ZookeeperRegistry.class, "providerMap");
-//        Assert.assertEquals(1, providerMap.values().size());
-//        checkInvokerMap(providerMap.values().iterator().next(), mockChildren);
+    public void watcherProcessTest() throws Exception {
+        // mock更新路径
+        String mockPath = "/tomato/" + mockVIP + "/" + stage + "/providers";
+        when(mockEvent.getPath()).thenReturn(mockPath);
+        // mock路径对应的孩子节点
+        Collection<URI> uriList = mockChildren.stream()
+                .map(MetaData::convert)
+                .filter(Optional::isPresent)
+                .map(Optional::get).collect(Collectors.toList());
+        List<String> children = uriList.stream()
+                .map(URI::toString)
+                .collect(Collectors.toList());
+        when(mockClient.getChildrenAndAddWatcher(any(), any())).thenReturn(children);
+
+        listener.process(this.mockEvent);
+
+        verify(spyRegistry, times(1)).notify(
+                eq(mockPath),
+                eq(uriList)
+        );
     }
 }

@@ -36,12 +36,27 @@ public interface NameServer extends LifeCycle {
     void registerService(MetaData metaData) throws Exception;
 
     /**
+     * unregister service vip
+     * @param metaData service identification、service address
+     * @throws Exception register exception
+     */
+    void unregisterService(MetaData metaData) throws Exception;
+
+    /**
      * subscribe vip
      * @param vipList vip to subscribe
      * @param stage client subscribe the provider invoker which has the same stage
      * @exception Exception subscribe exception
      */
     void subscribe(Collection<String> vipList, String stage) throws Exception;
+
+    /**
+     * unsubscribe vip
+     * @param vipList vip to unsubscribe
+     * @param stage client subscribe the provider invoker which has the same stage
+     * @exception Exception subscribe exception
+     */
+    void unsubscribe(Collection<String> vipList, String stage) throws Exception;
 
     /**
      * search service invoker

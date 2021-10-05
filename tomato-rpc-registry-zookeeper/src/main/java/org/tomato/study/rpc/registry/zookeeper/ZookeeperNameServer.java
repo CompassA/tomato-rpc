@@ -47,8 +47,18 @@ public class ZookeeperNameServer extends BaseNameServer {
     }
 
     @Override
+    public void unregisterService(MetaData metaData) throws Exception {
+        registry.unregister(metaData);
+    }
+
+    @Override
     public void subscribe(Collection<String> vipList, String stage) throws Exception {
         registry.subscribe(vipList, stage);
+    }
+
+    @Override
+    public void unsubscribe(Collection<String> vipList, String stage) throws Exception {
+        registry.unsubscribe(vipList);
     }
 
     @Override
@@ -57,7 +67,7 @@ public class ZookeeperNameServer extends BaseNameServer {
     }
 
     @Override
-    protected void doInit() throws TomatoRpcException {
+    protected synchronized void doInit() throws TomatoRpcException {
         registry = new ZookeeperRegistry(
                 ZookeeperConfig.builder()
                         .namespace(ZK_NAME_SPACE)
@@ -68,12 +78,12 @@ public class ZookeeperNameServer extends BaseNameServer {
     }
 
     @Override
-    protected void doStart() throws TomatoRpcException {
+    protected synchronized void doStart() throws TomatoRpcException {
         registry.start();
     }
 
     @Override
-    protected void doStop() throws TomatoRpcException {
+    protected synchronized void doStop() throws TomatoRpcException {
         try {
             registry.close();
         } catch (IOException e) {

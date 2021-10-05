@@ -3,7 +3,7 @@
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,7 +12,7 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.zookeeper;
+package org.tomato.study.rpc.registry.zookeeper.impl;
 
 import com.google.common.collect.Lists;
 import org.apache.curator.framework.CuratorFramework;
@@ -21,6 +21,7 @@ import org.apache.curator.framework.recipes.cache.TreeCacheEvent;
 import org.apache.curator.framework.recipes.cache.TreeCacheListener;
 import org.apache.zookeeper.data.Stat;
 import org.junit.Assert;
+import org.tomato.study.rpc.registry.zookeeper.CuratorClient;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;

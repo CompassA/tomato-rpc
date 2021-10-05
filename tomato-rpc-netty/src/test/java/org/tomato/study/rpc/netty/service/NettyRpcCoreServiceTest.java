@@ -150,7 +150,7 @@ public class NettyRpcCoreServiceTest {
         } catch (TomatoRpcException e) {
             Assert.assertEquals(
                     e.getMessage(),
-                    NettyRpcErrorEnum.CORE_SERVICE_START_ERROR.create().getMessage());
+                    NettyRpcErrorEnum.LIFE_CYCLE_START_ERROR.create().getMessage());
             return;
         }
 

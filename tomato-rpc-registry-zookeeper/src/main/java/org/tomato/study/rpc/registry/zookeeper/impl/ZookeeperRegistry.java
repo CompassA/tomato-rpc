@@ -17,15 +17,14 @@ package org.tomato.study.rpc.registry.zookeeper.impl;
 import lombok.Getter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.apache.zookeeper.KeeperException;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.router.RpcInvoker;
 import org.tomato.study.rpc.core.router.ServiceProvider;
 import org.tomato.study.rpc.core.router.ServiceProviderFactory;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.registry.zookeeper.ChildrenListener;
+import org.tomato.study.rpc.registry.zookeeper.CuratorClient;
 import org.tomato.study.rpc.registry.zookeeper.data.ZookeeperConfig;
-import org.tomato.study.rpc.zookeeper.CuratorClient;
 
 import java.io.IOException;
 import java.net.URI;
@@ -43,7 +42,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
 
 /**
- * implements service registry and service router by zookeeper
+ * 基于zookeeper实现的注册中心
  * @author Tomato
  * Created on 2021.07.07
  */
@@ -52,7 +51,7 @@ public class ZookeeperRegistry {
     private static final String PATH_DELIMITER = "/";
 
     /**
-     * provider zNode path: /namespace/vip/stage/{providers}
+     * 一个服务的所有实例的上级文件夹: /namespace/vip/stage/PROVIDER_DICTIONARY
      */
     private static final String PROVIDER_DICTIONARY = "providers";
 
@@ -62,19 +61,19 @@ public class ZookeeperRegistry {
     private final CuratorClient curatorWrapper;
 
     /**
-     * provider zNode path: /{namespace}/vip/stage/providers
+     * zookeeper注册器的根路径: /{namespace}/vip/stage/PROVIDER_DICTIONARY
      */
     @Getter
     private final String namespace;
 
     /**
-     * the charset of decode/encode
+     * zookeeper编解码
      */
     @Getter
     private final Charset zNodePathCharset;
 
     /**
-     * RPC client provider map: service vip -> provider
+     * 服务唯一标识VIP -> ServiceProvider
      */
     private final ConcurrentMap<String, ServiceProvider> providerMap = new ConcurrentHashMap<>(0);
 
@@ -82,11 +81,6 @@ public class ZookeeperRegistry {
      * provider -> children listener
      */
     private final ConcurrentMap<ServiceProvider, ChildrenListener> childrenListenerMap = new ConcurrentHashMap<>(0);
-
-    /**
-     * listener -> watcher
-     */
-    private final ConcurrentMap<ChildrenListener, PathChildrenWatcher> watcherMap = new ConcurrentHashMap<>(0);
 
     public ZookeeperRegistry(ZookeeperConfig config) {
         this.namespace = config.getNamespace();
@@ -101,8 +95,8 @@ public class ZookeeperRegistry {
     }
 
     /**
-     * export provider self to zookeeper
-     * @param metaData provider metadata
+     * 将服务ip端口暴露至zookeeper
+     * @param metaData 服务ip、端口等元数据
      * @throws Exception exceptions during register
      */
     public void register(MetaData metaData) throws Exception {
@@ -110,22 +104,17 @@ public class ZookeeperRegistry {
         if (uriOpt.isEmpty()) {
             return;
         }
+        // 路径：/namespace/vip/stage/providers/ip+port....
         String zNodePath = convertToZNodePath(
                 metaData.getVip(),
                 metaData.getStage(),
                 PROVIDER_DICTIONARY,
                 uriOpt.get().toString());
-        try {
-            curatorWrapper.createEphemeral(zNodePath);
-        } catch (KeeperException.NodeExistsException exception) {
-            // 若存在同名节点，先删除节点，再创建临时节点
-            curatorWrapper.delete(zNodePath);
-            curatorWrapper.createEphemeral(zNodePath);
-        }
+        curatorWrapper.createEphemeral(zNodePath);
     }
 
     /**
-     * delete provider metadata on the zookeeper
+     * 将服务元数据从zookeeper摘除
      * @param metaData provider metadata
      * @throws Exception exception during unregister
      */
@@ -139,13 +128,13 @@ public class ZookeeperRegistry {
                 metaData.getStage(),
                 PROVIDER_DICTIONARY,
                 uriOpt.get().toString());
-        this.curatorWrapper.delete(zNodePath);
+        curatorWrapper.delete(zNodePath);
     }
 
     /**
-     * method for PRC client to fetch RPC service metadata
-     * @param vips RPC service vip list
-     * @param stage client stage
+     * 订阅其他RPC服务
+     * @param vips 要订阅的RPC服务列表
+     * @param stage 当前服务的环境
      * @throws Exception exception during subscribe
      */
     public void subscribe(Collection<String> vips, String stage) throws Exception {
@@ -153,77 +142,65 @@ public class ZookeeperRegistry {
             return;
         }
         for (String vip : vips) {
-            // create provider
-            ServiceProvider serviceProvider = this.providerMap.computeIfAbsent(
-                    vip,
-                    vipKey -> SpiLoader.getLoader(ServiceProviderFactory.class)
-                            .load()
-                            .create(vipKey)
-            );
+            // 创建微服务对象
+            ServiceProvider serviceProvider = providerMap.computeIfAbsent(vip,
+                    // 通过SPI决定如何构建ServiceProvider对象
+                    vipKey -> SpiLoader.getLoader(ServiceProviderFactory.class).load().create(vipKey));
 
-            // create vip listener
-            ChildrenListener listener = this.childrenListenerMap.computeIfAbsent(
-                    serviceProvider,
-                    provider -> new PathChildrenListener(this)
-            );
+            // 根据固定的 /vip/stage/PROVIDER_DICTIONARY规则，计算出被订阅服务的zookeeper路径
+            String targetPath = convertToZNodePath(vip, stage, PROVIDER_DICTIONARY);
 
-            // create zk path children listener
-            PathChildrenWatcher watcher = this.watcherMap.computeIfAbsent(
-                    listener,
-                    listenerKey -> new PathChildrenWatcher(this.curatorWrapper, listener)
-            );
+            // 创建WATCHER, 监听服务节点的子节点变化，保证服务实例的更新与删除能同步当订阅方内存
+            ChildrenListener listener = childrenListenerMap.computeIfAbsent(serviceProvider,
+                    provider -> new PathChildrenListener(this, curatorWrapper));
 
-            // get metadata list of RPC provider nodes
-            List<String> children = this.curatorWrapper.getChildrenAndAddWatcher(
-                    this.convertToZNodePath(
-                            vip,
-                            stage,
-                            PROVIDER_DICTIONARY),
-                    watcher
-            );
+            // 获取目标服务的所有RPC实例节点, 并注册WATCHER
+            List<String> children = curatorWrapper.getChildrenAndAddWatcher(targetPath, listener);
             if (CollectionUtils.isEmpty(children)) {
                 continue;
             }
+
+            // 将RPC实例节点路径解码并转成Metadata形式
             final List<MetaData> metaDataList = new ArrayList<>(children.size());
             for (String child : children) {
-                String providerPathDecoded = URLDecoder.decode(child, this.zNodePathCharset);
+                String providerPathDecoded = URLDecoder.decode(child, zNodePathCharset);
                 URI providerMetadataURI = URI.create(providerPathDecoded);
                 MetaData.convert(providerMetadataURI)
+                        .filter(MetaData::isValid)
                         .ifPresent(metaDataList::add);
             }
 
-            // refresh client provider data
+            // 更新ServiceProvider的数据
             serviceProvider.refresh(new HashSet<>(metaDataList));
         }
     }
 
     /**
-     * method for RPC client to unsubscribe RPC provider
-     * @param vips vip list to unsubscribe
+     * 取消订阅RPC服务
+     * @param vips 取消订阅的RPC服务列表
      */
     public void unsubscribe(Collection<String> vips) throws IOException {
         if (CollectionUtils.isEmpty(vips)) {
             return;
         }
         for (String vip : vips) {
-            ServiceProvider provider = this.providerMap.remove(vip);
+            // 移除ServiceProvider
+            ServiceProvider provider = providerMap.remove(vip);
             if (provider == null) {
                 continue;
             }
             provider.close();
-            ChildrenListener listener = this.childrenListenerMap.remove(provider);
-            if (listener == null) {
-                continue;
-            }
-            PathChildrenWatcher watcher = this.watcherMap.remove(listener);
-            if (watcher != null) {
-                watcher.unwatch();
+
+            // 移除对应的Watcher
+            ChildrenListener listener = childrenListenerMap.remove(provider);
+            if (listener != null) {
+                listener.unwatch();
             }
         }
     }
 
     /**
-     * update provider instance data
+     * 监听的路径更新时，更新对应的ServiceProvider
      * @param path service provider path, format: /vip/{stage}/providers
      * @param children current provider node metadata
      */
@@ -231,6 +208,7 @@ public class ZookeeperRegistry {
         if (StringUtils.isBlank(path)) {
             return;
         }
+        // 解析路径，找到VIP
         String[] split = path.split(PATH_DELIMITER);
         if (split.length == 0) {
             return;
@@ -246,17 +224,18 @@ public class ZookeeperRegistry {
             return;
         }
 
-        this.providerMap.computeIfAbsent(
-                vip,
-                vipKey -> SpiLoader.getLoader(ServiceProviderFactory.class)
-                        .load()
-                        .create(vipKey)
-        ).refresh(CollectionUtils.isEmpty(children) ? Collections.emptySet() :
-                children.stream()
-                        .map(MetaData::convert)
-                        .filter(Optional::isPresent)
-                        .map(Optional::get)
-                        .collect(Collectors.toSet())
+        // 获取Provider对象并刷新节点数据, 若Provider不存在，说明已经取消订阅
+        ServiceProvider serviceProvider = providerMap.get(vip);
+        if (serviceProvider == null) {
+            return;
+        }
+        serviceProvider.refresh(
+                CollectionUtils.isEmpty(children) ? Collections.emptySet() :
+                        children.stream()
+                                .map(MetaData::convert)
+                                .filter(Optional::isPresent)
+                                .map(Optional::get)
+                                .collect(Collectors.toSet())
         );
     }
 
@@ -264,15 +243,20 @@ public class ZookeeperRegistry {
         if (StringUtils.isBlank(serviceVip) || StringUtils.isBlank(version)) {
             return Optional.empty();
         }
-        return Optional.ofNullable(this.providerMap.get(serviceVip))
+        return Optional.ofNullable(providerMap.get(serviceVip))
                 .flatMap(provider -> provider.lookUp(version));
     }
 
     public synchronized void close() throws IOException {
-        this.curatorWrapper.close();
-        this.unsubscribe(this.providerMap.keySet());
+        unsubscribe(providerMap.keySet());
+        curatorWrapper.close();
     }
 
+    /**
+     * 将传入的字符串拼接成路径
+     * @param parts 多个字符串
+     * @return zookeeper路径
+     */
     private String convertToZNodePath(String... parts) {
         if (parts == null || parts.length == 0) {
             return StringUtils.EMPTY;

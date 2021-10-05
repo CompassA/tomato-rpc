@@ -26,7 +26,9 @@ public enum NettyRpcErrorEnum {
 
     CORE_SERVICE_REGISTER_PROVIDER_ERROR(10000, "register provider parameter error"),
     CORE_SERVICE_STUB_CREATE_ERROR(10001, "create stub parameter error"),
-    CORE_SERVICE_START_ERROR(10002, "start rpc core service error"),
+    LIFE_CYCLE_START_ERROR(10002, "start rpc core service error"),
+    LIFE_CYCLE_STOP_ERROR(10003, "stop rpc core service error"),
+    LIFE_CYCLE_INIT_ERROR(10004, "init rpc core service error"),
 
     NETTY_REQUEST_HANDLE_ERROR(20001, "rpc server handler request error"),
     NETTY_HANDLER_PROVIDER_NOT_FOUND(20002, "provider interface not found"),

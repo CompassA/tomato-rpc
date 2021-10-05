@@ -77,11 +77,6 @@ public class NettyRpcServer extends BaseRpcServer {
     private ServerBootstrap serverBootstrap;
 
     /**
-     * server socket channel
-     */
-    private Channel channel;
-
-    /**
      * 业务线程池
      */
     private EventExecutorGroup businessGroup;
@@ -112,7 +107,7 @@ public class NettyRpcServer extends BaseRpcServer {
         if (isUseBusinessPool()) {
             this.businessGroup = new UnorderedThreadPoolEventExecutor(
                     getBusinessPoolSize(),
-                    new DefaultThreadFactory(BOSS_GROUP_THREAD_NAME)
+                    new DefaultThreadFactory(BUSINESS_GROUP_THREAD_NAME)
             );
         }
         this.metricHolder = new MetricHolder();
@@ -148,13 +143,11 @@ public class NettyRpcServer extends BaseRpcServer {
     @Override
     protected synchronized void doStart() throws TomatoRpcException {
         try {
-            channel = serverBootstrap.bind(getPort())
-                    .sync()
-                    .channel();
+            serverBootstrap.bind(getPort()).sync();
             metricHolder.startConsoleReporter(10, TimeUnit.SECONDS);
             metricHolder.startJmxReporter();
         } catch (InterruptedException exception) {
-            throw new TomatoRpcException(NettyRpcErrorEnum.CORE_SERVICE_START_ERROR.create(
+            throw new TomatoRpcException(NettyRpcErrorEnum.LIFE_CYCLE_START_ERROR.create(
                     "thread was interrupted when bind"),
                     exception
             );
@@ -165,7 +158,6 @@ public class NettyRpcServer extends BaseRpcServer {
     protected synchronized void doStop() throws TomatoRpcException {
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
-        channel.close();
         metricHolder.stop();
         if (businessGroup != null) {
             businessGroup.shutdownGracefully();

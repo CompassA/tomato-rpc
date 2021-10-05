@@ -27,15 +27,25 @@ import static org.tomato.study.rpc.netty.invoker.NettyRpcInvokerFactory.CHANNEL_
 import static org.tomato.study.rpc.netty.invoker.NettyRpcInvokerFactory.RESPONSE_HOLDER_PARAM_KEY;
 
 /**
+ * 提供基于Netty创建Invoker的方法
  * @author Tomato
  * Created on 2021.10.02
  */
 public class NettyServiceProvider extends BaseServiceProvider {
 
+    /**
+     * invoker创建
+     */
     private final RpcInvokerFactory nettyRpcInvokerFactory = new NettyRpcInvokerFactory();
 
+    /**
+     * 连接管理
+     */
     private final NettyChannelHolder channelHolder;
 
+    /**
+     * 响应管理
+     */
     private final NettyResponseHolder responseHolder;
 
     public NettyServiceProvider(String vip,
