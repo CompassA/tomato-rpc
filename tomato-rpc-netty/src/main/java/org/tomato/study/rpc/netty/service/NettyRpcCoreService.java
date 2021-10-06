@@ -27,14 +27,15 @@ import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.router.ServiceProviderFactory;
 import org.tomato.study.rpc.core.spi.SpiLoader;
-import org.tomato.study.rpc.netty.client.NettyChannelHolder;
-import org.tomato.study.rpc.netty.client.NettyResponseHolder;
+import org.tomato.study.rpc.netty.transport.client.NettyChannelHolder;
+import org.tomato.study.rpc.netty.transport.client.NettyResponseHolder;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
-import org.tomato.study.rpc.netty.handler.ResponseHandler;
+import org.tomato.study.rpc.netty.transport.handler.KeepAliveHandler;
+import org.tomato.study.rpc.netty.transport.handler.ResponseHandler;
 import org.tomato.study.rpc.netty.router.NettyServiceProviderFactory;
 import org.tomato.study.rpc.netty.serializer.GzipWrapper;
 import org.tomato.study.rpc.netty.serializer.SerializerHolder;
-import org.tomato.study.rpc.netty.server.NettyRpcServer;
+import org.tomato.study.rpc.netty.transport.server.NettyRpcServer;
 import org.tomato.study.rpc.utils.NetworkUtil;
 
 import java.net.URI;
@@ -72,14 +73,15 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
 
     public NettyRpcCoreService(RpcConfig rpcConfig) {
         super(rpcConfig);
-        this.server = new NettyRpcServer(
-                RpcServerConfig.builder()
-                        .host(NetworkUtil.getLocalHost())
-                        .port(getPort())
-                        .useBusinessThreadPool(rpcConfig.getBusinessThreadPoolSize() > 1)
-                        .businessThreadPoolSize(rpcConfig.getBusinessThreadPoolSize())
-                        .build()
-        );
+        RpcServerConfig rpcServerConfig = RpcServerConfig.builder()
+                .host(NetworkUtil.getLocalHost())
+                .port(getPort())
+                .useBusinessThreadPool(rpcConfig.getBusinessThreadPoolSize() > 1)
+                .businessThreadPoolSize(rpcConfig.getBusinessThreadPoolSize())
+                .clientKeepAliveMilliseconds(rpcConfig.getClientKeepAliveMilliseconds())
+                .serverReadIdleCheckMilliseconds(rpcConfig.getServerIdleCheckMilliseconds())
+                .build();
+        this.server = new NettyRpcServer(rpcServerConfig);
         this.rpcServerMetaData = MetaData.builder()
                 .protocol(getProtocol())
                 .host(server.getHost())
@@ -90,7 +92,10 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
                 .build();
         this.responseHolder = new NettyResponseHolder();
         this.channelHolder = new NettyChannelHolder(
-                Lists.newArrayList(new ResponseHandler(this.responseHolder))
+                rpcServerConfig.getClientKeepAliveMilliseconds(),
+                Lists.newArrayList(
+                        new KeepAliveHandler(),
+                        new ResponseHandler(this.responseHolder))
         );
     }
 

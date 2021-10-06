@@ -12,7 +12,7 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.netty.client;
+package org.tomato.study.rpc.netty.transport.client;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -31,10 +31,11 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import org.apache.commons.collections4.CollectionUtils;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
-import org.tomato.study.rpc.netty.codec.netty.NettyFrameDecoder;
-import org.tomato.study.rpc.netty.codec.netty.NettyFrameEncoder;
-import org.tomato.study.rpc.netty.codec.netty.NettyProtoDecoder;
+import org.tomato.study.rpc.netty.codec.NettyFrameDecoder;
+import org.tomato.study.rpc.netty.codec.NettyFrameEncoder;
+import org.tomato.study.rpc.netty.codec.NettyProtoDecoder;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
+import org.tomato.study.rpc.netty.transport.handler.ClientIdleCheckHandler;
 
 import java.net.URI;
 import java.util.List;
@@ -44,7 +45,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * manage all connections between client and service
+ * 管理客户端的所有连接
  * @author Tomato
  * Created on 2021.04.08
  */
@@ -53,31 +54,31 @@ public class NettyChannelHolder {
     private static final String RPC_CLIENT_THREAD_NAME = "rpc-client-worker-thread";
 
     /**
-     * connection timeout, time unit: ms
+     * 连接超时时间
      */
     private static final long CONNECTION_TIMEOUT = 10000;
 
     /**
-     * is channel holder closed
+     * 关闭标志位
      */
     public boolean close = false;
 
     /**
-     * serviceURI -> service connection info
+     * 服务节点URI -> 连接数据
      */
     private final ConcurrentMap<URI, ChannelWrapper> channelMap;
 
     /**
-     * client event loop
+     * 客户端循环
      */
     private final EventLoopGroup eventLoopGroup;
 
     /**
-     * netty client bootstrap
+     * 客户端启动类
      */
     private final Bootstrap bootstrap;
 
-    public NettyChannelHolder(List<ChannelHandler> responseHandlers) {
+    public NettyChannelHolder(long keepAliveMilliseconds, List<ChannelHandler> responseHandlers) {
         if (CollectionUtils.isEmpty(responseHandlers)) {
             throw new TomatoRpcRuntimeException(
                     NettyRpcErrorEnum.LIFE_CYCLE_START_ERROR.create("without response handler list"));
@@ -95,6 +96,7 @@ public class NettyChannelHolder {
                     @Override
                     protected void initChannel(Channel channel) throws Exception {
                         ChannelPipeline channelPipeline = channel.pipeline();
+                        channelPipeline.addLast("client-idle-checker", new ClientIdleCheckHandler(keepAliveMilliseconds));
                         channelPipeline.addLast("frame-decoder", new NettyFrameDecoder());
                         channelPipeline.addLast("proto-decoder", new NettyProtoDecoder());
                         channelPipeline.addLast("frame-encoder", new NettyFrameEncoder());
@@ -110,17 +112,18 @@ public class NettyChannelHolder {
     }
 
     /**
-     * get the connection with the service provider by serviceVip,
-     * if the connection is not established, create a new channel
-     * @param uri service provider vip
-     * @return netty channel
-     * @throws Exception any exception during service discovery and connection register.
+     * 根据服务节点URI得到连接, 若连接未建立, 先建立连接
+     * @param uri 一个服务节点的IP、端口等信息
+     * @return 连接包装类
+     * @throws InterruptedException 创建连接等待过程中线程被中断
+     * @throws TimeoutException 创建连接等待超时
      */
-    public ChannelWrapper getChannelWrapper(URI uri) throws Exception {
+    public ChannelWrapper getOrCreateChannelWrapper(URI uri) throws InterruptedException, TimeoutException {
         ChannelWrapper channelWrapper = channelMap.get(uri);
         if (channelWrapper == null) {
             synchronized (NettyChannelHolder.class) {
                 channelWrapper = channelMap.get(uri);
+                // 当未连接或者连接已经被关闭了，重新建立连接
                 if (channelWrapper == null || !channelWrapper.isActiveChannel()) {
                     channelWrapper = createChannel(uri);
                     channelMap.put(uri, channelWrapper);
@@ -141,8 +144,7 @@ public class NettyChannelHolder {
             throws InterruptedException, TimeoutException {
         ChannelFuture connectFuture = bootstrap.connect(
                 serverNodeURI.getHost(),
-                serverNodeURI.getPort()
-        );
+                serverNodeURI.getPort());
         if (!connectFuture.await(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)) {
             throw new TimeoutException("netty connect timeout");
         }

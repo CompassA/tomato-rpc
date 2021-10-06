@@ -47,7 +47,7 @@ import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.proxy.JdkStubFactory;
-import org.tomato.study.rpc.netty.server.NettyRpcServer;
+import org.tomato.study.rpc.netty.transport.server.NettyRpcServer;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -102,7 +102,7 @@ public class NettyRpcCoreServiceTest {
                 .serviceVIP("org.tomato.study.rpc.netty.service.NettyRpcCoreServiceTest")
                 .port(1234)
                 .build();
-        nettyRpcCoreService = new NettyRpcCoreService(rpcConfig);
+        nettyRpcCoreService = (NettyRpcCoreService) new NettyRpcCoreServiceFactory().create(rpcConfig);
     }
 
     /**

@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
+ * 创建数据帧
  * @author Tomato
  * Created on 2021.04.03
  */
@@ -39,14 +40,16 @@ public final class CommandFactory {
      * @return request command
      */
     public static <T> Command request(T requestData,
-                               Serializer serializer,
-                               CommandType type) {
-        byte[] body = serializer.serialize(requestData);
-        return Command.builder()
-                .header(createHeader(null, type, serializer, 0, body.length))
-                .extension(new byte[0])
-                .body(body)
-                .build();
+                                      Serializer serializer,
+                                      CommandType type) {
+        Command.CommandBuilder commandBuilder = Command.builder();
+        if (requestData != null) {
+            byte[] body = serializer.serialize(requestData);
+            commandBuilder.header(createHeader(null, type, serializer, 0, body.length)).body(body);
+        } else {
+            commandBuilder.header(createHeader(null, type, serializer, 0, 0));
+        }
+        return commandBuilder.build();
     }
 
     /**
@@ -59,9 +62,9 @@ public final class CommandFactory {
      * @return request data
      */
     public static <T> Command request(T requestData,
-                               List<Parameter> parameters,
-                               Serializer serializer,
-                               CommandType type) {
+                                      List<Parameter> parameters,
+                                      Serializer serializer,
+                                      CommandType type) {
         byte[] extension = serializer.serializeList(parameters, Parameter.class);
         byte[] body = serializer.serialize(requestData);
         return Command.builder()
@@ -81,22 +84,27 @@ public final class CommandFactory {
      * @return response command
      */
     public static <T> Command response(long requestId,
-                                T responseData,
-                                Serializer serializer,
-                                CommandType type) {
+                                       T responseData,
+                                       Serializer serializer,
+                                       CommandType type) {
+        if (responseData == null) {
+            return Command.builder()
+                    .header(createHeader(requestId, type, serializer, 0, 0))
+                    .build();
+        }
+
         byte[] body = serializer.serialize(responseData);
         return Command.builder()
                 .header(createHeader(requestId, type, serializer, 0, body.length))
-                .extension(new byte[0])
                 .body(body)
                 .build();
     }
 
     private static Header createHeader(Long id,
-                                CommandType type,
-                                Serializer serializer,
-                                int extensionLength,
-                                int bodyLength) {
+                                       CommandType type,
+                                       Serializer serializer,
+                                       int extensionLength,
+                                       int bodyLength) {
         return Header.builder()
                 .magicNumber(ProtoConstants.MAGIC_NUMBER)
                 .version(ProtoConstants.CURRENT_VERSION)

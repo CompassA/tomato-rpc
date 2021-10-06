@@ -18,7 +18,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToByteEncoder;
 import org.tomato.study.rpc.core.data.Command;
-import org.tomato.study.rpc.netty.utils.CommandUtil;
 
 /**
  * @author Tomato
@@ -30,6 +29,6 @@ public class RawFrameEncoder extends MessageToByteEncoder<Command> {
     protected void encode(ChannelHandlerContext ctx,
                           Command command,
                           ByteBuf byteBuf) throws Exception {
-        CommandUtil.encode(command, byteBuf);
+        NettyCommandCodec.encode(command, byteBuf);
     }
 }

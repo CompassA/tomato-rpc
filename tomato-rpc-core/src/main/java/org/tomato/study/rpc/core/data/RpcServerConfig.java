@@ -46,6 +46,16 @@ public class RpcServerConfig {
      */
     private final int businessThreadPoolSize;
 
+    /**
+     * 读空闲检测
+     */
+    private final long serverReadIdleCheckMilliseconds;
+
+    /**
+     * 心跳检测，在客户端的一个连接无写操作超过一定时间后发送心跳
+     */
+    private final long clientKeepAliveMilliseconds;
+
     public static Builder builder() {
         return new Builder();
     }
@@ -55,6 +65,8 @@ public class RpcServerConfig {
         private int port = 9090;
         private boolean useBusinessThreadPool = false;
         private int businessThreadPoolSize = 0;
+        private long serverReadIdleCheckMilliseconds = 600000;
+        private long clientKeepAliveMilliseconds = serverReadIdleCheckMilliseconds / 3;
 
         public Builder host(String host) {
             this.host = host;
@@ -76,12 +88,24 @@ public class RpcServerConfig {
             return this;
         }
 
+        public Builder serverReadIdleCheckMilliseconds(long serverReadIdleCheckMilliseconds) {
+            this.serverReadIdleCheckMilliseconds = serverReadIdleCheckMilliseconds;
+            return this;
+        }
+
+        public Builder clientKeepAliveMilliseconds(long clientKeepAliveMilliseconds) {
+            this.clientKeepAliveMilliseconds = clientKeepAliveMilliseconds;
+            return this;
+        }
+
         public RpcServerConfig build() {
             return new RpcServerConfig(
                     host,
                     port,
                     useBusinessThreadPool,
-                    businessThreadPoolSize
+                    businessThreadPoolSize,
+                    serverReadIdleCheckMilliseconds,
+                    clientKeepAliveMilliseconds
             );
         }
     }

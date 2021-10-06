@@ -3,7 +3,7 @@
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,7 +12,7 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.netty.server;
+package org.tomato.study.rpc.netty.transport.server;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -34,12 +34,13 @@ import org.tomato.study.rpc.core.base.BaseRpcServer;
 import org.tomato.study.rpc.core.data.RpcServerConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.observer.LifeCycle;
-import org.tomato.study.rpc.netty.codec.netty.NettyFrameDecoder;
-import org.tomato.study.rpc.netty.codec.netty.NettyFrameEncoder;
-import org.tomato.study.rpc.netty.codec.netty.NettyProtoDecoder;
+import org.tomato.study.rpc.netty.codec.NettyFrameDecoder;
+import org.tomato.study.rpc.netty.codec.NettyFrameEncoder;
+import org.tomato.study.rpc.netty.codec.NettyProtoDecoder;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
-import org.tomato.study.rpc.netty.handler.DispatcherHandler;
-import org.tomato.study.rpc.netty.handler.MetricHandler;
+import org.tomato.study.rpc.netty.transport.handler.MetricHandler;
+import org.tomato.study.rpc.netty.transport.handler.DispatcherHandler;
+import org.tomato.study.rpc.netty.transport.handler.ServerIdleCheckHandler;
 import org.tomato.study.rpc.utils.MetricHolder;
 
 import java.util.concurrent.TimeUnit;
@@ -123,7 +124,8 @@ public class NettyRpcServer extends BaseRpcServer {
                     @Override
                     protected void initChannel(Channel ch) throws Exception {
                         ChannelPipeline pipeline = ch.pipeline();
-                        pipeline.addLast("frame-decoder",new NettyFrameDecoder());
+                        pipeline.addLast("idle-checker", new ServerIdleCheckHandler(getReadIdleCheckMilliseconds()));
+                        pipeline.addLast("frame-decoder", new NettyFrameDecoder());
                         pipeline.addLast("proto-decoder", new NettyProtoDecoder());
                         pipeline.addLast("frame-encoder", new NettyFrameEncoder());
                         pipeline.addLast("metric-handler", NettyRpcServer.this.metricHandler);

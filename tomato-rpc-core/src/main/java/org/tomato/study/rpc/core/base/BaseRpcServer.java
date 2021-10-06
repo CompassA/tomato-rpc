@@ -33,11 +33,18 @@ public abstract class BaseRpcServer extends BaseLifeCycleComponent implements Rp
     @Getter
     private final int businessPoolSize;
 
+    /**
+     * 空闲连接检测时间
+     */
+    @Getter
+    private final long readIdleCheckMilliseconds;
+
     public BaseRpcServer(RpcServerConfig rpcServerConfig) {
         this.host = rpcServerConfig.getHost();
         this.port = rpcServerConfig.getPort();
         this.useBusinessPool = rpcServerConfig.isUseBusinessThreadPool();
         this.businessPoolSize = rpcServerConfig.getBusinessThreadPoolSize();
+        this.readIdleCheckMilliseconds = rpcServerConfig.getServerReadIdleCheckMilliseconds();
     }
 
     @Override

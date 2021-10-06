@@ -12,7 +12,7 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.netty.codec.netty;
+package org.tomato.study.rpc.netty.codec;
 
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 

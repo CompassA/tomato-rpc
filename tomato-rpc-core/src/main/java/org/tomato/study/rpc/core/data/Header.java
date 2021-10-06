@@ -67,7 +67,7 @@ public class Header {
     private byte serializeType;
 
     /**
-     * message id, each command sent by one server/client will have an unique id
+     * message id, each command sent by a client will have a unique id
      */
     private long id;
 

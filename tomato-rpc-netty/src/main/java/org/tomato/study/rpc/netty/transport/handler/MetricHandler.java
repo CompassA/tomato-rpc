@@ -12,7 +12,7 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.netty.handler;
+package org.tomato.study.rpc.netty.transport.handler;
 
 import com.codahale.metrics.Gauge;
 import io.netty.channel.ChannelDuplexHandler;

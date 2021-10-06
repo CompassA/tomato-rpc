@@ -38,6 +38,8 @@ public enum NettyRpcErrorEnum {
     STUB_INVOKER_RPC_ERROR(30002, "client rpc failed"),
 
     MODEL_DTO_CONVERT_ERROR(40001, "rpc request convert error"),
+    CODEC_DECODE_ERROR(40002, "rpc frame decode error"),
+    CODEC_ENCODE_ERROR(40003, "rpc frame encode error"),
     ;
 
     private int code;

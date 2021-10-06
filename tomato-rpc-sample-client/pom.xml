@@ -40,6 +40,12 @@
             <groupId>org.tomato.study.rpc</groupId>
             <artifactId>tomato-rpc-sample-api</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
 
     <build>

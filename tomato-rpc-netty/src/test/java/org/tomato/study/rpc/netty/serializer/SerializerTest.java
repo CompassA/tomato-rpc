@@ -24,7 +24,7 @@ import org.tomato.study.rpc.core.data.CommandType;
 import org.tomato.study.rpc.core.data.Parameter;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.netty.data.RpcRequestDTO;
-import org.tomato.study.rpc.netty.utils.CommandUtil;
+import org.tomato.study.rpc.netty.codec.NettyCommandCodec;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -58,7 +58,7 @@ public class SerializerTest {
                 .build();
         Command mockCommand = CommandFactory.request(
                 rpcRequest, list, SerializerHolder.getSerializer((byte) 0), CommandType.RPC_REQUEST);
-        CommandModel<RpcRequestDTO> commandModel = CommandUtil.toModel(mockCommand, RpcRequestDTO.class);
+        CommandModel<RpcRequestDTO> commandModel = NettyCommandCodec.toModel(mockCommand, RpcRequestDTO.class);
         Assert.assertNotNull(commandModel);
         Assert.assertEquals(2, commandModel.getExtension().size());
         for (int i = 0; i < commandModel.getBody().getArgs().length; i++) {
@@ -94,7 +94,7 @@ public class SerializerTest {
 
         Command mockCommand = CommandFactory.request(
                 rpcRequest, list, SerializerHolder.getSerializer((byte) 1), CommandType.RPC_REQUEST);
-        CommandModel<RpcRequestDTO> commandModel = CommandUtil.toModel(mockCommand, RpcRequestDTO.class);
+        CommandModel<RpcRequestDTO> commandModel = NettyCommandCodec.toModel(mockCommand, RpcRequestDTO.class);
         Assert.assertNotNull(commandModel);
         Assert.assertEquals(2, commandModel.getExtension().size());
         for (int i = 0; i < commandModel.getBody().getArgs().length; i++) {

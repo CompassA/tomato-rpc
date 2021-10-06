@@ -3,7 +3,7 @@
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,7 +12,7 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.netty.codec.netty;
+package org.tomato.study.rpc.netty.codec;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
@@ -30,7 +30,6 @@ import org.junit.Test;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.Header;
 import org.tomato.study.rpc.netty.TestCommonUtil;
-import org.tomato.study.rpc.netty.utils.CommandUtil;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -89,7 +88,7 @@ public class NettyCodecTest {
                     if (listener.isSuccess()) {
                         Command command = TestCommonUtil.mockCommand();
                         ByteBuf buffer = ByteBufAllocator.DEFAULT.buffer();
-                        CommandUtil.encode(command, buffer);
+                        NettyCommandCodec.encode(command, buffer);
                         listener.channel().writeAndFlush(buffer);
                     }
                 });

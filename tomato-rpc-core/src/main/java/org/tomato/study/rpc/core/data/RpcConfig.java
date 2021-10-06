@@ -74,6 +74,16 @@ public class RpcConfig {
      */
     private final boolean useGzip;
 
+    /**
+     * 服务端空闲检测频率, 单位ms
+     */
+    private final long serverIdleCheckMilliseconds;
+
+    /**
+     * 客户端心跳发送频率, 单位ms
+     */
+    private final long clientKeepAliveMilliseconds;
+
     public static Builder builder() {
         return new Builder();
     }
@@ -88,6 +98,8 @@ public class RpcConfig {
         private int port = 9090;
         private int businessThreadPoolSize = 0;
         private boolean useGzip = false;
+        private long serverIdleCheckMilliseconds = 600000;
+        private long clientKeepAliveMilliseconds = serverIdleCheckMilliseconds / 3;
 
         public Builder protocol(String protocol) {
             this.protocol = protocol;
@@ -134,6 +146,16 @@ public class RpcConfig {
             return this;
         }
 
+        public Builder serverIdleCheckMilliseconds(long serverIdleCheckMilliseconds) {
+            this.serverIdleCheckMilliseconds = serverIdleCheckMilliseconds;
+            return this;
+        }
+
+        public Builder clientKeepAliveMilliseconds(long clientKeepAliveMilliseconds) {
+            this.clientKeepAliveMilliseconds = clientKeepAliveMilliseconds;
+            return this;
+        }
+
         public RpcConfig build() {
             return new RpcConfig(
                     this.protocol,
@@ -144,7 +166,9 @@ public class RpcConfig {
                     this.nameServiceURI,
                     this.port,
                     this.businessThreadPoolSize,
-                    this.useGzip
+                    this.useGzip,
+                    this.serverIdleCheckMilliseconds,
+                    this.clientKeepAliveMilliseconds
             );
         }
     }

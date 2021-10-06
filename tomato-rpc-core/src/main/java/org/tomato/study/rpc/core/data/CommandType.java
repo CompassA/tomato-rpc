@@ -37,6 +37,16 @@ public enum CommandType {
      * RPC server response
      */
     RPC_RESPONSE((short) 2),
+
+    /**
+     * keep alive request
+     */
+    KEEP_ALIVE_REQUEST((short) 3),
+
+    /**
+     * keep alive response
+     */
+    KEEP_ALIVE_RESPONSE((short) 4),
     ;
 
     private final short id;

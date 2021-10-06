@@ -3,7 +3,7 @@
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,14 +12,16 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.netty.handler;
+package org.tomato.study.rpc.netty.transport.handler;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.data.Command;
-import org.tomato.study.rpc.netty.client.NettyResponseHolder;
+import org.tomato.study.rpc.core.data.CommandType;
+import org.tomato.study.rpc.core.data.Header;
+import org.tomato.study.rpc.netty.transport.client.NettyResponseHolder;
 
 /**
  * 处理RPC服务端的响应数据
@@ -41,12 +43,29 @@ public class ResponseHandler extends SimpleChannelInboundHandler<Command> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Command msg) throws Exception {
-        if (msg.getHeader() == null) {
+        Header header = msg.getHeader();
+        if (header == null) {
             throw new IllegalStateException("no header data");
         }
+        CommandType type = CommandType.value(header.getMessageType());
+        switch (type) {
+            case RPC_RESPONSE:
+                handleRpcResponse(msg, header);
+                break;
+            case KEEP_ALIVE_RESPONSE:
+                handleKeepAliveResponse(msg, header);
+                break;
+            default:
+                log.warn("received unknown command type: {}", type);
+        }
 
+
+
+    }
+
+    private void handleRpcResponse(Command msg, Header header) {
         // 根据消息id拿到对应的future
-        long id = msg.getHeader().getId();
+        long id = header.getId();
         try {
             // 将结果注入future使客户端停止等待
             responseHolder.getAndRemove(id)
@@ -57,6 +76,11 @@ public class ResponseHandler extends SimpleChannelInboundHandler<Command> {
                     .ifPresent(nettyResponse -> nettyResponse.completeExceptionally(exception));
             throw exception;
         }
+    }
+
+    private void handleKeepAliveResponse(Command msg, Header header) {
+        // do nothing
+        log.info("keep alive response received");
     }
 
     @Override
