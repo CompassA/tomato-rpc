@@ -26,7 +26,7 @@ import java.util.Set;
  * @author Tomato
  * Created on 2021.07.07
  */
-public interface ServiceProvider extends Closeable {
+public interface MicroServiceSpace extends Closeable {
 
     /**
      * 微服务唯一标识

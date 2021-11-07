@@ -14,7 +14,7 @@
 
 package org.tomato.study.rpc.netty.router;
 
-import org.tomato.study.rpc.core.router.ServiceProvider;
+import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.core.router.ServiceProviderFactory;
 import org.tomato.study.rpc.netty.transport.client.NettyChannelHolder;
 import org.tomato.study.rpc.netty.transport.client.NettyResponseHolder;
@@ -36,7 +36,7 @@ public class NettyServiceProviderFactory implements ServiceProviderFactory {
     }
 
     @Override
-    public ServiceProvider create(String vip) {
-        return new NettyServiceProvider(vip, channelHolder, responseHolder);
+    public MicroServiceSpace create(String vip) {
+        return new NettyMicroServiceSpace(vip, channelHolder, responseHolder);
     }
 }

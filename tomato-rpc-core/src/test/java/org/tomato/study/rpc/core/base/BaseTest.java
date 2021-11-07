@@ -15,10 +15,9 @@
 package org.tomato.study.rpc.core.base;
 
 import org.junit.Assert;
-import org.tomato.study.rpc.core.base.BaseServiceProvider;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.router.RpcInvoker;
-import org.tomato.study.rpc.core.router.ServiceProvider;
+import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.utils.ReflectUtils;
 
 import java.util.Collection;
@@ -35,11 +34,11 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class BaseTest {
 
-    protected void checkInvokerMap(ServiceProvider serviceProvider, Collection<MetaData> mataDataSet) {
+    protected void checkInvokerMap(MicroServiceSpace serviceProvider, Collection<MetaData> mataDataSet) {
         ConcurrentMap<MetaData, RpcInvoker> invokerRegistry = ReflectUtils.reflectGet(
-                serviceProvider, BaseServiceProvider.class, "invokerRegistry");
+                serviceProvider, BaseMicroServiceSpace.class, "invokerRegistry");
         ConcurrentMap<String, List<RpcInvoker>> invokerMap = ReflectUtils.reflectGet(
-                serviceProvider, BaseServiceProvider.class, "sameVersionInvokerMap");
+                serviceProvider, BaseMicroServiceSpace.class, "sameVersionInvokerMap");
 
         Assert.assertEquals(invokerRegistry.values().size(), mataDataSet.size());
 

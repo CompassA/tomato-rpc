@@ -52,7 +52,7 @@ public class ApiConfig<T> {
         }
         return Optional.of(
                 new ApiConfig<>(
-                        apiInfo.serviceVIP(),
+                        apiInfo.microServiceID(),
                         api
                 )
         );

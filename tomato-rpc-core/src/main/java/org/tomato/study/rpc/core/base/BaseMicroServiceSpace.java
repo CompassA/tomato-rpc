@@ -17,7 +17,7 @@ package org.tomato.study.rpc.core.base;
 import org.apache.commons.collections4.CollectionUtils;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.router.RpcInvoker;
-import org.tomato.study.rpc.core.router.ServiceProvider;
+import org.tomato.study.rpc.core.router.MicroServiceSpace;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentMap;
  * @author Tomato
  * Created on 2021.07.10
  */
-public abstract class BaseServiceProvider implements ServiceProvider {
+public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
 
     /**
      * 服务唯一标识 {@link MetaData#getVip()}
@@ -54,7 +54,7 @@ public abstract class BaseServiceProvider implements ServiceProvider {
      */
     private final ConcurrentMap<String, List<RpcInvoker>> sameVersionInvokerMap = new ConcurrentHashMap<>(0);
 
-    public BaseServiceProvider(String vip) {
+    public BaseMicroServiceSpace(String vip) {
         this.vip = vip;
     }
 

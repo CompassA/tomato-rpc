@@ -29,7 +29,7 @@ import org.tomato.study.rpc.core.Response;
 import org.tomato.study.rpc.core.Result;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.router.RpcInvoker;
-import org.tomato.study.rpc.core.router.ServiceProvider;
+import org.tomato.study.rpc.core.router.MicroServiceSpace;
 
 import java.io.IOException;
 import java.util.Collections;
@@ -48,7 +48,7 @@ public class BaseServiceProviderTest extends BaseTest {
 
     private Set<MetaData> originMataDataSet;
 
-    private final ServiceProvider provider = Mockito.spy(new TestServiceProvider(mockVIP));
+    private final MicroServiceSpace provider = Mockito.spy(new TestServiceProvider(mockVIP));
 
     @Before
     public void init() {
@@ -117,7 +117,7 @@ public class BaseServiceProviderTest extends BaseTest {
         Assert.assertTrue(provider.lookUp("default").isPresent());
     }
 
-    public static class TestServiceProvider extends BaseServiceProvider {
+    public static class TestServiceProvider extends BaseMicroServiceSpace {
 
         public TestServiceProvider(String vip) {
             super(vip);

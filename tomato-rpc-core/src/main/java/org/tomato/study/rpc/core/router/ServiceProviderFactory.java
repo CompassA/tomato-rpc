@@ -28,5 +28,5 @@ public interface ServiceProviderFactory {
      * @param vip provider vip
      * @return service provider
      */
-    ServiceProvider create(String vip);
+    MicroServiceSpace create(String vip);
 }

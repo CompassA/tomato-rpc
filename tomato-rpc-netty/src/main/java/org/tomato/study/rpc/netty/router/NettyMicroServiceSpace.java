@@ -14,7 +14,7 @@
 
 package org.tomato.study.rpc.netty.router;
 
-import org.tomato.study.rpc.core.base.BaseServiceProvider;
+import org.tomato.study.rpc.core.base.BaseMicroServiceSpace;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.router.InvokerConfig;
 import org.tomato.study.rpc.core.router.RpcInvoker;
@@ -31,7 +31,7 @@ import static org.tomato.study.rpc.netty.invoker.NettyRpcInvokerFactory.RESPONSE
  * @author Tomato
  * Created on 2021.10.02
  */
-public class NettyServiceProvider extends BaseServiceProvider {
+public class NettyMicroServiceSpace extends BaseMicroServiceSpace {
 
     /**
      * invoker创建
@@ -48,9 +48,9 @@ public class NettyServiceProvider extends BaseServiceProvider {
      */
     private final NettyResponseHolder responseHolder;
 
-    public NettyServiceProvider(String vip,
-                                NettyChannelHolder channelHolder,
-                                NettyResponseHolder responseHolder) {
+    public NettyMicroServiceSpace(String vip,
+                                  NettyChannelHolder channelHolder,
+                                  NettyResponseHolder responseHolder) {
         super(vip);
         this.channelHolder = channelHolder;
         this.responseHolder = responseHolder;

@@ -39,7 +39,7 @@ public class ApiConfigTest {
         Assert.assertEquals(MOCK_VIP, apiConfig.get().getServiceVIP());
     }
 
-    @TomatoApi(serviceVIP = MOCK_VIP)
+    @TomatoApi(microServiceID = MOCK_VIP)
     public static interface TestApi {
 
     }

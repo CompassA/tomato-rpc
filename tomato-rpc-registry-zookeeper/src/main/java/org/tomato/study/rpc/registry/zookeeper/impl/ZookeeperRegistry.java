@@ -19,7 +19,7 @@ import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.router.RpcInvoker;
-import org.tomato.study.rpc.core.router.ServiceProvider;
+import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.core.router.ServiceProviderFactory;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.registry.zookeeper.ChildrenListener;
@@ -75,12 +75,12 @@ public class ZookeeperRegistry {
     /**
      * 服务唯一标识VIP -> ServiceProvider
      */
-    private final ConcurrentMap<String, ServiceProvider> providerMap = new ConcurrentHashMap<>(0);
+    private final ConcurrentMap<String, MicroServiceSpace> providerMap = new ConcurrentHashMap<>(0);
 
     /**
      * provider -> children listener
      */
-    private final ConcurrentMap<ServiceProvider, ChildrenListener> childrenListenerMap = new ConcurrentHashMap<>(0);
+    private final ConcurrentMap<MicroServiceSpace, ChildrenListener> childrenListenerMap = new ConcurrentHashMap<>(0);
 
     public ZookeeperRegistry(ZookeeperConfig config) {
         this.namespace = config.getNamespace();
@@ -143,7 +143,7 @@ public class ZookeeperRegistry {
         }
         for (String vip : vips) {
             // 创建微服务对象
-            ServiceProvider serviceProvider = providerMap.computeIfAbsent(vip,
+            MicroServiceSpace serviceProvider = providerMap.computeIfAbsent(vip,
                     // 通过SPI决定如何构建ServiceProvider对象
                     vipKey -> SpiLoader.getLoader(ServiceProviderFactory.class).load().create(vipKey));
 
@@ -185,7 +185,7 @@ public class ZookeeperRegistry {
         }
         for (String vip : vips) {
             // 移除ServiceProvider
-            ServiceProvider provider = providerMap.remove(vip);
+            MicroServiceSpace provider = providerMap.remove(vip);
             if (provider == null) {
                 continue;
             }
@@ -225,7 +225,7 @@ public class ZookeeperRegistry {
         }
 
         // 获取Provider对象并刷新节点数据, 若Provider不存在，说明已经取消订阅
-        ServiceProvider serviceProvider = providerMap.get(vip);
+        MicroServiceSpace serviceProvider = providerMap.get(vip);
         if (serviceProvider == null) {
             return;
         }
