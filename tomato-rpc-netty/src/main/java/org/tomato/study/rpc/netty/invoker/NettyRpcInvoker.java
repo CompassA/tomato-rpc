@@ -78,8 +78,8 @@ public class NettyRpcInvoker implements RpcInvoker, MessageSender {
     }
 
     @Override
-    public String getVersion() {
-        return providerNodeMetaData.getVersion();
+    public String getGroup() {
+        return providerNodeMetaData.getGroup();
     }
 
     @Override

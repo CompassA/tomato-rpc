@@ -76,8 +76,8 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
     }
 
     @Override
-    public String getVersion() {
-        return rpcConfig.getVersion();
+    public String getGroup() {
+        return rpcConfig.getGroup();
     }
 
     @Override

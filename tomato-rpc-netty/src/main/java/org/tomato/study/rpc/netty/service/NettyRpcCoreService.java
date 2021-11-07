@@ -88,7 +88,7 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
                 .port(server.getPort())
                 .vip(getServiceVIP())
                 .stage(getStage())
-                .version(getVersion())
+                .group(getGroup())
                 .build();
         this.responseHolder = new NettyResponseHolder();
         this.channelHolder = new NettyChannelHolder(
@@ -130,7 +130,8 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
                         getNameServer(),
                         serviceInterface,
                         targetServiceVIP,
-                        getVersion()
+                        // 默认调用同version
+                        getGroup()
                 )
         );
         log.info("stub " + serviceInterface.getCanonicalName() + " created");

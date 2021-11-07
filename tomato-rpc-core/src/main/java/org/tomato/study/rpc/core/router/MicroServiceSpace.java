@@ -36,11 +36,11 @@ public interface MicroServiceSpace extends Closeable {
     String getVIP();
 
     /**
-     * 根据微服务版本找到匹配的一个微服务调用实例
-     * @param version service version
+     * 根据微服务分组找到匹配的一个微服务调用实例
+     * @param group service group
      * @return invoker
      */
-    Optional<RpcInvoker> lookUp(String version);
+    Optional<RpcInvoker> lookUp(String group);
 
     /**
      * 刷新节点信息

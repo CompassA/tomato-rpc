@@ -50,9 +50,9 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
 
     /**
      * 按RPC服务的实例版本对Invoker进行分类
-     * {@link MetaData#getVersion()} -> RpcInvokers with same version
+     * {@link MetaData#getGroup()} -> RpcInvokers with same group
      */
-    private final ConcurrentMap<String, List<RpcInvoker>> sameVersionInvokerMap = new ConcurrentHashMap<>(0);
+    private final ConcurrentMap<String, List<RpcInvoker>> sameGroupInvokerMap = new ConcurrentHashMap<>(0);
 
     public BaseMicroServiceSpace(String vip) {
         this.vip = vip;
@@ -65,12 +65,12 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
 
     /**
      * 根据客户端订阅的该RPC服务的版本，寻找匹配的服务实例节点
-     * @param version service version RPC服务
+     * @param group service version RPC服务
      * @return 可与实例节点通信的RpcInvoker
      */
     @Override
-    public Optional<RpcInvoker> lookUp(String version) {
-        List<RpcInvoker> invokers = sameVersionInvokerMap.get(version);
+    public Optional<RpcInvoker> lookUp(String group) {
+        List<RpcInvoker> invokers = sameGroupInvokerMap.get(group);
         if (CollectionUtils.isEmpty(invokers)) {
             return Optional.empty();
         }
@@ -94,14 +94,14 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
         Map<String, Set<MetaData>> sameVersionMetaMap = new HashMap<>(0);
         for (MetaData metaData : newRpcInstanceInfoSet) {
             sameVersionMetaMap.computeIfAbsent(
-                    metaData.getVersion(), version -> new HashSet<>(0)
+                    metaData.getGroup(), group -> new HashSet<>(0)
             ).add(metaData);
         }
 
         // 对同Version的实例节点数据，进行Invoker创建
         for (Map.Entry<String, Set<MetaData>> entry : sameVersionMetaMap.entrySet()) {
             // 将创建的Invoker收集到一个新的数组
-            String version = entry.getKey();
+            String group = entry.getKey();
             Set<MetaData> newMetadataSet = entry.getValue();
             List<RpcInvoker> newInvokers = new ArrayList<>(newMetadataSet.size());
 
@@ -117,12 +117,12 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
                 }
             }
 
-            // 获取该RPC服务版本的所有旧Invoker
+            // 获取该RPC服务分组的所有旧Invoker
             List<RpcInvoker> oldInvokers = CollectionUtils.isEmpty(newInvokers)
-                    // 若该版本没有新的节点，直接从versionMap中将对应的Invoker删除
-                    ? sameVersionInvokerMap.remove(version)
-                    // 若该版本有新节点，将旧Invoker从Map中拿出，将新Invoker放入Map
-                    : sameVersionInvokerMap.put(version, newInvokers);
+                    // 若该分组没有新的节点，直接从groupMap中将对应的Invoker删除
+                    ? sameGroupInvokerMap.remove(group)
+                    // 若该分组有新节点，将旧Invoker从Map中拿出，将新Invoker放入Map
+                    : sameGroupInvokerMap.put(group, newInvokers);
 
             // 如果没有旧的Invoker，说明没有旧的Invoker需要关闭
             if (CollectionUtils.isEmpty(oldInvokers)) {
@@ -163,6 +163,6 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
             }
         }
         invokerRegistry.clear();
-        sameVersionInvokerMap.clear();
+        sameGroupInvokerMap.clear();
     }
 }

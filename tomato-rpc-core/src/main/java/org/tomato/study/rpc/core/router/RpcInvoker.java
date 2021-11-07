@@ -29,10 +29,10 @@ import java.io.Closeable;
 public interface RpcInvoker extends Closeable {
 
     /**
-     * get invoker version {@link MetaData#getVersion()}
+     * get invoker group {@link MetaData#getGroup()}
      * @return invoker id
      */
-    String getVersion();
+    String getGroup();
 
     /**
      * get invoker metadata

@@ -44,7 +44,7 @@ public class JdkStubFactory implements StubFactory {
                 new Class[] { config.getServiceInterface() },
                 new StubHandler(
                         config.getServiceVIP(),
-                        config.getVersion(),
+                        config.getGroup(),
                         config.getNameServer(),
                         config.getServiceInterface())
         );
@@ -59,9 +59,9 @@ public class JdkStubFactory implements StubFactory {
         private final String vip;
 
         /**
-         * 服务版本
+         * 服务分组
          */
-        private final String version;
+        private final String group;
 
         /**
          * 注册中心
@@ -76,10 +76,10 @@ public class JdkStubFactory implements StubFactory {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             Invocation invocation = createInvocation(method, args);
-            Response response = nameServer.lookupInvoker(vip, version)
+            Response response = nameServer.lookupInvoker(vip, group)
                     .orElseThrow(() -> new TomatoRpcRuntimeException(
                             NettyRpcErrorEnum.STUB_INVOKER_SEARCH_ERROR.create(
-                                    "[invoker not found, vip=" + vip + ",version=" + version + "]")))
+                                    "[invoker not found, vip=" + vip + ",group=" + group + "]")))
                     .invoke(invocation)
                     .getResultSync();
             if (!Code.SUCCESS.equals(response.getCode())) {

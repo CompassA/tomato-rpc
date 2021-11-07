@@ -45,9 +45,9 @@ public class RpcConfig {
     private final String stage;
 
     /**
-     * 当前服务的接口版本，用于同环境间不同服务版本的隔离
+     * 当前服务的分组
      */
-    private final String version;
+    private final String group;
 
     /**
      * 当前服务订阅的其他RPC服务
@@ -92,7 +92,7 @@ public class RpcConfig {
         private String protocol = "tomato";
         private String serviceVIP;
         private String stage = "default";
-        private String version = "default";
+        private String group = "default";
         private List<String> subscribedVIP = Collections.emptyList();
         private String nameServiceURI;
         private int port = 9090;
@@ -116,8 +116,8 @@ public class RpcConfig {
             return this;
         }
 
-        public Builder version(String version) {
-            this.version = version;
+        public Builder group(String group) {
+            this.group = group;
             return this;
         }
 
@@ -161,7 +161,7 @@ public class RpcConfig {
                     this.protocol,
                     this.serviceVIP,
                     this.stage,
-                    this.version,
+                    this.group,
                     this.subscribedVIP,
                     this.nameServiceURI,
                     this.port,

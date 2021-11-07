@@ -48,7 +48,7 @@ public class EchoServiceImpl implements EchoService {
                     .append("provider host address: ").append(localAddress.getHostAddress()).append("\n")
                     .append("provider vip: ").append(coreService.getServiceVIP()).append("\n")
                     .append("provider stage: ").append(coreService.getStage()).append("\n")
-                    .append("provider version: ").append(coreService.getVersion()).append("\n");
+                    .append("provider group: ").append(coreService.getGroup()).append("\n");
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             response.setData(e.getMessage());

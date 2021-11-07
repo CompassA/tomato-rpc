@@ -63,10 +63,10 @@ public interface RpcCoreService extends LifeCycle {
     String getStage();
 
     /**
-     * get service version
-     * @return service provider node version
+     * get service group
+     * @return service provider node group
      */
-    String getVersion();
+    String getGroup();
 
     /**
      * get rpc network protocol

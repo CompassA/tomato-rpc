@@ -62,8 +62,8 @@ public class ZookeeperNameServer extends BaseNameServer {
     }
 
     @Override
-    public Optional<RpcInvoker> lookupInvoker(String serviceVIP, String version) {
-        return registry.lookup(serviceVIP, version);
+    public Optional<RpcInvoker> lookupInvoker(String serviceVIP, String group) {
+        return registry.lookup(serviceVIP, group);
     }
 
     @Override

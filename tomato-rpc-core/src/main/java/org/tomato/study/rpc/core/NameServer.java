@@ -61,8 +61,8 @@ public interface NameServer extends LifeCycle {
     /**
      * search service invoker
      * @param serviceVIP service vip
-     * @param version service version
+     * @param group service group
      * @return provider invoker
      */
-    Optional<RpcInvoker> lookupInvoker(String serviceVIP, String version);
+    Optional<RpcInvoker> lookupInvoker(String serviceVIP, String group);
 }

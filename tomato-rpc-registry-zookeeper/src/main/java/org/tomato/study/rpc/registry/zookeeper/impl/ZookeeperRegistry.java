@@ -73,7 +73,7 @@ public class ZookeeperRegistry {
     private final Charset zNodePathCharset;
 
     /**
-     * 服务唯一标识VIP -> ServiceProvider
+     * 服务唯一标识VIP -> MicroServiceProvider
      */
     private final ConcurrentMap<String, MicroServiceSpace> providerMap = new ConcurrentHashMap<>(0);
 
@@ -239,12 +239,12 @@ public class ZookeeperRegistry {
         );
     }
 
-    public Optional<RpcInvoker> lookup(String serviceVip, String version) {
-        if (StringUtils.isBlank(serviceVip) || StringUtils.isBlank(version)) {
+    public Optional<RpcInvoker> lookup(String serviceVip, String group) {
+        if (StringUtils.isBlank(serviceVip) || StringUtils.isBlank(group)) {
             return Optional.empty();
         }
         return Optional.ofNullable(providerMap.get(serviceVip))
-                .flatMap(provider -> provider.lookUp(version));
+                .flatMap(provider -> provider.lookUp(group));
     }
 
     public synchronized void close() throws IOException {

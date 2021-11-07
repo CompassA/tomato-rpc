@@ -100,7 +100,7 @@ public class BaseServiceProviderTest extends BaseTest {
                         .port(9999)
                         .vip(mockVIP)
                         .stage("default")
-                        .version("default")
+                        .group("default")
                         .build()
         );
         provider.refresh(newMetaSet);
@@ -129,7 +129,7 @@ public class BaseServiceProviderTest extends BaseTest {
                 @Override
                 public void close() throws IOException { }
                 @Override
-                public String getVersion() { return metadata.getVersion(); }
+                public String getGroup() { return metadata.getGroup(); }
                 @Override
                 public MetaData getMetadata() { return metadata; }
                 @Override

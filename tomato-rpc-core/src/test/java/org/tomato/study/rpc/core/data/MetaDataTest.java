@@ -69,7 +69,7 @@ public class MetaDataTest {
                 .port(1234)
                 .vip("org.study.test")
                 .stage("dev")
-                .version("test")
+                .group("test")
                 .build();
     }
 

@@ -58,9 +58,9 @@ public class MetaData {
     private static final String STAGE_PARAM_NAME = "stage";
 
     /**
-     * version parameter key name in the uri
+     * group parameter key name in the uri
      */
-    private static final String VERSION_PARAM_NAME = "version";
+    private static final String GROUP_PARAM_NAME = "group";
 
     /**
      * rpc protocol
@@ -90,7 +90,7 @@ public class MetaData {
     /**
      * provider version
      */
-    private final String version;
+    private final String group;
 
     /**
      * is metadata valid
@@ -101,7 +101,7 @@ public class MetaData {
                 && this.host != null && !this.host.isBlank()
                 && this.vip != null && !this.vip.isBlank()
                 && this.stage != null && !this.stage.isBlank()
-                && this.version != null && !this.version.isBlank();
+                && this.group != null && !this.group.isBlank();
     }
 
     /**
@@ -119,7 +119,7 @@ public class MetaData {
                 metaData.getPort(),
                 VIP_PARAM_NAME, metaData.getVip(),
                 STAGE_PARAM_NAME, metaData.getStage(),
-                VERSION_PARAM_NAME, metaData.getVersion()))
+                GROUP_PARAM_NAME, metaData.getGroup()))
         );
     }
 
@@ -142,14 +142,14 @@ public class MetaData {
         int port = uri.getPort();
         String vip = paramMap.get(VIP_PARAM_NAME);
         String stage = paramMap.get(STAGE_PARAM_NAME);
-        String version = paramMap.get(VERSION_PARAM_NAME);
+        String group = paramMap.get(GROUP_PARAM_NAME);
         MetaData metaData = MetaData.builder()
                 .protocol(scheme)
                 .host(host)
                 .port(port)
                 .vip(vip)
                 .stage(stage)
-                .version(version)
+                .group(group)
                 .build();
         if (!metaData.isValid()) {
             return Optional.empty();
@@ -171,7 +171,7 @@ public class MetaData {
                 Objects.equals(this.getPort(), otherMataData.getPort()) &&
                 Objects.equals(this.getVip(), otherMataData.getVip()) &&
                 Objects.equals(this.getStage(), otherMataData.getStage()) &&
-                Objects.equals(this.getVersion(), otherMataData.getVersion());
+                Objects.equals(this.getGroup(), otherMataData.getGroup());
     }
 
     @Override
@@ -182,7 +182,7 @@ public class MetaData {
         hash = hash * 31 + Objects.hashCode(this.getPort());
         hash = hash * 31 + Objects.hashCode(this.getVip());
         hash = hash * 31 + Objects.hashCode(this.getStage());
-        hash = hash * 31 + Objects.hashCode(this.getVersion());
+        hash = hash * 31 + Objects.hashCode(this.getGroup());
         return hash;
     }
 }

@@ -43,7 +43,7 @@ public class StubConfig<T> {
     private final String serviceVIP;
 
     /**
-     * service version
+     * service group
      */
-    private final String version;
+    private final String group;
 }

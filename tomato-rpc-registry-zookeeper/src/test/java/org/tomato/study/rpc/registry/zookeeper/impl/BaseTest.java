@@ -39,7 +39,7 @@ public class BaseTest {
         ConcurrentMap<MetaData, RpcInvoker> invokerRegistry = ReflectUtils.reflectGet(
                 serviceProvider, BaseMicroServiceSpace.class, "invokerRegistry");
         ConcurrentMap<String, List<RpcInvoker>> invokerMap = ReflectUtils.reflectGet(
-                serviceProvider, BaseMicroServiceSpace.class, "sameVersionInvokerMap");
+                serviceProvider, BaseMicroServiceSpace.class, "sameGroupFInvokerMap");
 
         Assert.assertEquals(invokerRegistry.values().size(), mataDataSet.size());
 
@@ -49,7 +49,7 @@ public class BaseTest {
 
         Map<String, Set<MetaData>> metadataMap = new HashMap<>(0);
         for (MetaData metaData : mataDataSet) {
-            metadataMap.computeIfAbsent(metaData.getVersion(), version -> new HashSet<>(0))
+            metadataMap.computeIfAbsent(metaData.getGroup(), version -> new HashSet<>(0))
                     .add(metaData);
         }
         for (Map.Entry<String, Set<MetaData>> entry : metadataMap.entrySet()) {
@@ -66,7 +66,7 @@ public class BaseTest {
                         .host("127.0.0.1")
                         .port(6666)
                         .vip(vip)
-                        .version("default")
+                        .group("default")
                         .stage("default")
                         .build(),
                 MetaData.builder()
@@ -74,7 +74,7 @@ public class BaseTest {
                         .host("127.0.0.1")
                         .port(7777)
                         .vip(vip)
-                        .version("version1")
+                        .group("version1")
                         .stage("default")
                         .build(),
                 MetaData.builder()
@@ -82,7 +82,7 @@ public class BaseTest {
                         .host("127.0.0.1")
                         .port(8888)
                         .vip(vip)
-                        .version("default")
+                        .group("default")
                         .stage("default")
                         .build()
         ));
