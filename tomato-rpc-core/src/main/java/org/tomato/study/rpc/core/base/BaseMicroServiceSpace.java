@@ -90,16 +90,16 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
             return;
         }
 
-        // 将实例节点数据按Version分组
-        Map<String, Set<MetaData>> sameVersionMetaMap = new HashMap<>(0);
+        // 将实例节点数据按Group分组
+        Map<String, Set<MetaData>> sameGroupMetaMap = new HashMap<>(0);
         for (MetaData metaData : newRpcInstanceInfoSet) {
-            sameVersionMetaMap.computeIfAbsent(
+            sameGroupMetaMap.computeIfAbsent(
                     metaData.getGroup(), group -> new HashSet<>(0)
             ).add(metaData);
         }
 
-        // 对同Version的实例节点数据，进行Invoker创建
-        for (Map.Entry<String, Set<MetaData>> entry : sameVersionMetaMap.entrySet()) {
+        // 对同Group的实例节点数据，进行Invoker创建
+        for (Map.Entry<String, Set<MetaData>> entry : sameGroupMetaMap.entrySet()) {
             // 将创建的Invoker收集到一个新的数组
             String group = entry.getKey();
             Set<MetaData> newMetadataSet = entry.getValue();

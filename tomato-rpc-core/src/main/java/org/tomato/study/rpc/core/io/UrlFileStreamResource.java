@@ -12,26 +12,33 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core;
+package org.tomato.study.rpc.core.io;
+
+import lombok.Getter;
+
+import java.net.URL;
 
 /**
+ * 文件流资源
  * @author Tomato
- * Created on 2021.11.07
+ * Created on 2021.11.15
  */
-public final class RpcJvmConfigKey {
-    /**
-     * 可在jvm参数中配置自身的服务版本
-     */
-    public static final String MICRO_SERVICE_GROUP = "tomato.service-group";
+@Getter
+public class UrlFileStreamResource extends FileStreamResource {
 
+    private static final String FILE_PROTO = "file";
 
-    /**
-     * 可在jvm参数重配置感兴趣的服务的版本
-     */
-    public static final String MICRO_SUBSCRIBE_GROUP = "tomato.subscribed-services-group";
+    private final URL url;
 
-    /**
-     * 注册中心地址
-     */
-    public static final String NAME_SERVICE_URI = "tomato.name-service-uri";
+    public UrlFileStreamResource(URL url) {
+        if (!FILE_PROTO.equals(url.getProtocol())) {
+            throw new IllegalArgumentException("url is not file protocol");
+        }
+        this.url = url;
+    }
+
+    @Override
+    public URL getURL() {
+        return this.url;
+    }
 }

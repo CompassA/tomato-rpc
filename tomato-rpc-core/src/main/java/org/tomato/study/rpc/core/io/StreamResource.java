@@ -12,26 +12,42 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core;
+package org.tomato.study.rpc.core.io;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 
 /**
+ * 流资源
  * @author Tomato
- * Created on 2021.11.07
+ * Created on 2021.11.15
  */
-public final class RpcJvmConfigKey {
-    /**
-     * 可在jvm参数中配置自身的服务版本
-     */
-    public static final String MICRO_SERVICE_GROUP = "tomato.service-group";
-
+public interface StreamResource {
 
     /**
-     * 可在jvm参数重配置感兴趣的服务的版本
+     * 获取一个输入流
+     * @return 一个全新的输入流
+     * @throws IOException 获取流异常
      */
-    public static final String MICRO_SUBSCRIBE_GROUP = "tomato.subscribed-services-group";
+    InputStream openNewStream() throws IOException;
 
     /**
-     * 注册中心地址
+     * 流资源是否存在
+     * @return true 存在
      */
-    public static final String NAME_SERVICE_URI = "tomato.name-service-uri";
+    boolean exists();
+
+    /**
+     * 是否可读
+     * @return true 可读
+     */
+    boolean isReadable();
+
+    /**
+     * 获取资源的URL
+     * @return URL
+     */
+    URL getURL();
+
 }

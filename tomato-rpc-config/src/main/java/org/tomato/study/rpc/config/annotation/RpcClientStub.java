@@ -12,26 +12,20 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core;
+package org.tomato.study.rpc.config.annotation;
+
+import java.lang.annotation.Documented;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
+import java.lang.annotation.Target;
 
 /**
  * @author Tomato
- * Created on 2021.11.07
+ * Created on 2021.11.18
  */
-public final class RpcJvmConfigKey {
-    /**
-     * 可在jvm参数中配置自身的服务版本
-     */
-    public static final String MICRO_SERVICE_GROUP = "tomato.service-group";
-
-
-    /**
-     * 可在jvm参数重配置感兴趣的服务的版本
-     */
-    public static final String MICRO_SUBSCRIBE_GROUP = "tomato.subscribed-services-group";
-
-    /**
-     * 注册中心地址
-     */
-    public static final String NAME_SERVICE_URI = "tomato.name-service-uri";
+@Documented
+@Retention(RetentionPolicy.RUNTIME)
+@Target({ElementType.FIELD})
+public @interface RpcClientStub {
 }

@@ -12,26 +12,30 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core;
+package org.tomato.study.rpc.config.error;
+
+import lombok.AllArgsConstructor;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorInfo;
 
 /**
  * @author Tomato
- * Created on 2021.11.07
+ * Created on 2021.11.18
  */
-public final class RpcJvmConfigKey {
-    /**
-     * 可在jvm参数中配置自身的服务版本
-     */
-    public static final String MICRO_SERVICE_GROUP = "tomato.service-group";
+@AllArgsConstructor
+public enum TomatoRpcConfigurationErrorEnum {
 
+    MICROSERVICE_ID_NOT_FOUND(-1, "missing micro-service-id"),
+    ;
 
-    /**
-     * 可在jvm参数重配置感兴趣的服务的版本
-     */
-    public static final String MICRO_SUBSCRIBE_GROUP = "tomato.subscribed-services-group";
+    private int code;
+    private String message;
 
-    /**
-     * 注册中心地址
-     */
-    public static final String NAME_SERVICE_URI = "tomato.name-service-uri";
+    public TomatoRpcErrorInfo create() {
+        return new TomatoRpcErrorInfo(this.code, this.message);
+    }
+
+    public TomatoRpcErrorInfo create(String customMessage) {
+        return new TomatoRpcErrorInfo(this.code, customMessage);
+    }
+
 }
