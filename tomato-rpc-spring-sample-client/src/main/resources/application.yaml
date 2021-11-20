@@ -1,0 +1,25 @@
+server:
+  port: 5678
+
+tomato-rpc:
+  # 微服务id
+  micro-service-id: "demo-rpc-client"
+  # 订阅的其他服务
+  subscribed-services:
+    - "demo-rpc-server"
+  # 注册中心地址
+  name-service-uri: "127.0.0.1:2181"
+  # RPC服务暴露的端口
+  port: 3456
+  # RPC服务处理线程池数量
+  business-thread: 1
+  # 服务环境
+  stage: "dev"
+  # 服务分组
+  group: "main"
+  # 服务端空闲连接检测时间间隔，单位ms
+  server-idle-check-ms: 600000
+  # 客户端发送心跳包的时间间隔，单位ms
+  client-keep-alive-ms: 200000
+  # 客户端发送数据时是否开启压缩
+  use-gzip: true

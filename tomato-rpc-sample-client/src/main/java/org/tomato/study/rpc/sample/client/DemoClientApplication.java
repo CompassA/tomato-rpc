@@ -69,7 +69,7 @@ public class DemoClientApplication {
                 .load()
                 .create(RpcConfig.builder()
                         .serviceVIP("org.tomato.study.rpc.demo.client")
-                        .subscribedVIP(Collections.singletonList(Constant.serviceVIP))
+                        .subscribedVIP(Collections.singletonList(Constant.serviceId))
                         .nameServiceURI(zkURL)
                         .port(7890)
                         .useGzip(true)

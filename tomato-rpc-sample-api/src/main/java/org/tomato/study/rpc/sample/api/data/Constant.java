@@ -20,5 +20,5 @@ package org.tomato.study.rpc.sample.api.data;
  */
 public interface Constant {
 
-    String serviceVIP = "org.tomato.study.rpc.demo.server";
+    String serviceId = "org.tomato.study.rpc.demo.server";
 }

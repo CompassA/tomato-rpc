@@ -1,0 +1,2 @@
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+  org.tomato.study.rpc.config.component.TomatoRpcConfiguration

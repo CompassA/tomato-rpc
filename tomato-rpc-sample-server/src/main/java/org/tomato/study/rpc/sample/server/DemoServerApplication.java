@@ -39,7 +39,7 @@ public class DemoServerApplication {
         RpcCoreService coreService = SpiLoader.getLoader(RpcCoreServiceFactory.class)
                 .load()
                 .create(RpcConfig.builder()
-                        .serviceVIP(Constant.serviceVIP)
+                        .serviceVIP(Constant.serviceId)
                         .nameServiceURI(zkURL)
                         .port(4567)
                         .businessThreadPoolSize(4)

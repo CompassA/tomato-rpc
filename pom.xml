@@ -23,14 +23,20 @@
     <packaging>pom</packaging>
     <version>1.0-SNAPSHOT</version>
     <modules>
+        <!-- framework module -->
         <module>tomato-rpc-core</module>
         <module>tomato-rpc-netty</module>
         <module>tomato-rpc-common</module>
+        <module>tomato-rpc-spring-boot-starter</module>
+        <module>tomato-rpc-registry-zookeeper</module>
+        <module>tomato-rpc-config</module>
+
+        <!-- sample module -->
         <module>tomato-rpc-sample-server</module>
         <module>tomato-rpc-sample-client</module>
         <module>tomato-rpc-sample-api</module>
-        <module>tomato-rpc-registry-zookeeper</module>
-        <module>tomato-rpc-config</module>
+        <module>tomato-rpc-spring-sample-server</module>
+        <module>tomato-rpc-spring-sample-client</module>
     </modules>
 
     <properties>
@@ -92,6 +98,12 @@
             <dependency>
                 <groupId>org.tomato.study.rpc</groupId>
                 <artifactId>tomato-rpc-sample-api</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.tomato.study.rpc</groupId>
+                <artifactId>tomato-rpc-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
 
