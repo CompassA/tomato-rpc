@@ -21,6 +21,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
+ * 客户端stub配置
  * @author Tomato
  * Created on 2021.11.18
  */
@@ -28,4 +29,17 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target({ElementType.FIELD})
 public @interface RpcClientStub {
+
+    /**
+     * 配置客户端调用的超时时间
+     * @return 超时时间，单位ms
+     */
+    long timeout() default 50000;
+
+    /**
+     * 要调用哪个分组的api
+     * @return 分组
+     */
+    String group() default "";
+
 }

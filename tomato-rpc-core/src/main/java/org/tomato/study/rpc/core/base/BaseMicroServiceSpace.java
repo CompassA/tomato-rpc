@@ -49,7 +49,7 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
     private final ConcurrentMap<MetaData, RpcInvoker> invokerRegistry = new ConcurrentHashMap<>(0);
 
     /**
-     * 按RPC服务的实例版本对Invoker进行分类
+     * 按RPC实例的group对Invoker进行分类
      * {@link MetaData#getGroup()} -> RpcInvokers with same group
      */
     private final ConcurrentMap<String, List<RpcInvoker>> sameGroupInvokerMap = new ConcurrentHashMap<>(0);

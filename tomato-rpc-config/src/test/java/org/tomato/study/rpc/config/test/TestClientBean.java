@@ -12,24 +12,20 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.config.annotation;
+package org.tomato.study.rpc.config.test;
 
+import lombok.Getter;
 import org.springframework.stereotype.Component;
-
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import org.tomato.study.rpc.config.annotation.RpcClientStub;
 
 /**
- * 服务端Stub
  * @author Tomato
- * Created on 2021.11.18
+ * Created on 2021.11.21
  */
-@Documented
-@Retention(RetentionPolicy.RUNTIME)
-@Target({ElementType.TYPE})
+@Getter
 @Component
-public @interface RpcServerStub {
+public class TestClientBean {
+
+    @RpcClientStub
+    private TestApi testApi;
 }

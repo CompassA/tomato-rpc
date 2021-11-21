@@ -14,17 +14,22 @@
 
 package org.tomato.study.rpc.core.data;
 
+import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import org.tomato.study.rpc.core.api.TomatoApi;
 
 import java.util.Optional;
 
 /**
+ * todo 实现其余配置
  * rpc接口元数据
  * @author Tomato
  * Created on 2021.09.29
  */
 @Getter
+@Builder
+@AllArgsConstructor
 public class ApiConfig<T> {
 
     /**
@@ -37,11 +42,6 @@ public class ApiConfig<T> {
      */
     private final Class<T> api;
 
-    private ApiConfig(String serviceVIP, Class<T> api) {
-        this.serviceVIP = serviceVIP;
-        this.api = api;
-    }
-
     public static <T> Optional<ApiConfig<T>> create(Class<T> api) {
         if (!api.isInterface()) {
             return Optional.empty();
@@ -51,10 +51,10 @@ public class ApiConfig<T> {
             return Optional.empty();
         }
         return Optional.of(
-                new ApiConfig<>(
-                        apiInfo.microServiceID(),
-                        api
-                )
+                ApiConfig.<T>builder()
+                        .serviceVIP(apiInfo.microServiceID())
+                        .api(api)
+                        .build()
         );
     }
 }

@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.NameServer;
 import org.tomato.study.rpc.core.Serializer;
 import org.tomato.study.rpc.core.base.BaseRpcCoreService;
+import org.tomato.study.rpc.core.data.ApiConfig;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.data.RpcServerConfig;
@@ -109,19 +110,18 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
         getProviderRegistry().register(
                 getServiceVIP(),
                 serviceInstance,
-                serviceInterface
-        );
+                serviceInterface);
         URI providerURI = NetworkUtil.createURI(
                 getProtocol(),
                 server.getHost(),
-                server.getPort()
-        );
+                server.getPort());
         log.info("provider registered, URI[" + providerURI + "]");
         return providerURI;
     }
 
     @Override
-    public <T> T createStub(String targetServiceVIP, Class<T> serviceInterface) {
+    public <T> T createStub(ApiConfig<T> apiConfig) {
+        Class<T> serviceInterface = apiConfig.getApi();
         if (!serviceInterface.isInterface()) {
             throw new TomatoRpcRuntimeException(NettyRpcErrorEnum.CORE_SERVICE_STUB_CREATE_ERROR.create());
         }
@@ -129,11 +129,10 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
                 new StubConfig<>(
                         getNameServer(),
                         serviceInterface,
-                        targetServiceVIP,
-                        // 默认调用同version
+                        apiConfig.getServiceVIP(),
+                        // 默认调用同group
                         getGroup()
-                )
-        );
+                ));
         log.info("stub " + serviceInterface.getCanonicalName() + " created");
         return stub;
     }
@@ -182,7 +181,18 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
         } catch (Exception e) {
             throw new TomatoRpcException(NettyRpcErrorEnum.LIFE_CYCLE_START_ERROR.create(), e);
         }
-        log.info("netty rpc core service started");
+        RpcConfig rpcConfig = getRpcConfig();
+        log.info("netty rpc core service started.\n" +
+                        "micro-service-id: {}\n" +
+                        "stage: {}\n" +
+                        "group: {}\n" +
+                        "host: {}\n" +
+                        "port: {}",
+                rpcConfig.getServiceVIP(),
+                rpcConfig.getStage(),
+                rpcConfig.getGroup(),
+                rpcServerMetaData.getHost(),
+                rpcConfig.getPort());
     }
 
     @Override

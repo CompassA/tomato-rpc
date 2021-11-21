@@ -7,10 +7,11 @@ tomato-rpc:
   subscribed-services:
     - "mock-service-a"
     - "mock-service-b"
+    - "rpc-test-service"
   # 注册中心地址
   name-service-uri: "127.0.0.1:2181"
   # RPC服务暴露的端口
-  port: 34000
+  port: 7854
   # RPC服务处理线程池数量
   business-thread: 4
   # 服务环境

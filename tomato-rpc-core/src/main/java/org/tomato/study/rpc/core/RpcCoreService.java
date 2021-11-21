@@ -14,6 +14,7 @@
 
 package org.tomato.study.rpc.core;
 
+import org.tomato.study.rpc.core.data.ApiConfig;
 import org.tomato.study.rpc.core.observer.LifeCycle;
 
 import java.net.URI;
@@ -37,12 +38,11 @@ public interface RpcCoreService extends LifeCycle {
 
     /**
      * create client proxy consumer
-     * @param targetServiceVIP service virtual ip
-     * @param serviceInterface consumer interface class
+     * @param apiConfig stub config
      * @param <T> consumer class type
      * @return proxy instance
      */
-    <T> T createStub(String targetServiceVIP, Class<T> serviceInterface);
+    <T> T createStub(ApiConfig<T> apiConfig);
 
     /**
      * get service virtual ip

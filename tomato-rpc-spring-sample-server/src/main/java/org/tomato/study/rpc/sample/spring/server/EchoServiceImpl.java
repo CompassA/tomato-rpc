@@ -18,9 +18,9 @@ import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.config.annotation.RpcServerStub;
 import org.tomato.study.rpc.core.RpcCoreService;
+import org.tomato.study.rpc.sample.api.EchoService;
 import org.tomato.study.rpc.sample.api.data.DemoRequest;
 import org.tomato.study.rpc.sample.api.data.DemoResponse;
-import org.tomato.study.rpc.sample.springdemo.api.EchoService;
 import org.tomato.study.rpc.utils.NetworkUtil;
 
 import java.net.InetAddress;
@@ -48,7 +48,7 @@ public class EchoServiceImpl implements EchoService {
             builder.append("hello client!\n")
                     .append("request message: ").append(request.toString()).append("\n")
                     .append("provider host address: ").append(localAddress.getHostAddress()).append("\n")
-                    .append("provider vip: ").append(coreService.getServiceVIP()).append("\n")
+                    .append("provider micro-service-id: ").append(coreService.getServiceVIP()).append("\n")
                     .append("provider stage: ").append(coreService.getStage()).append("\n")
                     .append("provider group: ").append(coreService.getGroup()).append("\n");
         } catch (Exception e) {

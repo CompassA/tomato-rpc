@@ -41,6 +41,7 @@ import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.RpcServer;
 import org.tomato.study.rpc.core.StubFactory;
 import org.tomato.study.rpc.core.base.BaseNameServer;
+import org.tomato.study.rpc.core.data.ApiConfig;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
@@ -128,10 +129,20 @@ public class NettyRpcCoreServiceTest {
      */
     @Test
     public void stubCreateTest() {
-        Assert.assertNotNull(nettyRpcCoreService.createStub("mock", RpcServer.class));
+        Assert.assertNotNull(nettyRpcCoreService.createStub(
+                ApiConfig.<RpcServer>builder()
+                        .api(RpcServer.class)
+                        .serviceVIP("mock")
+                        .build())
+        );
 
         try {
-            nettyRpcCoreService.createStub("mock", NettyRpcServer.class);
+            nettyRpcCoreService.createStub(
+                    ApiConfig.<NettyRpcServer>builder()
+                            .api(NettyRpcServer.class)
+                            .serviceVIP("mock")
+                            .build()
+            );
         } catch (TomatoRpcRuntimeException e) {
             Assert.assertEquals(
                     e.getMessage(),

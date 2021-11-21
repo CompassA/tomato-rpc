@@ -12,10 +12,8 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.config.component;
+package org.tomato.study.rpc.config;
 
-import lombok.AllArgsConstructor;
-import lombok.NoArgsConstructor;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -24,7 +22,9 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.tomato.study.rpc.config.component.TomatoRpcConfiguration;
 import org.tomato.study.rpc.config.data.TomatoRpcProperties;
+import org.tomato.study.rpc.config.test.TestClientBean;
 import org.tomato.study.rpc.utils.ReflectUtils;
 
 import java.util.Objects;
@@ -35,7 +35,8 @@ import java.util.Objects;
  */
 @SpringBootTest(classes = TomatoRpcConfigurationTest.class)
 @ComponentScan(basePackages = {
-      "org.tomato.study.rpc.config.component"
+        "org.tomato.study.rpc.config.component",
+        "org.tomato.study.rpc.config.test"
 })
 @ActiveProfiles("test")
 @RunWith(SpringRunner.class)
@@ -44,6 +45,8 @@ public class TomatoRpcConfigurationTest {
 
     @Autowired
     private TomatoRpcConfiguration configuration;
+    @Autowired
+    private TestClientBean testClientBean;
 
     @Test
     public void configurationTest() {
@@ -51,16 +54,23 @@ public class TomatoRpcConfigurationTest {
                 configuration, TomatoRpcConfiguration.class, "properties");
         Assert.assertNotNull(properties);
         Assert.assertEquals(properties.getMicroServiceId(), "rpc-test-service");
-        Assert.assertEquals(properties.getSubscribedServices().size(), 2);
+        Assert.assertEquals(properties.getSubscribedServices().size(), 3);
         Assert.assertEquals(properties.getSubscribedServices().get(0), "mock-service-a");
         Assert.assertEquals(properties.getSubscribedServices().get(1), "mock-service-b");
+        Assert.assertEquals(properties.getSubscribedServices().get(2), "rpc-test-service");
         Assert.assertEquals(properties.getNameServiceUri(), "127.0.0.1:2181");
-        Assert.assertTrue(Objects.equals(properties.getPort(), 34000));
+        Assert.assertTrue(Objects.equals(properties.getPort(), 7854));
         Assert.assertTrue(Objects.equals(properties.getBusinessThread(), 4));
         Assert.assertTrue(Objects.equals(properties.getStage(), "dev"));
         Assert.assertTrue(Objects.equals(properties.getGroup(), "main"));
         Assert.assertTrue(Objects.equals(properties.getServerIdleCheckMs(), 600000L));
         Assert.assertTrue(Objects.equals(properties.getClientKeepAliveMs(), 200000L));
         Assert.assertTrue(properties.isUseGzip());
+    }
+
+    @Test
+    public void beanRegisterTest() {
+        String echoStr = "echo";
+        Assert.assertEquals(echoStr, testClientBean.getTestApi().echo(echoStr));
     }
 }

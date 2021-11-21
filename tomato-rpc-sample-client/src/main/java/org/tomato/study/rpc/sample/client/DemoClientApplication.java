@@ -68,7 +68,7 @@ public class DemoClientApplication {
         RpcCoreService rpcCoreService = SpiLoader.getLoader(RpcCoreServiceFactory.class)
                 .load()
                 .create(RpcConfig.builder()
-                        .serviceVIP("org.tomato.study.rpc.demo.client")
+                        .serviceVIP("demo-rpc-client")
                         .subscribedVIP(Collections.singletonList(Constant.serviceId))
                         .nameServiceURI(zkURL)
                         .port(7890)
@@ -83,7 +83,7 @@ public class DemoClientApplication {
     private static EchoService createStub(RpcCoreService rpcCoreService) {
         Optional<ApiConfig<EchoService>> apiConfig = ApiConfig.create(EchoService.class);
         assert apiConfig.isPresent();
-        return rpcCoreService.createStub(apiConfig.get().getServiceVIP(), apiConfig.get().getApi());
+        return rpcCoreService.createStub(apiConfig.get());
     }
 
     private static void invokerRpc(EchoService stub) throws InterruptedException {

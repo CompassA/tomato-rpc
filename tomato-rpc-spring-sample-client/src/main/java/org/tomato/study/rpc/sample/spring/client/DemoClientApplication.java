@@ -14,11 +14,11 @@
 
 package org.tomato.study.rpc.sample.spring.client;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.context.ConfigurableApplicationContext;
+import org.springframework.stereotype.Component;
 import org.tomato.study.rpc.config.annotation.RpcClientStub;
 import org.tomato.study.rpc.sample.api.EchoService;
 import org.tomato.study.rpc.sample.api.data.DemoRequest;
@@ -27,19 +27,24 @@ import org.tomato.study.rpc.sample.api.data.DemoRequest;
  * @author Tomato
  * Created on 2021.11.20
  */
-@RestController
+@Slf4j
+@Component
 @SpringBootApplication
 public class DemoClientApplication {
-
-    public static void main(String[] args) {
-        SpringApplication.run(DemoClientApplication.class);
-    }
 
     @RpcClientStub
     private EchoService echoService;
 
-    @GetMapping("/test")
-    public String test(@RequestBody String request) {
-        return echoService.echo(new DemoRequest(request)).getData();
+    public String echo(String msg) {
+        return echoService.echo(new DemoRequest(msg)).getData();
     }
+
+    public static void main(String[] args) {
+        ConfigurableApplicationContext context = SpringApplication.run(DemoClientApplication.class);
+        DemoClientApplication bean = context.getBean(DemoClientApplication.class);
+        log.info(bean.echo("hello world"));
+        context.close();
+        System.exit(0);
+    }
+
 }

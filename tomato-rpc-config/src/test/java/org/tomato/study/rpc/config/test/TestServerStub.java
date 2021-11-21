@@ -12,18 +12,18 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.sample.springdemo.api;
+package org.tomato.study.rpc.config.test;
 
-import org.tomato.study.rpc.core.api.TomatoApi;
-import org.tomato.study.rpc.sample.api.data.DemoRequest;
-import org.tomato.study.rpc.sample.api.data.DemoResponse;
+import org.tomato.study.rpc.config.annotation.RpcServerStub;
 
 /**
  * @author Tomato
- * Created on 2021.11.20
+ * Created on 2021.11.21
  */
-@TomatoApi(microServiceID = "demo-rpc-server")
-public interface EchoService {
-
-    DemoResponse echo(DemoRequest request);
+@RpcServerStub
+public class TestServerStub implements TestApi {
+    @Override
+    public String echo(String str) {
+        return str;
+    }
 }

@@ -25,6 +25,8 @@ import org.tomato.study.rpc.core.error.TomatoRpcErrorInfo;
 public enum TomatoRpcConfigurationErrorEnum {
 
     MICROSERVICE_ID_NOT_FOUND(-1, "missing micro-service-id"),
+    RPC_CORE_SERVICE_BEAN_START_ERROR(-2, "create rpc core service bean error"),
+    RPC_CORE_SERVICE_STOP_ERROR(-3, "stop rpc core service bean error"),
     ;
 
     private int code;
