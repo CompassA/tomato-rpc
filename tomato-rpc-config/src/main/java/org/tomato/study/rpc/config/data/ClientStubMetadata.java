@@ -16,6 +16,7 @@ package org.tomato.study.rpc.config.data;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.config.annotation.RpcClientStub;
 import org.tomato.study.rpc.core.api.TomatoApi;
@@ -30,6 +31,7 @@ import java.util.Optional;
  * Created on 2021.11.21
  */
 @Getter
+@ToString
 @AllArgsConstructor
 public class ClientStubMetadata<T> {
 

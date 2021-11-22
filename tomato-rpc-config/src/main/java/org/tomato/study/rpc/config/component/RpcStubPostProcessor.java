@@ -14,7 +14,6 @@
 
 package org.tomato.study.rpc.config.component;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
@@ -34,11 +33,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created on 2021.11.20
  */
 @Slf4j
-@Getter
 public class RpcStubPostProcessor implements BeanPostProcessor {
 
     private final RpcCoreService rpcCoreService;
-    private final Map<ClientStubMetadata<?>, Object> stubCache = new ConcurrentHashMap<>(0);
+    private Map<ClientStubMetadata<?>, Object> stubCache = new ConcurrentHashMap<>(0);
 
     public RpcStubPostProcessor(RpcCoreService rpcCoreService) {
         this.rpcCoreService = rpcCoreService;
@@ -53,6 +51,14 @@ public class RpcStubPostProcessor implements BeanPostProcessor {
         registerServerStub(bean);
 
         return bean;
+    }
+
+    public synchronized void cleanCache() {
+        log.info("clean stub cache, created stub size: {}", stubCache.size());
+        for (ClientStubMetadata<?> clientStubMetadata : stubCache.keySet()) {
+            log.info("stub info: {}", clientStubMetadata);
+        }
+        this.stubCache = null;
     }
 
     @SuppressWarnings("all")

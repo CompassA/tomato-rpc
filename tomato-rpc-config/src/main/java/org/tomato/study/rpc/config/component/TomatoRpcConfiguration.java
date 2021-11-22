@@ -19,6 +19,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.ContextClosedEvent;
@@ -93,7 +94,10 @@ public class TomatoRpcConfiguration {
 
     @EventListener
     public void onApplicationEvent(ContextRefreshedEvent event) {
-        RpcCoreService rpcCoreService = event.getApplicationContext().getBean(RpcCoreService.class);
+        ApplicationContext context = event.getApplicationContext();
+
+        // 启动rpc服务
+        RpcCoreService rpcCoreService = context.getBean(RpcCoreService.class);
         try {
             rpcCoreService.init();
             rpcCoreService.start();
@@ -102,6 +106,9 @@ public class TomatoRpcConfiguration {
             throw new TomatoRpcRuntimeException(
                     TomatoRpcConfigurationErrorEnum.RPC_CORE_SERVICE_BEAN_START_ERROR.create());
         }
+
+        // 清除stub缓存
+        context.getBean(RpcStubPostProcessor.class).cleanCache();
     }
 
     @EventListener

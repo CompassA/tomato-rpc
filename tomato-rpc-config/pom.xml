@@ -75,6 +75,11 @@
             <artifactId>tomato-rpc-netty</artifactId>
         </dependency>
 
+        <dependency>
+            <groupId>org.apache.curator</groupId>
+            <artifactId>curator-test</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

@@ -14,7 +14,10 @@
 
 package org.tomato.study.rpc.config;
 
+import org.apache.curator.test.TestingServer;
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,8 +28,12 @@ import org.springframework.test.context.junit4.SpringRunner;
 import org.tomato.study.rpc.config.component.TomatoRpcConfiguration;
 import org.tomato.study.rpc.config.data.TomatoRpcProperties;
 import org.tomato.study.rpc.config.test.TestClientBean;
+import org.tomato.study.rpc.core.RpcCoreService;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.utils.ReflectUtils;
 
+import javax.annotation.PostConstruct;
+import java.io.IOException;
 import java.util.Objects;
 
 /**
@@ -43,10 +50,35 @@ import java.util.Objects;
 @SuppressWarnings("all")
 public class TomatoRpcConfigurationTest {
 
+    private static TestingServer TEST_SERVER;
+    private static RpcCoreService RPC_CORE_SERVICE;
+
     @Autowired
     private TomatoRpcConfiguration configuration;
+
     @Autowired
     private TestClientBean testClientBean;
+
+    @Autowired
+    private RpcCoreService rpcCoreService;
+
+    @PostConstruct
+    public void postConstruct() {
+        RPC_CORE_SERVICE = rpcCoreService;
+    }
+
+    @BeforeClass
+    public static void init() throws Exception {
+        TEST_SERVER = new TestingServer(3689);
+        TEST_SERVER.start();
+    }
+
+    @AfterClass
+    public static void destroy() throws IOException, TomatoRpcException {
+        RPC_CORE_SERVICE.stop();
+        TEST_SERVER.stop();
+        TEST_SERVER.close();
+    }
 
     @Test
     public void configurationTest() {
@@ -58,7 +90,7 @@ public class TomatoRpcConfigurationTest {
         Assert.assertEquals(properties.getSubscribedServices().get(0), "mock-service-a");
         Assert.assertEquals(properties.getSubscribedServices().get(1), "mock-service-b");
         Assert.assertEquals(properties.getSubscribedServices().get(2), "rpc-test-service");
-        Assert.assertEquals(properties.getNameServiceUri(), "127.0.0.1:2181");
+        Assert.assertEquals(properties.getNameServiceUri(), "127.0.0.1:" + TEST_SERVER.getPort());
         Assert.assertTrue(Objects.equals(properties.getPort(), 7854));
         Assert.assertTrue(Objects.equals(properties.getBusinessThread(), 4));
         Assert.assertTrue(Objects.equals(properties.getStage(), "dev"));
