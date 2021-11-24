@@ -57,8 +57,8 @@ public class TomatoRpcConfiguration {
         if (StringUtils.isBlank(properties.getMicroServiceId())) {
             throw new TomatoRpcException(TomatoRpcConfigurationErrorEnum.MICROSERVICE_ID_NOT_FOUND.create());
         }
-        rpcConfigBuilder.serviceVIP(properties.getMicroServiceId());
-        rpcConfigBuilder.subscribedVIP(CollectionUtils.isNotEmpty(properties.getSubscribedServices())
+        rpcConfigBuilder.microServiceId(properties.getMicroServiceId());
+        rpcConfigBuilder.subscribedServiceIds(CollectionUtils.isNotEmpty(properties.getSubscribedServices())
                 ? properties.getSubscribedServices() : Collections.emptyList());
         rpcConfigBuilder.useGzip(properties.isUseGzip());
         if (StringUtils.isNotBlank(properties.getStage())) {

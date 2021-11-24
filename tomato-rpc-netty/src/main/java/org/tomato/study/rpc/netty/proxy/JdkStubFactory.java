@@ -43,7 +43,7 @@ public class JdkStubFactory implements StubFactory {
                 JdkStubFactory.class.getClassLoader(),
                 new Class[] { config.getServiceInterface() },
                 new StubHandler(
-                        config.getServiceVIP(),
+                        config.getMicroServiceId(),
                         config.getGroup(),
                         config.getNameServer(),
                         config.getServiceInterface())
@@ -56,7 +56,7 @@ public class JdkStubFactory implements StubFactory {
         /**
          * 目标服务的唯一标识
          */
-        private final String vip;
+        private final String microServiceId;
 
         /**
          * 服务分组
@@ -76,10 +76,10 @@ public class JdkStubFactory implements StubFactory {
         @Override
         public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
             Invocation invocation = createInvocation(method, args);
-            Response response = nameServer.lookupInvoker(vip, group)
+            Response response = nameServer.lookupInvoker(microServiceId, group)
                     .orElseThrow(() -> new TomatoRpcRuntimeException(
                             NettyRpcErrorEnum.STUB_INVOKER_SEARCH_ERROR.create(
-                                    "[invoker not found, vip=" + vip + ",group=" + group + "]")))
+                                    "[invoker not found, micro-service-id=" + microServiceId + ",group=" + group + "]")))
                     .invoke(invocation)
                     .getResultSync();
             if (!Code.SUCCESS.equals(response.getCode())) {
@@ -92,7 +92,7 @@ public class JdkStubFactory implements StubFactory {
 
         private Invocation createInvocation(Method method, Object[] args) {
             RpcRequestDTO.RpcRequestDTOBuilder builder = RpcRequestDTO.builder()
-                    .serviceVIP(vip)
+                    .microServiceId(microServiceId)
                     .interfaceName(serviceInterface.getName())
                     .methodName(method.getName())
                     .returnType(method.getReturnType().getName())

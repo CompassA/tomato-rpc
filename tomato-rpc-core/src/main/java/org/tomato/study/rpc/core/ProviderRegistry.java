@@ -25,18 +25,18 @@ public interface ProviderRegistry {
 
     /**
      * register provider handler
-     * @param vip virtual ip
+     * @param microServiceId micro-service-id
      * @param instance provider instance
      * @param providerInterface service provider interface
      * @param <T> provider interface type
      */
-    <T> void register(String vip, T instance, Class<T> providerInterface);
+    <T> void register(String microServiceId, T instance, Class<T> providerInterface);
 
     /**
      * get provider instance
-     * @param vip virtual ip
+     * @param microServiceId micro service id
      * @param providerInterface service provider interface
      * @return provider instance
      */
-    Object getProvider(String vip, Class<?> providerInterface);
+    Object getProvider(String microServiceId, Class<?> providerInterface);
 }

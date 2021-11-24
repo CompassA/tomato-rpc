@@ -15,7 +15,9 @@
 package org.tomato.study.rpc.netty.service;
 
 import com.google.common.collect.Lists;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.tomato.study.rpc.core.NameServer;
 import org.tomato.study.rpc.core.Serializer;
 import org.tomato.study.rpc.core.base.BaseRpcCoreService;
@@ -26,25 +28,28 @@ import org.tomato.study.rpc.core.data.RpcServerConfig;
 import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
-import org.tomato.study.rpc.core.router.ServiceProviderFactory;
+import org.tomato.study.rpc.core.router.MicroServiceSpace;
+import org.tomato.study.rpc.core.router.RpcInvokerFactory;
 import org.tomato.study.rpc.core.spi.SpiLoader;
-import org.tomato.study.rpc.netty.transport.client.NettyChannelHolder;
-import org.tomato.study.rpc.netty.transport.client.NettyResponseHolder;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
-import org.tomato.study.rpc.netty.transport.handler.KeepAliveHandler;
-import org.tomato.study.rpc.netty.transport.handler.ResponseHandler;
-import org.tomato.study.rpc.netty.router.NettyServiceProviderFactory;
+import org.tomato.study.rpc.netty.invoker.NettyRpcInvokerFactory;
+import org.tomato.study.rpc.netty.router.NettyMicroServiceSpace;
 import org.tomato.study.rpc.netty.serializer.GzipWrapper;
 import org.tomato.study.rpc.netty.serializer.SerializerHolder;
+import org.tomato.study.rpc.netty.transport.client.NettyChannelHolder;
+import org.tomato.study.rpc.netty.transport.client.NettyResponseHolder;
+import org.tomato.study.rpc.netty.transport.handler.KeepAliveHandler;
+import org.tomato.study.rpc.netty.transport.handler.ResponseHandler;
 import org.tomato.study.rpc.netty.transport.server.NettyRpcServer;
 import org.tomato.study.rpc.utils.NetworkUtil;
 
 import java.net.URI;
+import java.util.List;
 
 /**
  * 基于Netty实现的RPC服务入口类
  * Functions:
- * 1.根据设置的VIP，将自己作为一个RPC服务暴露给其他服务
+ * 1.根据设置的micro-service-id，将自己作为一个RPC服务暴露给其他服务
  * 2.将自己作为一个RPC客户端节点，订阅其他RPC服务
  * @author Tomato
  * Created on 2021.04.17
@@ -65,12 +70,25 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
     /**
      * 管理与RPC服务端建立的所有连接
      */
+    @Getter
     private final NettyChannelHolder channelHolder;
 
     /**
      * 管理所有响应Future
      */
+    @Getter
     private final NettyResponseHolder responseHolder;
+
+    /**
+     * Invoker创建者
+     */
+    @Getter
+    private final RpcInvokerFactory invokerFactory;
+
+    /**
+     * 订阅的微服务对象
+     */
+    private final MicroServiceSpace[] microServices;
 
     public NettyRpcCoreService(RpcConfig rpcConfig) {
         super(rpcConfig);
@@ -87,7 +105,7 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
                 .protocol(getProtocol())
                 .host(server.getHost())
                 .port(server.getPort())
-                .vip(getServiceVIP())
+                .microServiceId(getMicroServiceId())
                 .stage(getStage())
                 .group(getGroup())
                 .build();
@@ -96,8 +114,18 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
                 rpcServerConfig.getClientKeepAliveMilliseconds(),
                 Lists.newArrayList(
                         new KeepAliveHandler(),
-                        new ResponseHandler(this.responseHolder))
-        );
+                        new ResponseHandler(this.responseHolder)));
+        this.invokerFactory = new NettyRpcInvokerFactory(this.channelHolder, this.responseHolder);
+
+        List<String> subscribedServiceIds = getSubscribedServices();
+        if (CollectionUtils.isNotEmpty(subscribedServiceIds)) {
+            this.microServices = new MicroServiceSpace[subscribedServiceIds.size()];
+            for (int i = 0; i < subscribedServiceIds.size(); i++) {
+                this.microServices[i] = new NettyMicroServiceSpace(subscribedServiceIds.get(i), invokerFactory);
+            }
+        } else {
+            this.microServices = new MicroServiceSpace[0];
+        }
     }
 
     @Override
@@ -108,7 +136,7 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
         }
 
         getProviderRegistry().register(
-                getServiceVIP(),
+                getMicroServiceId(),
                 serviceInstance,
                 serviceInterface);
         URI providerURI = NetworkUtil.createURI(
@@ -129,7 +157,7 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
                 new StubConfig<>(
                         getNameServer(),
                         serviceInterface,
-                        apiConfig.getServiceVIP(),
+                        apiConfig.getMicroServiceId(),
                         // 默认调用同group
                         getGroup()
                 ));
@@ -145,15 +173,8 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
         // 初始化注册中心
         getNameServer().init();
 
-        // 注册Invoker创建对象
-        SpiLoader.registerSpiInstance(
-                ServiceProviderFactory.class,
-                new NettyServiceProviderFactory(channelHolder, responseHolder)
-        );
-
-        // 配置压缩
+        // 客户端配置压缩，Gzip类替换原来的序列化类
         if (getRpcConfig().isUseGzip()) {
-            // 客户端配置压缩，Gzip类替换原来的序列化类
             SpiLoader.registerWrapper(Serializer.class, GzipWrapper.class);
         }
         // 服务端配置压缩, Gzip类与原始类共存，id不同
@@ -176,8 +197,7 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
             nameServer.registerService(rpcServerMetaData);
 
             // 订阅其余RPC服务
-            nameServer.subscribe(getSubscribedVIP(), getStage());
-
+            nameServer.subscribe(microServices, getStage());
         } catch (Exception e) {
             throw new TomatoRpcException(NettyRpcErrorEnum.LIFE_CYCLE_START_ERROR.create(), e);
         }
@@ -188,7 +208,7 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
                         "group: {}\n" +
                         "host: {}\n" +
                         "port: {}",
-                rpcConfig.getServiceVIP(),
+                rpcConfig.getMicroServiceId(),
                 rpcConfig.getStage(),
                 rpcConfig.getGroup(),
                 rpcServerMetaData.getHost(),
@@ -197,14 +217,18 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
 
     @Override
     protected void doStop() throws TomatoRpcException {
+        NameServer nameServer = getNameServer();
         try {
-            getNameServer().unsubscribe(getSubscribedVIP(), getStage());
-            getNameServer().unregisterService(rpcServerMetaData);
+            nameServer.unsubscribe(microServices, getStage());
+            nameServer.unregisterService(rpcServerMetaData);
+            for (MicroServiceSpace microService : microServices) {
+                microService.close();
+            }
         } catch (Exception e) {
             log.error("name server unregister service failed", e);
         }
         server.stop();
-        getNameServer().stop();
+        nameServer.stop();
         channelHolder.close();
         log.info("netty rpc core service stopped");
     }

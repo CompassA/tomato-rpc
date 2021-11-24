@@ -103,8 +103,7 @@ public class NettyChannelHolder {
                         for (ChannelHandler responseHandler : responseHandlers) {
                             channelPipeline.addLast(
                                     responseHandler.getClass().getSimpleName(),
-                                    responseHandler
-                            );
+                                    responseHandler);
                         }
                     }
                 });

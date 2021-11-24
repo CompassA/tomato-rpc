@@ -61,13 +61,13 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
     }
 
     @Override
-    public String getServiceVIP() {
-        return rpcConfig.getServiceVIP();
+    public String getMicroServiceId() {
+        return rpcConfig.getMicroServiceId();
     }
 
     @Override
-    public List<String> getSubscribedVIP() {
-        return rpcConfig.getSubscribedVIP();
+    public List<String> getSubscribedServices() {
+        return rpcConfig.getSubscribedServiceIds();
     }
 
     @Override

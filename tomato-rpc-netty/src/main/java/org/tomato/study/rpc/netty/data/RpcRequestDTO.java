@@ -34,9 +34,9 @@ import org.tomato.study.rpc.core.Invocation;
 public class RpcRequestDTO implements Invocation {
 
     /**
-     * {@link RpcRequestModel#getServiceVIP()}
+     * {@link RpcRequestModel#getMicroServiceId()}
      */
-    private String serviceVIP;
+    private String microServiceId;
 
     /**
      * {@link RpcRequestModel#getRpcInterFace()}

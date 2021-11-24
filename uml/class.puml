@@ -1,8 +1,50 @@
 @startuml
 
 title tomato-rpc
+interface LifeCycle {
 
-class ZookeeperNameService implements NameService {
+    void init() throws TomatoRpcException;
+    void start() throws TomatoRpcException;
+    void stop() throws TomatoRpcException;
+    List<LifeCycleListener> getListeners();
+    void addListener(LifeCycleListener listener);
+}
+
+interface RpcCoreService extends LifeCycle {
+    <T> URI registerProvider(T serviceInstance, Class<T> serviceInterface)
+    <T> T createStub(ApiConfig<T> apiConfig)
+    String getMicroServiceId()
+    List<String> getSubscribedServices()
+    String getStage()
+    String getGroup()
+    String getProtocol()
+    int getPort()
+}
+
+abstract class BaseRpcCoreService implements RpcCoreService {
+    ProviderRegistry providerRegistry
+    NameServer nameServer
+    StubFactory stubFactory
+    RpcConfig rpcConfig
+}
+
+interface NameServer extends LifeCycle {
+    void registerService(MetaData metaData) throws Exception;
+    void unregisterService(MetaData metaData) throws Exception;
+    void subscribe(MicroServiceSpace[] microServices, String stage) throws Exception;
+    void unsubscribe(MicroServiceSpace[] microServices, String stage) throws Exception;
+    Optional<RpcInvoker> lookupInvoker(String microServiceId, String group);
+
+}
+
+interface MicroServiceSpace {
+    String getMicroServiceId()
+    Optional<RpcInvoker> lookUp(String group)
+    void refresh(Set<MetaData> metadataSet) throws IOException
+    void close()
+}
+
+class ZookeeperNameService implements NameServer {
     ZookeeperRegistry registry
 }
 
@@ -14,71 +56,54 @@ class ZookeeperRegistry {
     ConcurrentMap<MicroServiceSpace, ChildrenListener> childrenListenerMap
 }
 
-abstract class BaseRpcServer implements RpcServer {
-    String host;
-    int port;
-    boolean useBusinessPool;
-    int businessPoolSize;
-}
-
-class NettyRpcServer extends BaseRpcServer {
-    DispatcherHandler dispatcherHandler;
-    MetricHolder metricHolder;
-    MetricHandler metricHandler;
-    ServerBootstrap serverBootstrap;
-    EventExecutorGroup businessGroup;
-    EventLoopGroup bossGroup;
-    EventLoopGroup workerGroup;
-}
-
-
-abstract class BaseRpcCoreService implements RpcCoreService {
-    ProviderRegistry providerRegistry
-    NameServer nameServer
-    StubFactory stubFactory
-    RpcConfig rpcConfig
-}
-
 class NettyRpcCoreService extends BaseRpcCoreService {
     NettyRpcServer server
     MetaData rpcServerMetaData
     NettyChannelHolder channelHolder
     NettyResponseHolder responseHolder
+    RpcInvokerFactory invokerFactory
+    MicroServiceSpace[] microServices
 }
 
 class BaseMicroServiceSpace implements MicroServiceSpace {
-    String vip
+    String microServiceId
     ConcurrentMap<MetaData, RpcInvoker> invokerRegistry
     ConcurrentMap<String, List<RpcInvoker>> sameGroupInvokerMap
+    abstract RpcInvoker createInvoker(MetaData meta);
 }
 
-class NettyMicroServiceSpace extends BaseMicroServiceSpace {
-    RpcInvokerFactory nettyRpcInvokerFactory
-    NettyChannelHolder channelHolder
-    NettyResponseHolder responseHolder
-}
+BaseRpcCoreService "1" *--> "1" NameServer
+NettyRpcCoreService "1" *--> "n" MicroServiceSpace
+NameServer "1" o--> "n" MicroServiceSpace
+NameServer "1" *--> "1" ZookeeperRegistry
 
-class NettyRpcInvoker implements RpcInvoker, MessageSender {
-    MetaData providerNodeMetaData
-    NettyChannelHolder channelHolder
-    NettyResponseHolder responseHolder
-    Serializer commandSerializer
-    URI uri
-}
+note left of LifeCycle
+组件生命周期
+end note
 
-class NettyResponseFuture {
-    long messageId
-    CompletableFuture<Command> future
-    long timeStamp
-}
+note left of RpcCoreService
+rpc核心接口
+提供创建客户端动态代理Stub、
+注册服务提供者、暴露服务的能力
+end note
 
-NettyRpcCoreService "1" *--> "1" ZookeeperNameService
-ZookeeperNameService "1"*--> "1" ZookeeperRegistry
-ZookeeperRegistry "1" *--> "n" MicroServiceSpace
-ZookeeperRegistry "1" <--> "n" PathChildrenListener
-MicroServiceSpace "1" --> "1" PathChildrenListener
-MicroServiceSpace "1" *--> "n" NettyRpcInvoker
-NettyResponseHolder "1" o--> "n" NettyResponseFuture
-NettyRpcCoreService "1" *--> "1" NettyRpcServer
+note left of BaseRpcCoreService::providerRegistry
+服务端stub管理
+end note
+
+note left of BaseRpcCoreService::stubFactory
+基于动态代理创建客户端stub
+end note
+
+
+note left of NameServer
+注册中心
+提供服务注册、订阅服务更新的能力
+end note
+
+note left of MicroServiceSpace
+微服务对象，存储了微服务实例信息，
+并暴露了更新接口
+end note
 
 @enduml

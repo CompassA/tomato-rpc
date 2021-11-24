@@ -39,7 +39,7 @@ Tomato-RPC的RPC客户端默认会向group字段与自己相同的其他RPC服�
 
 
 ### 注册中心服务树
-RPC服务节点目录结构: /tomato/{micro-service-vip}/{stage}/providers/............  
+RPC服务节点目录结构: /tomato/{micro-service-id}/{stage}/providers/............  
 一级目录: Tomato-RPC namespace, 与Tomato-RPC相关的数据都在这个目录中  
 二级目录: 各微服务信息  
 三级目录: 一个微服务在部署在哪几个环境  
@@ -97,7 +97,7 @@ RPC客户端与RPC服务端需共同引入此jar包，保持接口一致性。
 接口及方法参数
 ```java
 // TomatoApi注解为框架自定义注解，发布的接口需带上此注解，目的是告诉客户端，发布该接口的服务端的唯一标识
-@TomatoApi(microServiceID = "demo-rpc-service")
+@TomatoApi(microServiceId = "demo-rpc-service")
 public interface EchoService {
     String echo(String request);
 }
@@ -231,7 +231,7 @@ public class RpcServerDemo {
         RpcCoreService coreService = SpiLoader.getLoader(RpcCoreServiceFactory.class).load()
                 .create(RpcConfig.builder()
                         // 服务唯一标识
-                        .serviceVIP("DemoRpcServer")
+                        .microServiceId("DemoRpcServer")
                         // RPC注册中心ip
                         .nameServiceURI("127.0.0.1:2181")
                         // 暴露的端口
@@ -266,9 +266,9 @@ public class RpcClientDemo {
                 .load()
                 .create(RpcConfig.builder()
                         // 自身微服务标识
-                        .serviceVIP("DemoRpcClient")
+                        .microServiceId("DemoRpcClient")
                         // 订阅的微服务标识，订阅之后，可与该服务进行RPC通信
-                        .subscribedVIP(Collections.singletonList("DemoRpcServer"))
+                        .subscribedServiceIds(Collections.singletonList("DemoRpcServer"))
                         // 注册中心地址
                         .nameServiceURI("127.0.0.1:2181")
                         // 自身暴露端口
@@ -295,6 +295,119 @@ public class RpcClientDemo {
         // 停止服务
         rpcCoreService.stop();
     }
+}
+```
+
+# 核心类图
+```puml
+
+@startuml
+
+title tomato-rpc
+interface LifeCycle {
+
+    void init() throws TomatoRpcException;
+    void start() throws TomatoRpcException;
+    void stop() throws TomatoRpcException;
+    List<LifeCycleListener> getListeners();
+    void addListener(LifeCycleListener listener);
+}
+
+interface RpcCoreService extends LifeCycle {
+    <T> URI registerProvider(T serviceInstance, Class<T> serviceInterface)
+    <T> T createStub(ApiConfig<T> apiConfig)
+    String getMicroServiceId()
+    List<String> getSubscribedServices()
+    String getStage()
+    String getGroup()
+    String getProtocol()
+    int getPort()
+}
+
+abstract class BaseRpcCoreService implements RpcCoreService {
+    ProviderRegistry providerRegistry
+    NameServer nameServer
+    StubFactory stubFactory
+    RpcConfig rpcConfig
+}
+
+interface NameServer extends LifeCycle {
+    void registerService(MetaData metaData) throws Exception;
+    void unregisterService(MetaData metaData) throws Exception;
+    void subscribe(MicroServiceSpace[] microServices, String stage) throws Exception;
+    void unsubscribe(MicroServiceSpace[] microServices, String stage) throws Exception;
+    Optional<RpcInvoker> lookupInvoker(String microServiceId, String group);
 
 }
+
+interface MicroServiceSpace {
+    String getMicroServiceId()
+    Optional<RpcInvoker> lookUp(String group)
+    void refresh(Set<MetaData> metadataSet) throws IOException
+    void close()
+}
+
+class ZookeeperNameService implements NameServer {
+    ZookeeperRegistry registry
+}
+
+class ZookeeperRegistry {
+    CuratorClient curatorWrapper
+    String namespace
+    Charset zNodePathCharset
+    ConcurrentMap<String, MicroServiceSpace> providerMap
+    ConcurrentMap<MicroServiceSpace, ChildrenListener> childrenListenerMap
+}
+
+class NettyRpcCoreService extends BaseRpcCoreService {
+    NettyRpcServer server
+    MetaData rpcServerMetaData
+    NettyChannelHolder channelHolder
+    NettyResponseHolder responseHolder
+    RpcInvokerFactory invokerFactory
+    MicroServiceSpace[] microServices
+}
+
+class BaseMicroServiceSpace implements MicroServiceSpace {
+    String microServiceId
+    ConcurrentMap<MetaData, RpcInvoker> invokerRegistry
+    ConcurrentMap<String, List<RpcInvoker>> sameGroupInvokerMap
+    abstract RpcInvoker createInvoker(MetaData meta);
+}
+
+BaseRpcCoreService "1" *--> "1" NameServer
+NettyRpcCoreService "1" *--> "n" MicroServiceSpace
+NameServer "1" o--> "n" MicroServiceSpace
+NameServer "1" *--> "1" ZookeeperRegistry
+
+note left of LifeCycle
+组件生命周期
+end note
+
+note left of RpcCoreService
+rpc核心接口
+提供创建客户端动态代理Stub、
+注册服务提供者、暴露服务的能力
+end note
+
+note left of BaseRpcCoreService::providerRegistry
+服务端stub管理
+end note
+
+note left of BaseRpcCoreService::stubFactory
+基于动态代理创建客户端stub
+end note
+
+
+note left of NameServer
+注册中心
+提供服务注册、订阅服务更新的能力
+end note
+
+note left of MicroServiceSpace
+微服务对象，存储了微服务实例信息，
+并暴露了更新接口
+end note
+
+@enduml
 ```

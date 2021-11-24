@@ -40,7 +40,7 @@ public final class ConvertUtils {
         Object[] parameters = dto.getArgs();
 
         RpcRequestModel.RpcRequestModelBuilder builder = RpcRequestModel.builder()
-                .serviceVIP(dto.getServiceVIP())
+                .microServiceId(dto.getMicroServiceId())
                 .rpcInterFace(getClass(dto.getInterfaceName()))
                 .methodName(dto.getMethodName())
                 .returnType(StringUtils.isBlank(dto.getReturnType())
@@ -69,7 +69,7 @@ public final class ConvertUtils {
         Class<?>[] argsType = model.getArgsType();
 
         RpcRequestDTO.RpcRequestDTOBuilder builder = RpcRequestDTO.builder()
-                .serviceVIP(model.getServiceVIP())
+                .microServiceId(model.getMicroServiceId())
                 .interfaceName(model.getRpcInterFace().getName())
                 .returnType(model.getReturnType() == null
                         ? void.class.getName()

@@ -22,10 +22,10 @@ package org.tomato.study.rpc.core;
 public interface Invocation {
 
     /**
-     * get rpc service vip in the service name registry
-     * @return service vip
+     * get rpc service id in the service name registry
+     * @return service id
      */
-    String getServiceVIP();
+    String getMicroServiceId();
 
     /**
      * get rpc api class full name

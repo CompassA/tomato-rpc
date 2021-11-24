@@ -100,7 +100,7 @@ public class NettyRpcCoreServiceTest {
         whenNew(NettyRpcServer.class).withAnyArguments().thenReturn(mockNettyRpcServer);
 
         RpcConfig rpcConfig = RpcConfig.builder()
-                .serviceVIP("org.tomato.study.rpc.netty.service.NettyRpcCoreServiceTest")
+                .microServiceId("org.tomato.study.rpc.netty.service.NettyRpcCoreServiceTest")
                 .port(1234)
                 .build();
         nettyRpcCoreService = (NettyRpcCoreService) new NettyRpcCoreServiceFactory().create(rpcConfig);
@@ -132,7 +132,7 @@ public class NettyRpcCoreServiceTest {
         Assert.assertNotNull(nettyRpcCoreService.createStub(
                 ApiConfig.<RpcServer>builder()
                         .api(RpcServer.class)
-                        .serviceVIP("mock")
+                        .microServiceId("mock")
                         .build())
         );
 
@@ -140,7 +140,7 @@ public class NettyRpcCoreServiceTest {
             nettyRpcCoreService.createStub(
                     ApiConfig.<NettyRpcServer>builder()
                             .api(NettyRpcServer.class)
-                            .serviceVIP("mock")
+                            .microServiceId("mock")
                             .build()
             );
         } catch (TomatoRpcRuntimeException e) {

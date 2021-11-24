@@ -44,15 +44,15 @@ import java.util.Set;
 @PowerMockIgnore({"javax.management"})
 public class BaseServiceProviderTest extends BaseTest {
 
-    private final String mockVIP = "mock.subscribe.1";
+    private final String mockServiceId = "mock.subscribe.1";
 
     private Set<MetaData> originMataDataSet;
 
-    private final MicroServiceSpace provider = Mockito.spy(new TestServiceProvider(mockVIP));
+    private final MicroServiceSpace provider = Mockito.spy(new TestServiceProvider(mockServiceId));
 
     @Before
     public void init() {
-        originMataDataSet = mockMetadataSet(mockVIP);
+        originMataDataSet = mockMetadataSet(mockServiceId);
     }
 
     @After
@@ -84,7 +84,7 @@ public class BaseServiceProviderTest extends BaseTest {
         provider.refresh(originMataDataSet);
 
         // remove test
-        Set<MetaData> newMetaSet = mockMetadataSet(mockVIP);
+        Set<MetaData> newMetaSet = mockMetadataSet(mockServiceId);
         Iterator<MetaData> iterator = newMetaSet.iterator();
         iterator.next();
         iterator.remove();
@@ -92,13 +92,13 @@ public class BaseServiceProviderTest extends BaseTest {
         checkInvokerMap(provider, newMetaSet);
 
         // add test
-        newMetaSet = mockMetadataSet(mockVIP);
+        newMetaSet = mockMetadataSet(mockServiceId);
         newMetaSet.add(
                 MetaData.builder()
                         .protocol("tomato")
                         .host("127.0.0.1")
                         .port(9999)
-                        .vip(mockVIP)
+                        .microServiceId(mockServiceId)
                         .stage("default")
                         .group("default")
                         .build()
@@ -119,8 +119,8 @@ public class BaseServiceProviderTest extends BaseTest {
 
     public static class TestServiceProvider extends BaseMicroServiceSpace {
 
-        public TestServiceProvider(String vip) {
-            super(vip);
+        public TestServiceProvider(String mockServiceId) {
+            super(mockServiceId);
         }
 
         @Override

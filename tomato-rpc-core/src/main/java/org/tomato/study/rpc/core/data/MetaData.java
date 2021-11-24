@@ -48,9 +48,9 @@ import java.util.Optional;
 public class MetaData {
 
     /**
-     * vip parameter key name in the uri
+     * micro-service-id parameter key name in the uri
      */
-    private static final String VIP_PARAM_NAME = "VIP";
+    private static final String ID_PARAM_NAME = "micro-service-id";
 
     /**
      * stage parameter key name in the uri
@@ -78,9 +78,9 @@ public class MetaData {
     private final int port;
 
     /**
-     * provider vip
+     * provider micro service id
      */
-    private final String vip;
+    private final String microServiceId;
 
     /**
      * provider stage
@@ -99,7 +99,7 @@ public class MetaData {
     public boolean isValid() {
         return this.protocol != null && !this.protocol.isBlank()
                 && this.host != null && !this.host.isBlank()
-                && this.vip != null && !this.vip.isBlank()
+                && this.microServiceId != null && !this.microServiceId.isBlank()
                 && this.stage != null && !this.stage.isBlank()
                 && this.group != null && !this.group.isBlank();
     }
@@ -117,7 +117,7 @@ public class MetaData {
                 metaData.getProtocol(),
                 metaData.getHost(),
                 metaData.getPort(),
-                VIP_PARAM_NAME, metaData.getVip(),
+                ID_PARAM_NAME, metaData.getMicroServiceId(),
                 STAGE_PARAM_NAME, metaData.getStage(),
                 GROUP_PARAM_NAME, metaData.getGroup()))
         );
@@ -140,14 +140,14 @@ public class MetaData {
         String scheme = uri.getScheme();
         String host = uri.getHost();
         int port = uri.getPort();
-        String vip = paramMap.get(VIP_PARAM_NAME);
+        String microServiceId = paramMap.get(ID_PARAM_NAME);
         String stage = paramMap.get(STAGE_PARAM_NAME);
         String group = paramMap.get(GROUP_PARAM_NAME);
         MetaData metaData = MetaData.builder()
                 .protocol(scheme)
                 .host(host)
                 .port(port)
-                .vip(vip)
+                .microServiceId(microServiceId)
                 .stage(stage)
                 .group(group)
                 .build();
@@ -169,7 +169,7 @@ public class MetaData {
         return Objects.equals(this.getProtocol(), otherMataData.getProtocol()) &&
                 Objects.equals(this.getHost(), otherMataData.getHost()) &&
                 Objects.equals(this.getPort(), otherMataData.getPort()) &&
-                Objects.equals(this.getVip(), otherMataData.getVip()) &&
+                Objects.equals(this.getMicroServiceId(), otherMataData.getMicroServiceId()) &&
                 Objects.equals(this.getStage(), otherMataData.getStage()) &&
                 Objects.equals(this.getGroup(), otherMataData.getGroup());
     }
@@ -180,7 +180,7 @@ public class MetaData {
         hash = hash * 31 + Objects.hashCode(this.getProtocol());
         hash = hash * 31 + Objects.hashCode(this.getHost());
         hash = hash * 31 + Objects.hashCode(this.getPort());
-        hash = hash * 31 + Objects.hashCode(this.getVip());
+        hash = hash * 31 + Objects.hashCode(this.getMicroServiceId());
         hash = hash * 31 + Objects.hashCode(this.getStage());
         hash = hash * 31 + Objects.hashCode(this.getGroup());
         return hash;

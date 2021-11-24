@@ -37,7 +37,7 @@ public class RpcConfig {
     /**
      * 当前服务的唯一标识，别的服务通过该标识订阅服务
      */
-    private final String serviceVIP;
+    private final String microServiceId;
 
     /**
      * 当前服务所在的环境，用于环境隔离
@@ -52,7 +52,7 @@ public class RpcConfig {
     /**
      * 当前服务订阅的其他RPC服务
      */
-    private final List<String> subscribedVIP;
+    private final List<String> subscribedServiceIds;
 
     /**
      * 注册中心的连接URI
@@ -90,10 +90,10 @@ public class RpcConfig {
 
     public static class Builder {
         private String protocol = "tomato";
-        private String serviceVIP;
+        private String microServiceId;
         private String stage = "default";
         private String group = "default";
-        private List<String> subscribedVIP = Collections.emptyList();
+        private List<String> subscribedServiceIds = Collections.emptyList();
         private String nameServiceURI;
         private int port = 9090;
         private int businessThreadPoolSize = 0;
@@ -106,8 +106,8 @@ public class RpcConfig {
             return this;
         }
 
-        public Builder serviceVIP(String serviceVIP) {
-            this.serviceVIP = serviceVIP;
+        public Builder microServiceId(String microServiceId) {
+            this.microServiceId = microServiceId;
             return this;
         }
 
@@ -121,8 +121,8 @@ public class RpcConfig {
             return this;
         }
 
-        public Builder subscribedVIP(List<String> subscribedVIP) {
-            this.subscribedVIP = subscribedVIP;
+        public Builder subscribedServiceIds(List<String> subscribedServiceIds) {
+            this.subscribedServiceIds = subscribedServiceIds;
             return this;
         }
 
@@ -159,10 +159,10 @@ public class RpcConfig {
         public RpcConfig build() {
             return new RpcConfig(
                     this.protocol,
-                    this.serviceVIP,
+                    this.microServiceId,
                     this.stage,
                     this.group,
-                    this.subscribedVIP,
+                    this.subscribedServiceIds,
                     this.nameServiceURI,
                     this.port,
                     this.businessThreadPoolSize,

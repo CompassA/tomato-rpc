@@ -16,9 +16,9 @@ package org.tomato.study.rpc.core;
 
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.observer.LifeCycle;
+import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.core.router.RpcInvoker;
 
-import java.util.Collection;
 import java.util.Optional;
 
 /**
@@ -29,40 +29,40 @@ import java.util.Optional;
 public interface NameServer extends LifeCycle {
 
     /**
-     * register service vip
+     * register micro service
      * @param metaData service identification、service address
      * @throws Exception register exception
      */
     void registerService(MetaData metaData) throws Exception;
 
     /**
-     * unregister service vip
+     * unregister micro service
      * @param metaData service identification、service address
      * @throws Exception register exception
      */
     void unregisterService(MetaData metaData) throws Exception;
 
     /**
-     * subscribe vip
-     * @param vipList vip to subscribe
+     * subscribe micro service
+     * @param microServices micro services to subscribe
      * @param stage client subscribe the provider invoker which has the same stage
      * @exception Exception subscribe exception
      */
-    void subscribe(Collection<String> vipList, String stage) throws Exception;
+    void subscribe(MicroServiceSpace[] microServices, String stage) throws Exception;
 
     /**
-     * unsubscribe vip
-     * @param vipList vip to unsubscribe
+     * unsubscribe micro service
+     * @param microServices micro services to unsubscribe
      * @param stage client subscribe the provider invoker which has the same stage
      * @exception Exception subscribe exception
      */
-    void unsubscribe(Collection<String> vipList, String stage) throws Exception;
+    void unsubscribe(MicroServiceSpace[] microServices, String stage) throws Exception;
 
     /**
      * search service invoker
-     * @param serviceVIP service vip
+     * @param microServiceId micro service id
      * @param group service group
      * @return provider invoker
      */
-    Optional<RpcInvoker> lookupInvoker(String serviceVIP, String group);
+    Optional<RpcInvoker> lookupInvoker(String microServiceId, String group);
 }

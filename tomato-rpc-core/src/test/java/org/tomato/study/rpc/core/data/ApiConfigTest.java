@@ -27,7 +27,7 @@ import java.util.Optional;
  */
 public class ApiConfigTest {
 
-    private static final String MOCK_VIP = "test";
+    private static final String MOCK_SERVICE_ID = "test";
 
     @Test
     public void test() {
@@ -36,10 +36,10 @@ public class ApiConfigTest {
         Optional<ApiConfig<TestApi>> apiConfig = ApiConfig.create(TestApi.class);
         Assert.assertTrue(apiConfig.isPresent());
         Assert.assertSame(apiConfig.get().getApi(), TestApi.class);
-        Assert.assertEquals(MOCK_VIP, apiConfig.get().getServiceVIP());
+        Assert.assertEquals(MOCK_SERVICE_ID, apiConfig.get().getMicroServiceId());
     }
 
-    @TomatoApi(microServiceID = MOCK_VIP)
+    @TomatoApi(microServiceId = MOCK_SERVICE_ID)
     public static interface TestApi {
 
     }

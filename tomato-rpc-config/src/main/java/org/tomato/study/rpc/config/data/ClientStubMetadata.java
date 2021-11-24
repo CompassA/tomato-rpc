@@ -95,10 +95,10 @@ public class ClientStubMetadata<T> {
             return Optional.empty();
         }
         TomatoApi tomatoApi = api.getAnnotation(TomatoApi.class);
-        if (tomatoApi == null || StringUtils.isBlank(tomatoApi.microServiceID())) {
+        if (tomatoApi == null || StringUtils.isBlank(tomatoApi.microServiceId())) {
             return Optional.empty();
         }
         return Optional.of(new ClientStubMetadata<>(
-                api, tomatoApi.microServiceID(), rpcClientStub.timeout(), rpcClientStub.group()));
+                api, tomatoApi.microServiceId(), rpcClientStub.timeout(), rpcClientStub.group()));
     }
 }

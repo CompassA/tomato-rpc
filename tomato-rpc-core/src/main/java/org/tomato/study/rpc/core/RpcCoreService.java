@@ -45,16 +45,16 @@ public interface RpcCoreService extends LifeCycle {
     <T> T createStub(ApiConfig<T> apiConfig);
 
     /**
-     * get service virtual ip
-     * @return service virtual ip
+     * get micro-service-id
+     * @return service unique id
      */
-    String getServiceVIP();
+    String getMicroServiceId();
 
     /**
-     * get subscribed vip
-     * @return subscribed vip list
+     * get subscribed micro-service-id
+     * @return subscribed micro-service-id list
      */
-    List<String> getSubscribedVIP();
+    List<String> getSubscribedServices();
 
     /**
      * get service stage

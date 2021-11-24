@@ -18,13 +18,13 @@ import org.tomato.study.rpc.core.base.BaseNameServer;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.NameServerConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.core.router.RpcInvoker;
 import org.tomato.study.rpc.registry.zookeeper.data.ZookeeperConfig;
 import org.tomato.study.rpc.registry.zookeeper.error.TomatoRegistryErrorEnum;
 import org.tomato.study.rpc.registry.zookeeper.impl.ZookeeperRegistry;
 
 import java.io.IOException;
-import java.util.Collection;
 import java.util.Optional;
 
 /**
@@ -52,18 +52,18 @@ public class ZookeeperNameServer extends BaseNameServer {
     }
 
     @Override
-    public void subscribe(Collection<String> vipList, String stage) throws Exception {
-        registry.subscribe(vipList, stage);
+    public void subscribe(MicroServiceSpace[] microServices, String stage) throws Exception {
+        registry.subscribe(microServices, stage);
     }
 
     @Override
-    public void unsubscribe(Collection<String> vipList, String stage) throws Exception {
-        registry.unsubscribe(vipList);
+    public void unsubscribe(MicroServiceSpace[] microServices, String stage) throws Exception {
+        registry.unsubscribe(microServices);
     }
 
     @Override
-    public Optional<RpcInvoker> lookupInvoker(String serviceVIP, String group) {
-        return registry.lookup(serviceVIP, group);
+    public Optional<RpcInvoker> lookupInvoker(String microServiceId, String group) {
+        return registry.lookup(microServiceId, group);
     }
 
     @Override
@@ -73,8 +73,7 @@ public class ZookeeperNameServer extends BaseNameServer {
                         .namespace(ZK_NAME_SPACE)
                         .connString(getConnString())
                         .charset(getCharset())
-                        .build()
-        );
+                        .build());
     }
 
     @Override

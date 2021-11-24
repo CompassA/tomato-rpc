@@ -38,9 +38,9 @@ public class StubConfig<T> {
     private final Class<T> serviceInterface;
 
     /**
-     * service vip
+     * service id
      */
-    private final String serviceVIP;
+    private final String microServiceId;
 
     /**
      * service group

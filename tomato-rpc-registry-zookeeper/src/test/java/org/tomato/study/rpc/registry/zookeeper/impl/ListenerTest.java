@@ -52,7 +52,7 @@ import static org.powermock.api.mockito.PowerMockito.whenNew;
 @RunWith(PowerMockRunner.class)
 public class ListenerTest extends BaseTest {
 
-    private final String mockVIP = "mock_vip";
+    private final String microServiceId = "mock_service_id";
 
     private final String stage = "default";
 
@@ -84,7 +84,7 @@ public class ListenerTest extends BaseTest {
                 "curatorWrapper",
                 mock(CuratorClient.class));
         this.listener = new PathChildrenListener(spyRegistry, mockClient);
-        this.mockChildren = new ArrayList<>(mockMetadataSet(mockVIP));
+        this.mockChildren = new ArrayList<>(mockMetadataSet(microServiceId));
     }
 
     @After
@@ -96,7 +96,7 @@ public class ListenerTest extends BaseTest {
     @Test
     public void watcherProcessTest() throws Exception {
         // mock更新路径
-        String mockPath = "/tomato/" + mockVIP + "/" + stage + "/providers";
+        String mockPath = "/tomato/" + microServiceId + "/" + stage + "/providers";
         when(mockEvent.getPath()).thenReturn(mockPath);
         // mock路径对应的孩子节点
         Collection<URI> uriList = mockChildren.stream()

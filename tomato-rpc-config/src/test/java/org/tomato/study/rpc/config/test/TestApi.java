@@ -20,7 +20,7 @@ import org.tomato.study.rpc.core.api.TomatoApi;
  * @author Tomato
  * Created on 2021.11.21
  */
-@TomatoApi(microServiceID = "rpc-test-service")
+@TomatoApi(microServiceId = "rpc-test-service")
 public interface TestApi {
     String echo(String str);
 }

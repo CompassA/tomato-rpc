@@ -35,7 +35,7 @@ public class ApiConfig<T> {
     /**
      * 服务唯一标识
      */
-    private final String serviceVIP;
+    private final String microServiceId;
 
     /**
      * rpc接口
@@ -52,7 +52,7 @@ public class ApiConfig<T> {
         }
         return Optional.of(
                 ApiConfig.<T>builder()
-                        .serviceVIP(apiInfo.microServiceID())
+                        .microServiceId(apiInfo.microServiceId())
                         .api(api)
                         .build()
         );

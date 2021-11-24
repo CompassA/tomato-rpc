@@ -100,7 +100,7 @@ public class RpcStubPostProcessor implements BeanPostProcessor {
                             metaDataKey -> rpcCoreService.createStub(
                                     ApiConfig.builder()
                                             .api((Class<Object>) metaDataKey.getStubClass())
-                                            .serviceVIP(metaDataKey.getMicroServiceId())
+                                            .microServiceId(metaDataKey.getMicroServiceId())
                                             .build()));
                     try {
                         field.set(bean, stub);

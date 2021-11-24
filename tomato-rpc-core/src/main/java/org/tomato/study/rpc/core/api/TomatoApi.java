@@ -34,5 +34,5 @@ public @interface TomatoApi {
      * 用于设置服务的唯一标识
      * @return 服务唯一标识
      */
-    String microServiceID();
+    String microServiceId();
 }

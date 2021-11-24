@@ -23,7 +23,7 @@ import org.tomato.study.rpc.sample.api.data.DemoResponse;
  * @author Tomato
  * Created on 2021.06.20
  */
-@TomatoApi(microServiceID = Constant.serviceId)
+@TomatoApi(microServiceId = Constant.serviceId)
 public interface EchoService {
 
     DemoResponse echo(DemoRequest request);

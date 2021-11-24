@@ -60,8 +60,8 @@ public class RpcRequestHandler implements ServerHandler {
             // 得到接口
             Class<?> providerInterface = request.getRpcInterFace();
 
-            // 根据客户端提供的目标vip值和目标接口查找服务端的实现类
-            Object provider = providerRegistry.getProvider(request.getServiceVIP(), providerInterface);
+            // 根据客户端提供的目标micro-service-id值和目标接口查找服务端的实现类
+            Object provider = providerRegistry.getProvider(request.getMicroServiceId(), providerInterface);
 
             // 查找目标方法
             Method method = searchMethod(request, providerInterface, provider);

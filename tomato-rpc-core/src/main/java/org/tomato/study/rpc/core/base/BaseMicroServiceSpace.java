@@ -38,9 +38,9 @@ import java.util.concurrent.ConcurrentMap;
 public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
 
     /**
-     * 服务唯一标识 {@link MetaData#getVip()}
+     * 服务唯一标识 {@link MetaData#getMicroServiceId()}
      */
-    private final String vip;
+    private final String microServiceId;
 
     /**
      * 一个RPC服务的所有实例节点，一个RpcInvoker持有一个与服务实例节点的连接并与其通信
@@ -54,13 +54,13 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
      */
     private final ConcurrentMap<String, List<RpcInvoker>> sameGroupInvokerMap = new ConcurrentHashMap<>(0);
 
-    public BaseMicroServiceSpace(String vip) {
-        this.vip = vip;
+    public BaseMicroServiceSpace(String microServiceId) {
+        this.microServiceId = microServiceId;
     }
 
     @Override
-    public String getVIP() {
-        return vip;
+    public String getMicroServiceId() {
+        return microServiceId;
     }
 
     /**
@@ -79,7 +79,7 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
 
     /**
      * 更新RPC服务的实例节点信息
-     * @param newRpcInstanceInfoSet 相同VIP、相同Stage的所有实例节点
+     * @param newRpcInstanceInfoSet 相同micro-service-id、相同Stage的所有实例节点
      * @throws IOException 更新异常
      */
     @Override
@@ -154,6 +154,11 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
         cleanInvoker();
     }
 
+    /**
+     * 根据rpc节点信息创建invoker
+     * @param metaData rpc节点信息
+     * @return 可与rpc节点通信的invoker
+     */
     protected abstract RpcInvoker createInvoker(MetaData metaData);
 
     private void cleanInvoker() throws IOException {

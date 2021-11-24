@@ -18,10 +18,8 @@ import lombok.Getter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.router.RpcInvoker;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
-import org.tomato.study.rpc.core.router.ServiceProviderFactory;
-import org.tomato.study.rpc.core.spi.SpiLoader;
+import org.tomato.study.rpc.core.router.RpcInvoker;
 import org.tomato.study.rpc.registry.zookeeper.ChildrenListener;
 import org.tomato.study.rpc.registry.zookeeper.CuratorClient;
 import org.tomato.study.rpc.registry.zookeeper.data.ZookeeperConfig;
@@ -31,12 +29,12 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.stream.Collectors;
@@ -51,7 +49,7 @@ public class ZookeeperRegistry {
     private static final String PATH_DELIMITER = "/";
 
     /**
-     * 一个服务的所有实例的上级文件夹: /namespace/vip/stage/PROVIDER_DICTIONARY
+     * 一个服务的所有实例的上级文件夹: /namespace/micro-service-id/stage/PROVIDER_DICTIONARY
      */
     private static final String PROVIDER_DICTIONARY = "providers";
 
@@ -61,7 +59,7 @@ public class ZookeeperRegistry {
     private final CuratorClient curatorWrapper;
 
     /**
-     * zookeeper注册器的根路径: /{namespace}/vip/stage/PROVIDER_DICTIONARY
+     * zookeeper注册器的根路径: /{namespace}/micro-service-id/stage/PROVIDER_DICTIONARY
      */
     @Getter
     private final String namespace;
@@ -73,7 +71,7 @@ public class ZookeeperRegistry {
     private final Charset zNodePathCharset;
 
     /**
-     * 服务唯一标识VIP -> MicroServiceProvider
+     * 服务唯一标识 -> MicroServiceProvider
      */
     private final ConcurrentMap<String, MicroServiceSpace> providerMap = new ConcurrentHashMap<>(0);
 
@@ -104,9 +102,9 @@ public class ZookeeperRegistry {
         if (uriOpt.isEmpty()) {
             return;
         }
-        // 路径：/namespace/vip/stage/providers/ip+port....
+        // 路径：/namespace/micro-service-id/stage/providers/ip+port....
         String zNodePath = convertToZNodePath(
-                metaData.getVip(),
+                metaData.getMicroServiceId(),
                 metaData.getStage(),
                 PROVIDER_DICTIONARY,
                 uriOpt.get().toString());
@@ -124,7 +122,7 @@ public class ZookeeperRegistry {
             return;
         }
         String zNodePath = convertToZNodePath(
-                metaData.getVip(),
+                metaData.getMicroServiceId(),
                 metaData.getStage(),
                 PROVIDER_DICTIONARY,
                 uriOpt.get().toString());
@@ -133,25 +131,27 @@ public class ZookeeperRegistry {
 
     /**
      * 订阅其他RPC服务
-     * @param vips 要订阅的RPC服务列表
+     * @param microServices 要订阅的RPC服务列表
      * @param stage 当前服务的环境
      * @throws Exception exception during subscribe
      */
-    public void subscribe(Collection<String> vips, String stage) throws Exception {
-        if (CollectionUtils.isEmpty(vips)) {
+    public void subscribe(MicroServiceSpace[] microServices, String stage) throws Exception {
+        if (microServices == null || microServices.length < 1) {
             return;
         }
-        for (String vip : vips) {
-            // 创建微服务对象
-            MicroServiceSpace serviceProvider = providerMap.computeIfAbsent(vip,
-                    // 通过SPI决定如何构建ServiceProvider对象
-                    vipKey -> SpiLoader.getLoader(ServiceProviderFactory.class).load().create(vipKey));
+        for (MicroServiceSpace microService : microServices) {
+            String microServiceId = microService.getMicroServiceId();
+            if (StringUtils.isBlank(microServiceId)) {
+                continue;
+            }
+            // 注册微服务对象
+            providerMap.putIfAbsent(microServiceId, microService);
 
-            // 根据固定的 /vip/stage/PROVIDER_DICTIONARY规则，计算出被订阅服务的zookeeper路径
-            String targetPath = convertToZNodePath(vip, stage, PROVIDER_DICTIONARY);
+            // 根据固定的 /micro-service-id/stage/PROVIDER_DICTIONARY规则，计算出被订阅服务的zookeeper路径
+            String targetPath = convertToZNodePath(microServiceId, stage, PROVIDER_DICTIONARY);
 
-            // 创建WATCHER, 监听服务节点的子节点变化，保证服务实例的更新与删除能同步当订阅方内存
-            ChildrenListener listener = childrenListenerMap.computeIfAbsent(serviceProvider,
+            // 创建WATCHER, 监听服务节点的子节点变化，保证服务实例的更新与删除能同步到订阅方的内存中
+            ChildrenListener listener = childrenListenerMap.computeIfAbsent(microService,
                     provider -> new PathChildrenListener(this, curatorWrapper));
 
             // 获取目标服务的所有RPC实例节点, 并注册WATCHER
@@ -161,31 +161,35 @@ public class ZookeeperRegistry {
             }
 
             // 将RPC实例节点路径解码并转成Metadata形式
-            final List<MetaData> metaDataList = new ArrayList<>(children.size());
+            final Set<MetaData> metadata = new HashSet<>(children.size());
             for (String child : children) {
                 String providerPathDecoded = URLDecoder.decode(child, zNodePathCharset);
                 URI providerMetadataURI = URI.create(providerPathDecoded);
                 MetaData.convert(providerMetadataURI)
                         .filter(MetaData::isValid)
-                        .ifPresent(metaDataList::add);
+                        .ifPresent(metadata::add);
             }
 
-            // 更新ServiceProvider的数据
-            serviceProvider.refresh(new HashSet<>(metaDataList));
+            // 更新微服务的数据
+            microService.refresh(metadata);
         }
     }
 
     /**
      * 取消订阅RPC服务
-     * @param vips 取消订阅的RPC服务列表
+     * @param microServices 取消订阅的RPC服务列表
      */
-    public void unsubscribe(Collection<String> vips) throws IOException {
-        if (CollectionUtils.isEmpty(vips)) {
+    public void unsubscribe(MicroServiceSpace[] microServices) throws IOException {
+        if (microServices == null || microServices.length < 1) {
             return;
         }
-        for (String vip : vips) {
-            // 移除ServiceProvider
-            MicroServiceSpace provider = providerMap.remove(vip);
+        for (MicroServiceSpace microService : microServices) {
+            String microServiceId = microService.getMicroServiceId();
+            if (StringUtils.isBlank(microServiceId)) {
+                continue;
+            }
+            // 移除微服务对象
+            MicroServiceSpace provider = providerMap.remove(microServiceId);
             if (provider == null) {
                 continue;
             }
@@ -201,31 +205,31 @@ public class ZookeeperRegistry {
 
     /**
      * 监听的路径更新时，更新对应的ServiceProvider
-     * @param path service provider path, format: /vip/{stage}/providers
+     * @param path service provider path, format: /micro-service-id/{stage}/providers
      * @param children current provider node metadata
      */
     public void notify(String path, Collection<URI> children) throws IOException {
         if (StringUtils.isBlank(path)) {
             return;
         }
-        // 解析路径，找到VIP
+        // 解析路径，找到micro-service-id
         String[] split = path.split(PATH_DELIMITER);
         if (split.length == 0) {
             return;
         }
-        String vip = null;
+        String microServiceId = null;
         for (String s : split) {
             if (!StringUtils.isBlank(s) && !this.namespace.equals(s)) {
-                vip = s;
+                microServiceId = s;
                 break;
             }
         }
-        if (StringUtils.isBlank(vip)) {
+        if (StringUtils.isBlank(microServiceId)) {
             return;
         }
 
         // 获取Provider对象并刷新节点数据, 若Provider不存在，说明已经取消订阅
-        MicroServiceSpace serviceProvider = providerMap.get(vip);
+        MicroServiceSpace serviceProvider = providerMap.get(microServiceId);
         if (serviceProvider == null) {
             return;
         }
@@ -239,16 +243,15 @@ public class ZookeeperRegistry {
         );
     }
 
-    public Optional<RpcInvoker> lookup(String serviceVip, String group) {
-        if (StringUtils.isBlank(serviceVip) || StringUtils.isBlank(group)) {
+    public Optional<RpcInvoker> lookup(String microServiceId, String group) {
+        if (StringUtils.isBlank(microServiceId) || StringUtils.isBlank(group)) {
             return Optional.empty();
         }
-        return Optional.ofNullable(providerMap.get(serviceVip))
+        return Optional.ofNullable(providerMap.get(microServiceId))
                 .flatMap(provider -> provider.lookUp(group));
     }
 
     public synchronized void close() throws IOException {
-        unsubscribe(providerMap.keySet());
         curatorWrapper.close();
     }
 

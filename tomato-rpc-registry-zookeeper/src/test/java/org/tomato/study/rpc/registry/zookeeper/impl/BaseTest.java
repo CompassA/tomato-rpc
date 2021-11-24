@@ -59,13 +59,13 @@ public class BaseTest {
         }
     }
 
-    protected Set<MetaData> mockMetadataSet(String vip) {
+    protected Set<MetaData> mockMetadataSet(String serviceId) {
         return new HashSet<>(Set.of(
                 MetaData.builder()
                         .protocol("tomato")
                         .host("127.0.0.1")
                         .port(6666)
-                        .vip(vip)
+                        .microServiceId(serviceId)
                         .group("default")
                         .stage("default")
                         .build(),
@@ -73,7 +73,7 @@ public class BaseTest {
                         .protocol("tomato")
                         .host("127.0.0.1")
                         .port(7777)
-                        .vip(vip)
+                        .microServiceId(serviceId)
                         .group("version1")
                         .stage("default")
                         .build(),
@@ -81,7 +81,7 @@ public class BaseTest {
                         .protocol("tomato")
                         .host("127.0.0.1")
                         .port(8888)
-                        .vip(vip)
+                        .microServiceId(serviceId)
                         .group("default")
                         .stage("default")
                         .build()

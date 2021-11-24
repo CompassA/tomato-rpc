@@ -16,15 +16,8 @@ package org.tomato.study.rpc.netty.router;
 
 import org.tomato.study.rpc.core.base.BaseMicroServiceSpace;
 import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.router.InvokerConfig;
 import org.tomato.study.rpc.core.router.RpcInvoker;
 import org.tomato.study.rpc.core.router.RpcInvokerFactory;
-import org.tomato.study.rpc.netty.invoker.NettyRpcInvokerFactory;
-import org.tomato.study.rpc.netty.transport.client.NettyChannelHolder;
-import org.tomato.study.rpc.netty.transport.client.NettyResponseHolder;
-
-import static org.tomato.study.rpc.netty.invoker.NettyRpcInvokerFactory.CHANNEL_HOLDER_PARAM_KEY;
-import static org.tomato.study.rpc.netty.invoker.NettyRpcInvokerFactory.RESPONSE_HOLDER_PARAM_KEY;
 
 /**
  * 提供基于Netty创建Invoker的方法
@@ -36,34 +29,16 @@ public class NettyMicroServiceSpace extends BaseMicroServiceSpace {
     /**
      * invoker创建
      */
-    private final RpcInvokerFactory nettyRpcInvokerFactory = new NettyRpcInvokerFactory();
+    private final RpcInvokerFactory invokerFactory;
 
-    /**
-     * 连接管理
-     */
-    private final NettyChannelHolder channelHolder;
-
-    /**
-     * 响应管理
-     */
-    private final NettyResponseHolder responseHolder;
-
-    public NettyMicroServiceSpace(String vip,
-                                  NettyChannelHolder channelHolder,
-                                  NettyResponseHolder responseHolder) {
-        super(vip);
-        this.channelHolder = channelHolder;
-        this.responseHolder = responseHolder;
+    public NettyMicroServiceSpace(String microServiceId,
+                                  RpcInvokerFactory invokerFactory) {
+        super(microServiceId);
+        this.invokerFactory = invokerFactory;
     }
 
     @Override
     protected RpcInvoker createInvoker(MetaData metaData) {
-        return nettyRpcInvokerFactory.create(
-                InvokerConfig.builder()
-                        .nodeInfo(metaData)
-                        .parameter(CHANNEL_HOLDER_PARAM_KEY, channelHolder)
-                        .parameter(RESPONSE_HOLDER_PARAM_KEY, responseHolder)
-                        .build()
-        ).orElse(null);
+        return invokerFactory.create(metaData).orElse(null);
     }
 }

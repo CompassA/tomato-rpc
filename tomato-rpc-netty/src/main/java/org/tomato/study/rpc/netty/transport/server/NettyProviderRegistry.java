@@ -33,23 +33,23 @@ public class NettyProviderRegistry implements ProviderRegistry {
     private final ConcurrentMap<String, Object> providerMap = new ConcurrentHashMap<>(0);
 
     @Override
-    public <T> void register(String vip, T instance, Class<T> providerInterface) {
-        if (StringUtils.isBlank(vip) || instance == null || !providerInterface.isInterface()) {
+    public <T> void register(String microServiceId, T instance, Class<T> providerInterface) {
+        if (StringUtils.isBlank(microServiceId) || instance == null || !providerInterface.isInterface()) {
             throw new IllegalCallerException("register invalid data");
         }
-        this.providerMap.put(providerId(providerInterface.getName(), vip), instance);
+        this.providerMap.put(providerId(providerInterface.getName(), microServiceId), instance);
     }
 
     @Override
-    public Object getProvider(String vip, Class<?> providerInterface) {
-        if (providerInterface == null || StringUtils.isBlank(vip)) {
+    public Object getProvider(String microServiceId, Class<?> providerInterface) {
+        if (providerInterface == null || StringUtils.isBlank(microServiceId)) {
             return null;
         }
-        String providerId = providerId(providerInterface.getCanonicalName(), vip);
+        String providerId = providerId(providerInterface.getCanonicalName(), microServiceId);
         return this.providerMap.get(providerId);
     }
 
-    private String providerId(String interfaceName, String vip) {
-        return interfaceName + "$" + vip;
+    private String providerId(String interfaceName, String microServiceId) {
+        return interfaceName + "$" + microServiceId;
     }
 }

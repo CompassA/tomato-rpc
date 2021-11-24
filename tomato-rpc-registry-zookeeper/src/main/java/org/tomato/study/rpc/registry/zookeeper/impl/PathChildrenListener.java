@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 监听服务VIP节点的孩子节点变化
+ * 监听微服务节点的孩子节点变化
  * @author Tomato
  * Created on 2021.07.10
  */

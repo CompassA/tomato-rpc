@@ -67,7 +67,7 @@ public class MetaDataTest {
                 .protocol("tomato")
                 .host("127.0.0.1")
                 .port(1234)
-                .vip("org.study.test")
+                .microServiceId("org.study.test")
                 .stage("dev")
                 .group("test")
                 .build();
@@ -75,7 +75,7 @@ public class MetaDataTest {
 
     private MetaData mockNull() {
         return  MetaData.builder()
-                .vip("mock")
+                .microServiceId("mock")
                 .build();
     }
 }

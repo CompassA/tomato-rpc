@@ -45,7 +45,7 @@ public class NettyRpcInvoker implements RpcInvoker, MessageSender {
     /**
      * RPC服务节点的ip、端口等数据
      */
-    private final MetaData providerNodeMetaData;
+    private final MetaData nodeInfo;
 
     /**
      * 客户端的连接管理器
@@ -67,24 +67,24 @@ public class NettyRpcInvoker implements RpcInvoker, MessageSender {
      */
     private final URI uri;
 
-    public NettyRpcInvoker(MetaData providerNodeMetaData,
+    public NettyRpcInvoker(MetaData nodeInfo,
                            NettyChannelHolder channelHolder,
                            NettyResponseHolder responseHolder) {
-        this.providerNodeMetaData = providerNodeMetaData;
+        this.nodeInfo = nodeInfo;
         this.channelHolder = channelHolder;
         this.responseHolder = responseHolder;
         this.commandSerializer = SpiLoader.getLoader(Serializer.class).load();
-        this.uri = URI.create("tomato://" + providerNodeMetaData.getHost() + ":" + providerNodeMetaData.getPort());
+        this.uri = URI.create("tomato://" + nodeInfo.getHost() + ":" + nodeInfo.getPort());
     }
 
     @Override
     public String getGroup() {
-        return providerNodeMetaData.getGroup();
+        return nodeInfo.getGroup();
     }
 
     @Override
     public MetaData getMetadata() {
-        return providerNodeMetaData;
+        return nodeInfo;
     }
 
     @Override

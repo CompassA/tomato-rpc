@@ -32,9 +32,9 @@ import java.util.Arrays;
 public class RpcRequestModel {
 
     /**
-     * rpc service vip in the service name registry
+     * rpc service micro-service-id in the service name registry
      */
-    private String serviceVIP;
+    private String microServiceId;
 
     /**
      * RPC interface class full name,
@@ -66,13 +66,13 @@ public class RpcRequestModel {
     private Object[] parameters;
 
     @Builder
-    public RpcRequestModel(String serviceVIP,
+    public RpcRequestModel(String microServiceId,
                            Class<?> rpcInterFace,
                            String methodName,
                            Class<?>[] argsType,
                            Class<?> returnType,
                            Object... parameters) {
-        this.serviceVIP = serviceVIP;
+        this.microServiceId = microServiceId;
         this.rpcInterFace = rpcInterFace;
         this.methodName = methodName;
         this.argsType = argsType;

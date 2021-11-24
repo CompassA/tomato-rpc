@@ -30,10 +30,10 @@ public interface MicroServiceSpace extends Closeable {
 
     /**
      * 微服务唯一标识
-     * ex. "org.study.rpc.service"
-     * @return vip
+     * ex. "trade-rpc-service"
+     * @return id
      */
-    String getVIP();
+    String getMicroServiceId();
 
     /**
      * 根据微服务分组找到匹配的一个微服务调用实例
@@ -44,7 +44,7 @@ public interface MicroServiceSpace extends Closeable {
 
     /**
      * 刷新节点信息
-     * @param metadataSet all rpc node metadata of a provider with same vip and stage
+     * @param metadataSet all rpc node metadata of a provider with same micro-service-id and stage
      * @throws IOException IO Exception during refresh invoker data
      */
     void refresh(Set<MetaData> metadataSet) throws IOException;
