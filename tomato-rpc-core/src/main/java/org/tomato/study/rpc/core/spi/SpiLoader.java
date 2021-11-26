@@ -16,21 +16,31 @@ package org.tomato.study.rpc.core.spi;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
+import org.apache.commons.collections4.CollectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.tomato.study.rpc.core.RpcJvmConfigKey;
+import org.tomato.study.rpc.core.io.FileStreamResource;
+import org.tomato.study.rpc.core.io.UrlFileStreamResource;
 import org.tomato.study.rpc.core.utils.ClassUtil;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 /**
- * load rpc extensions
+ * 加载SPI实例
  * @author Tomato
  * Created on 2021.04.17
  */
@@ -41,6 +51,11 @@ public class SpiLoader<T> {
      * SPI配置文件路径
      */
     private static final String SPI_CONFIG_DICTIONARY = "META-INF/tomato/";
+
+    /**
+     * set方法前缀
+     */
+    private static final String SETTER_PREFIX = "set";
 
     /**
      * 配置的键值对分隔符
@@ -56,13 +71,20 @@ public class SpiLoader<T> {
     /**
      * SPI接口 -> 接口包装器
      */
-    private static final ConcurrentMap<Class<?>, Constructor<?>> WRAPPER_MAP = new ConcurrentHashMap<>();
+    private static final ConcurrentMap<Class<?>, Set<Constructor<?>>> WRAPPER_MAP = new ConcurrentHashMap<>();
+
+    /**
+     * 用户通过jvm参数指定的SPI组件
+     * 接口名 -> 参数名
+     */
+    private static Map<String, String> JVM_PRIORITY_CONFIG = RpcJvmConfigKey.parseMultiKeyValue(
+            System.getProperty(RpcJvmConfigKey.SPI_CUSTOM_CONFIG));
 
     //==================================================================================================================
     /**
      * SPI配置文件中的组件Key -> 组件全类名
      */
-    private final ObjectHolder<Map<String, Class<?>>> spiConfigHolder = new ObjectHolder<>();
+    private final Map<String, Class<? extends T>> componentMap;
 
     /**
      * 组件单例Map[SPI配置中的key -> 组件单例]
@@ -77,7 +99,7 @@ public class SpiLoader<T> {
     /**
      * 接口配置的默认实现参数
      */
-    private final String paramName;
+    private final String defaultKey;
 
     /**
      * 是否是单例
@@ -96,17 +118,11 @@ public class SpiLoader<T> {
     }
 
     /**
-     * 编程式注入SPI默认实例
-     * @param clazz 接口类型
-     * @param instance 接口实例
-     * @param <T> 接口类型
+     * 暴露接口重置SPI组件配置
      */
-    public static <T> void registerSpiInstance(Class<T> clazz, T instance) {
-        SpiLoader<T> loader = getLoader(clazz);
-        if (loader == null) {
-            return;
-        }
-        loader.getSingletonMap().put(loader.getParamName(), instance);
+    public static void resetPriorityMap() {
+        JVM_PRIORITY_CONFIG = RpcJvmConfigKey.parseMultiKeyValue(
+                System.getProperty(RpcJvmConfigKey.SPI_CUSTOM_CONFIG));
     }
 
     /**
@@ -117,7 +133,8 @@ public class SpiLoader<T> {
      */
     public static <T> void registerWrapper(Class<T> interfaceClass, Class<? extends T> wrapper) {
         try {
-            WRAPPER_MAP.put(interfaceClass, wrapper.getConstructor(interfaceClass));
+            WRAPPER_MAP.computeIfAbsent(interfaceClass, key -> new HashSet<>())
+                    .add(wrapper.getConstructor(interfaceClass));
         } catch (NoSuchMethodException e) {
             // do nothing
         }
@@ -133,16 +150,24 @@ public class SpiLoader<T> {
         }
         SpiInterface spiInfo = clazz.getAnnotation(SpiInterface.class);
         this.spiInterface = clazz;
-        this.paramName = spiInfo.value();
+        this.defaultKey = spiInfo.value();
         this.singletonInstance = spiInfo.singleton();
+        this.componentMap = loadSpiConfigFile();
     }
 
     /**
-     * 加载key为 {@link SpiLoader#getParamName()} 对应的默认实现类
+     * 加载用户指定的SPI组件，若未指定，加载注解指定的默认参数
      * @return spi instance
      */
     public T load() {
-        return load(paramName);
+        String priorityKey = JVM_PRIORITY_CONFIG.get(spiInterface.getCanonicalName());
+        if (StringUtils.isNotBlank(priorityKey)) {
+            T component = load(priorityKey);
+            if (component != null) {
+                return component;
+            }
+        }
+        return load(defaultKey);
     }
 
     /**
@@ -151,57 +176,70 @@ public class SpiLoader<T> {
      * @return spi实例
      */
     public T load(String paramName) {
-        if (!singletonInstance) {
-            return createSpiInstance(paramName);
+        // 获取实现类
+        Class<? extends T> spiImplClass = componentMap.get(paramName);
+        if (spiImplClass == null) {
+            return null;
         }
-        return singletonMap.computeIfAbsent(paramName, this::createSpiInstance);
+        if (!singletonInstance) {
+            return createSpiInstance(spiImplClass);
+        }
+        // 加锁，防止把未完成依赖注入的不完整对象暴露
+        synchronized (paramName.intern()) {
+            T component = singletonMap.get(paramName);
+            if (component == null) {
+                // 创建spi实例, 并在注入依赖前，提前加入map，防止循环依赖
+                component = singletonMap.computeIfAbsent(paramName, key -> createSpiInstance(spiImplClass));
+                // 注入依赖的其余spi组件
+                injectSpiComponents(spiImplClass, component);
+            }
+            return component;
+        }
     }
 
     @SneakyThrows
     @SuppressWarnings("unchecked")
-    private T createSpiInstance(final String spiParameterName) {
-        // 加载配置文件，转为Map
-        Map<String, Class<?>> spiConfigMap = getSpiConfigMap();
-
-        // 获取实现类
-        Class<?> spiImplClass = spiConfigMap.get(spiParameterName);
-        if (spiImplClass == null) {
-            return null;
-        }
-
-        // 创建实现类实例
+    private T createSpiInstance(Class<? extends T> spiImplClass) {
+        // 创建实现类实例(实现类需要有无参构造函数)
         Object spiInstance = spiImplClass.getConstructor().newInstance();
 
         // 如果该类对象有包装器，构建包装器
-        Constructor<?> constructor = WRAPPER_MAP.get(spiInterface);
-        if (constructor != null) {
-            return (T) constructor.newInstance(spiInstance);
+        Set<Constructor<?>> constructors = WRAPPER_MAP.get(spiInterface);
+        if (CollectionUtils.isNotEmpty(constructors)) {
+            for (Constructor<?> constructor : constructors) {
+                spiInstance = constructor.newInstance(spiInstance);
+            }
         }
         return (T) spiInstance;
     }
 
-    private Map<String, Class<?>> getSpiConfigMap() {
-        Map<String, Class<?>> spiConfigMap = spiConfigHolder.get();
-        if (spiConfigMap == null) {
-            synchronized (spiConfigHolder) {
-                spiConfigMap = spiConfigHolder.get();
-                if (spiConfigMap == null) {
-                    spiConfigMap = loadSpiConfigFile();
-                    if (!spiConfigMap.isEmpty()) {
-                        spiConfigHolder.set(spiConfigMap);
-                    }
-                }
+    @SneakyThrows
+    private void injectSpiComponents(Class<? extends T> spiImplClass, T component) {
+        for (Method method : spiImplClass.getDeclaredMethods()) {
+            if (!isSetter(method)) {
+                continue;
+            }
+            Class<?> spiInterface = method.getParameterTypes()[0];
+            if (spiInterface.isInterface() && spiInterface.isAnnotationPresent(SpiInterface.class)) {
+                method.invoke(component,
+                        SpiLoader.getLoader(spiInterface).load());
             }
         }
-        return spiConfigMap;
+    }
+
+    private boolean isSetter(Method method) {
+        return method.getName().startsWith(SETTER_PREFIX)
+                && method.getParameterCount() == 1
+                && Modifier.isPublic(method.getModifiers());
     }
 
     /**
      * load spi config file
-     * @return {@link SpiLoader#paramName} -> implement class of spi interface
+     * @return 配置文件中的组件key -> 具体实现类
      */
     @SneakyThrows
-    private Map<String, Class<?>> loadSpiConfigFile() {
+    @SuppressWarnings("unchecked")
+    private Map<String, Class<? extends T>> loadSpiConfigFile() {
         // 获取类加载器
         String path = SPI_CONFIG_DICTIONARY + spiInterface.getCanonicalName();
         ClassLoader classLoader = ClassUtil.getClassLoader(spiInterface);
@@ -209,32 +247,32 @@ public class SpiLoader<T> {
             return Collections.emptyMap();
         }
 
-        // 打开SPI配置文件
-        URL resourceUrl = classLoader.getResource(path);
-        if (resourceUrl == null) {
-            return Collections.emptyMap();
-        }
+        // 打开SPI配置文件,一行一行解析文件，存入Map[组件key -> 组件类型]
+        Map<String, Class<? extends T>> spiConfigMap = new HashMap<>(0);
+        Enumeration<URL> resources = classLoader.getResources(path);
+        while (resources.hasMoreElements()) {
+            FileStreamResource resource = new UrlFileStreamResource(resources.nextElement());
+            try (BufferedReader reader = new BufferedReader(
+                    new InputStreamReader(resource.openNewStream(), StandardCharsets.UTF_8))) {
+                String line;
+                while ((line = reader.readLine()) != null) {
+                    line = line.trim();
+                    int delimiterPos = line.indexOf(DELIMITER);
+                    if (delimiterPos < 1) {
+                        continue;
+                    }
 
-        // 一行一行解析文件，存入Map[组件key -> 组件类型]
-        Map<String, Class<?>> spiConfigMap = new HashMap<>(0);
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(resourceUrl.openStream(), StandardCharsets.UTF_8))) {
-            String line;
-            while ((line = reader.readLine()) != null) {
-                line = line.trim();
-                int delimiterPos = line.indexOf(DELIMITER);
-                if (delimiterPos < 1) {
-                    continue;
+                    // 获取参数名与全类名
+                    String paramName = line.substring(0, delimiterPos).trim();
+                    String implClassName = line.substring(delimiterPos + 1).trim();
+                    if (paramName.isEmpty() || implClassName.isEmpty()) {
+                        continue;
+                    }
+                    Class<?> clazz = Class.forName(implClassName, true, classLoader);
+                    if (spiInterface.isAssignableFrom(clazz)) {
+                        spiConfigMap.put(paramName, (Class<? extends T>) clazz);
+                    }
                 }
-
-                // load class by class full name in the config file
-                String paramName = line.substring(0, delimiterPos).trim();
-                String implClassName = line.substring(delimiterPos + 1).trim();
-                if (paramName.isEmpty() || implClassName.isEmpty()) {
-                    continue;
-                }
-                Class<?> clazz = Class.forName(implClassName, true, classLoader);
-                spiConfigMap.put(paramName, clazz);
             }
         }
         return spiConfigMap;

@@ -1,0 +1,2 @@
+a : org.tomato.study.rpc.core.spi.spitest.SpiInterfaceAImpl
+other: org.tomato.study.rpc.core.spi.spitest.SpiInterfaceAOtherImpl

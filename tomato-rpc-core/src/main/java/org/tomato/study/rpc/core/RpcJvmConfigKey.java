@@ -14,24 +14,65 @@
 
 package org.tomato.study.rpc.core;
 
+import org.apache.commons.lang3.StringUtils;
+
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
+ * Tomato-Rpc支持的键值对参数
  * @author Tomato
  * Created on 2021.11.07
  */
 public final class RpcJvmConfigKey {
+
+    /**
+     * 多键值对分隔符
+     */
+    public static final String ENTRY_DELIMITER = "&";
+
+    /**
+     * 键值分隔符
+     */
+    public static final String KEY_VALUE_DELIMITER = ":";
+
     /**
      * 可在jvm参数中配置自身的服务版本
      */
-    public static final String MICRO_SERVICE_GROUP = "tomato.service-group";
-
+    public static final String MICRO_SERVICE_GROUP = "tomato-rpc.service-group";
 
     /**
      * 可在jvm参数重配置感兴趣的服务的版本
      */
-    public static final String MICRO_SUBSCRIBE_GROUP = "tomato.subscribed-services-group";
+    public static final String MICRO_SUBSCRIBE_GROUP = "tomato-rpc.subscribed-services-group";
 
     /**
      * 注册中心地址
      */
-    public static final String NAME_SERVICE_URI = "tomato.name-service-uri";
+    public static final String NAME_SERVICE_URI = "tomato-rpc.name-service-uri";
+
+    /**
+     * spi配置
+     */
+    public static final String SPI_CUSTOM_CONFIG = "tomato-rpc.spi";
+
+    /**
+     * 解析多重键值对参数
+     * @param param key1:value1&key2:value2&key3:value3
+     * @return 只读的键值对map
+     */
+    public static Map<String, String> parseMultiKeyValue(String param) {
+        if (StringUtils.isBlank(param)) {
+            return Collections.emptyMap();
+        }
+        Map<String, String> kvMap = new HashMap<>();
+        for (String kv : param.split(ENTRY_DELIMITER)) {
+            String[] kvSplitRes = kv.split(KEY_VALUE_DELIMITER);
+            if (kvSplitRes.length == 2) {
+                kvMap.put(kvSplitRes[0], kvSplitRes[1]);
+            }
+        }
+        return Collections.unmodifiableMap(kvMap);
+    }
 }

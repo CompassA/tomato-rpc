@@ -31,7 +31,7 @@ import java.lang.annotation.Target;
 public @interface SpiInterface {
 
     /**
-     * 配置一个SPI文件中的组件的key
+     * spi类的默认实现
      * @return 组件的key
      */
     String value();

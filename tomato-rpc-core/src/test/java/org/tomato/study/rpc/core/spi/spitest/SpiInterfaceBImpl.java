@@ -3,7 +3,7 @@
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,22 +12,20 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core.spi;
+package org.tomato.study.rpc.core.spi.spitest;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 /**
- * hold a volatile object
  * @author Tomato
- * Created on 2021.06.12
+ * Created on 2021.11.26
  */
-public class ObjectHolder<T> {
+@NoArgsConstructor
+public class SpiInterfaceBImpl implements SpiInterfaceB {
 
-    private volatile T object;
-
-    public T get() {
-        return this.object;
-    }
-
-    public void set(T object) {
-        this.object = object;
-    }
+    @Getter
+    @Setter
+    private SpiInterfaceC c;
 }
