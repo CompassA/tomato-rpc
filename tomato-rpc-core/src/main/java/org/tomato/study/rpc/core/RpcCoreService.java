@@ -16,6 +16,7 @@ package org.tomato.study.rpc.core;
 
 import org.tomato.study.rpc.core.data.ApiConfig;
 import org.tomato.study.rpc.core.observer.LifeCycle;
+import org.tomato.study.rpc.core.transport.RpcInvokerFactory;
 
 import java.net.URI;
 import java.util.List;
@@ -43,6 +44,20 @@ public interface RpcCoreService extends LifeCycle {
      * @return proxy instance
      */
     <T> T createStub(ApiConfig<T> apiConfig);
+
+    /**
+     * direct-rpc-stub
+     * @param apiConfig rpc server info
+     * @param <T> rpc api
+     * @return direct-rpc-stub
+     */
+    <T> T createDirectStub(ApiConfig<T> apiConfig);
+
+    /**
+     * get rpc invoker factory
+     * @return rpc invoker factory
+     */
+    RpcInvokerFactory getRpcInvokerFactory();
 
     /**
      * get micro-service-id

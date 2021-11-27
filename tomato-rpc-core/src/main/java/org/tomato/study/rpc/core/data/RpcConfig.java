@@ -84,6 +84,11 @@ public class RpcConfig {
      */
     private final long clientKeepAliveMilliseconds;
 
+    /**
+     * 全局RPC客户端超时时间
+     */
+    private final long globalClientTimeoutMilliseconds;
+
     public static Builder builder() {
         return new Builder();
     }
@@ -100,6 +105,7 @@ public class RpcConfig {
         private boolean useGzip = false;
         private long serverIdleCheckMilliseconds = 600000;
         private long clientKeepAliveMilliseconds = serverIdleCheckMilliseconds / 3;
+        private long globalClientTimeoutMilliseconds = 50000;
 
         public Builder protocol(String protocol) {
             this.protocol = protocol;
@@ -156,6 +162,11 @@ public class RpcConfig {
             return this;
         }
 
+        public Builder globalClientTimeoutMilliseconds(long globalClientTimeoutMilliseconds) {
+            this.globalClientTimeoutMilliseconds = globalClientTimeoutMilliseconds;
+            return this;
+        }
+
         public RpcConfig build() {
             return new RpcConfig(
                     this.protocol,
@@ -168,7 +179,8 @@ public class RpcConfig {
                     this.businessThreadPoolSize,
                     this.useGzip,
                     this.serverIdleCheckMilliseconds,
-                    this.clientKeepAliveMilliseconds
+                    this.clientKeepAliveMilliseconds,
+                    this.globalClientTimeoutMilliseconds
             );
         }
     }

@@ -14,12 +14,9 @@
 
 package org.tomato.study.rpc.netty.invoker;
 
-import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.router.RpcInvoker;
-import org.tomato.study.rpc.core.router.RpcInvokerFactory;
-import org.tomato.study.rpc.netty.transport.client.NettyChannelHolder;
-import org.tomato.study.rpc.netty.transport.client.NettyResponseHolder;
+import org.tomato.study.rpc.core.transport.RpcInvoker;
+import org.tomato.study.rpc.core.transport.RpcInvokerFactory;
 
 import java.util.Optional;
 
@@ -28,24 +25,20 @@ import java.util.Optional;
  * @author Tomato
  * Created on 2021.07.11
  */
-@Slf4j
 public class NettyRpcInvokerFactory implements RpcInvokerFactory {
+    private static final long DEFAULT_KEEP_ALIVE_MS = 20000;
+    private static final long DEFAULT_TIMEOUT_MS = 20000;
 
-    private final NettyChannelHolder channelHolder;
-    private final NettyResponseHolder responseHolder;
-
-    public NettyRpcInvokerFactory(NettyChannelHolder channelHolder,
-                                  NettyResponseHolder responseHolder) {
-        this.channelHolder = channelHolder;
-        this.responseHolder = responseHolder;
-    }
-
-    @Deprecated
     @Override
     public Optional<RpcInvoker> create(MetaData nodeInfo) {
-        if (nodeInfo == null || !nodeInfo.isValid()) {
+        return create(nodeInfo, DEFAULT_KEEP_ALIVE_MS, DEFAULT_TIMEOUT_MS);
+    }
+
+    @Override
+    public Optional<RpcInvoker> create(MetaData nodeInfo, long keepAliveMs, long timeoutMs) {
+        if (nodeInfo == null ) {
             return Optional.empty();
         }
-        return Optional.of(new NettyRpcInvoker(nodeInfo, channelHolder, responseHolder));
+        return Optional.of(new NettyRpcInvoker(nodeInfo, keepAliveMs, timeoutMs));
     }
 }

@@ -16,7 +16,7 @@ package org.tomato.study.rpc.core.base;
 
 import org.junit.Assert;
 import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.router.RpcInvoker;
+import org.tomato.study.rpc.core.transport.RpcInvoker;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.utils.ReflectUtils;
 

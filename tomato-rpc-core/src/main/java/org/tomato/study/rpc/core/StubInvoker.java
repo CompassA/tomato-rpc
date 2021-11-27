@@ -3,7 +3,7 @@
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
@@ -14,38 +14,38 @@
 
 package org.tomato.study.rpc.core;
 
-import org.tomato.study.rpc.core.data.Command;
-
-import java.util.concurrent.CompletableFuture;
+import java.lang.reflect.Method;
 
 /**
- * send rpc request
  * @author Tomato
- * Created on 2021.03.31
+ * Created on 2021.11.27
  */
-public interface MessageSender {
+public interface StubInvoker {
 
     /**
-     * send rpc request
-     * @param msg request message
-     * @return response message
+     * invoke method
+     * @param proxy proxy instance
+     * @param method proxy method
+     * @param args method args
+     * @return invoke result
      */
-    CompletableFuture<Command> send(Command msg);
+    Object invoke(Object proxy, Method method, Object[] args);
 
     /**
-     * get target host
-     * @return host
+     * target micro-service id
+     * @return id
      */
-    String getHost();
+    String getMicroServiceId();
 
     /**
-     * get target port
-     * @return port
+     * rpc group
+     * @return rpc group
      */
-    int getPort();
+    String getGroup();
 
     /**
-     * close sender client
+     * get proxy target interface
+     * @return interface
      */
-    void close();
+    Class<?> getServiceInterface();
 }

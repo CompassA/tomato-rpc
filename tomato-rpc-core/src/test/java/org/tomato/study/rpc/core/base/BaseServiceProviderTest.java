@@ -25,13 +25,12 @@ import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.tomato.study.rpc.core.Invocation;
-import org.tomato.study.rpc.core.Response;
 import org.tomato.study.rpc.core.Result;
 import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.router.RpcInvoker;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
+import org.tomato.study.rpc.core.transport.RpcInvoker;
 
-import java.io.IOException;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
@@ -56,7 +55,7 @@ public class BaseServiceProviderTest extends BaseTest {
     }
 
     @After
-    public void destroy() throws IOException {
+    public void destroy() throws TomatoRpcException {
         provider.close();
     }
 
@@ -127,13 +126,13 @@ public class BaseServiceProviderTest extends BaseTest {
         protected RpcInvoker createInvoker(MetaData metadata) {
             return new RpcInvoker() {
                 @Override
-                public void close() throws IOException { }
-                @Override
                 public String getGroup() { return metadata.getGroup(); }
                 @Override
                 public MetaData getMetadata() { return metadata; }
                 @Override
-                public Result<Response> invoke(Invocation invocation) { return null; }
+                public Result invoke(Invocation invocation) { return null; }
+                @Override
+                public void destroy() throws TomatoRpcException {}
             };
         }
     }

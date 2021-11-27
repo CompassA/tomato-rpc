@@ -3,7 +3,7 @@
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
@@ -18,7 +18,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPipeline;
@@ -29,64 +29,100 @@ import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
-import org.apache.commons.collections4.CollectionUtils;
+import org.tomato.study.rpc.core.base.BaseRpcClient;
+import org.tomato.study.rpc.core.data.Command;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.netty.codec.NettyFrameDecoder;
 import org.tomato.study.rpc.netty.codec.NettyFrameEncoder;
 import org.tomato.study.rpc.netty.codec.NettyProtoDecoder;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.transport.handler.ClientIdleCheckHandler;
+import org.tomato.study.rpc.netty.transport.handler.KeepAliveHandler;
+import org.tomato.study.rpc.netty.transport.handler.ResponseHandler;
 
 import java.net.URI;
-import java.util.List;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 /**
- * 管理客户端的所有连接
  * @author Tomato
- * Created on 2021.04.08
+ * Created on 2021.11.27
  */
-public class NettyChannelHolder {
+public class NettyRpcClient extends BaseRpcClient {
 
     private static final String RPC_CLIENT_THREAD_NAME = "rpc-client-worker-thread";
+    private static final long CONNECTION_TIMEOUT_MS = 10000;
 
     /**
-     * 连接超时时间
+     * 客户端的响应管理器
      */
-    private static final long CONNECTION_TIMEOUT = 10000;
-
-    /**
-     * 关闭标志位
-     */
-    public boolean close = false;
-
-    /**
-     * 服务节点URI -> 连接数据
-     */
-    private final ConcurrentMap<URI, ChannelWrapper> channelMap;
+    private final NettyResponseHolder responseHolder;
 
     /**
      * 客户端循环
      */
-    private final EventLoopGroup eventLoopGroup;
+    private EventLoopGroup eventLoopGroup;
 
     /**
      * 客户端启动类
      */
-    private final Bootstrap bootstrap;
+    private Bootstrap bootstrap;
 
-    public NettyChannelHolder(long keepAliveMilliseconds, List<ChannelHandler> responseHandlers) {
-        if (CollectionUtils.isEmpty(responseHandlers)) {
-            throw new TomatoRpcRuntimeException(
-                    NettyRpcErrorEnum.LIFE_CYCLE_START_ERROR.create("without response handler list"));
+    /**
+     * 心跳包发送时间间隔
+     */
+    private final long keepAliveMs;
+
+    /**
+     * 调用超时时间
+     */
+    private final long timeoutMs;
+
+    private ChannelWrapper channelWrapper;
+
+    public NettyRpcClient(URI uri, long keepAliveMs, long timeoutMs) {
+        super(uri);
+        this.keepAliveMs = keepAliveMs;
+        this.timeoutMs = timeoutMs;
+        this.responseHolder = new NettyResponseHolder();
+        doInit();
+        doStart();
+    }
+
+    @Override
+    public CompletableFuture<Command> send(Command msg) throws TomatoRpcException {
+        CompletableFuture<Command> future = new CompletableFuture<>();
+        long id = msg.getHeader().getId();
+        try {
+            createOrReconnect().getChannel().writeAndFlush(msg)
+                    .addListener((ChannelFutureListener) futureChannel -> {
+                        if (futureChannel.isSuccess()) {
+                            responseHolder.putFeatureResponse(id, future, timeoutMs);
+                        } else {
+                            future.completeExceptionally(
+                                    new TomatoRpcRuntimeException(
+                                            NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create(),
+                                            futureChannel.cause()));
+                            responseHolder.getAndRemove(id);
+                        }
+                    });
+        } catch (Exception e) {
+            responseHolder.getAndRemove(id);
+            throw new TomatoRpcException(
+                    NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create("channel fetch error"), e);
         }
-        this.channelMap = new ConcurrentHashMap<>(0);
+        return future;
+    }
+
+    @Override
+    protected void doInit() {
         this.eventLoopGroup = Epoll.isAvailable()
                 ? new EpollEventLoopGroup(new DefaultThreadFactory(RPC_CLIENT_THREAD_NAME))
                 : new NioEventLoopGroup(new DefaultThreadFactory(RPC_CLIENT_THREAD_NAME));
+        KeepAliveHandler keepAliveHandler = new KeepAliveHandler();
+        ResponseHandler responseHandler = new ResponseHandler(responseHolder);
         this.bootstrap = new Bootstrap()
                 .option(ChannelOption.ALLOCATOR, PooledByteBufAllocator.DEFAULT)
                 .option(ChannelOption.TCP_NODELAY, true)
@@ -96,55 +132,50 @@ public class NettyChannelHolder {
                     @Override
                     protected void initChannel(Channel channel) throws Exception {
                         ChannelPipeline channelPipeline = channel.pipeline();
-                        channelPipeline.addLast("client-idle-checker", new ClientIdleCheckHandler(keepAliveMilliseconds));
+                        channelPipeline.addLast("client-idle-checker", new ClientIdleCheckHandler(keepAliveMs));
                         channelPipeline.addLast("frame-decoder", new NettyFrameDecoder());
                         channelPipeline.addLast("proto-decoder", new NettyProtoDecoder());
                         channelPipeline.addLast("frame-encoder", new NettyFrameEncoder());
-                        for (ChannelHandler responseHandler : responseHandlers) {
-                            channelPipeline.addLast(
-                                    responseHandler.getClass().getSimpleName(),
-                                    responseHandler);
-                        }
+                        channelPipeline.addLast("keep-alive-handler", keepAliveHandler);
+                        channelPipeline.addLast("response-handler", responseHandler);
                     }
                 });
+    }
 
+    @Override
+    protected void doStart() {
+    }
+
+    @Override
+    protected void doStop() throws TomatoRpcException {
+        if (channelWrapper != null && channelWrapper.isActiveChannel()) {
+            channelWrapper.closeChannel();
+        }
+        this.eventLoopGroup.shutdownGracefully();
     }
 
     /**
      * 根据服务节点URI得到连接, 若连接未建立, 先建立连接
-     * @param uri 一个服务节点的IP、端口等信息
      * @return 连接包装类
      * @throws InterruptedException 创建连接等待过程中线程被中断
      * @throws TimeoutException 创建连接等待超时
      */
-    public ChannelWrapper getOrCreateChannelWrapper(URI uri) throws InterruptedException, TimeoutException {
-        ChannelWrapper channelWrapper = channelMap.get(uri);
-        if (channelWrapper == null) {
-            synchronized (NettyChannelHolder.class) {
-                channelWrapper = channelMap.get(uri);
+    public ChannelWrapper createOrReconnect() throws InterruptedException, TimeoutException {
+        if (channelWrapper == null || !channelWrapper.isActiveChannel()) {
+            synchronized (this) {
                 // 当未连接或者连接已经被关闭了，重新建立连接
                 if (channelWrapper == null || !channelWrapper.isActiveChannel()) {
-                    channelWrapper = createChannel(uri);
-                    channelMap.put(uri, channelWrapper);
+                    channelWrapper = createChannel(getHost(), getPort());
                 }
             }
         }
         return channelWrapper;
     }
 
-    public void removeChannel(URI uri) {
-        ChannelWrapper channelWrapper = channelMap.get(uri);
-        if (channelWrapper != null) {
-            channelWrapper.closeChannel();
-        }
-    }
-
-    private ChannelWrapper createChannel(URI serverNodeURI)
+    private ChannelWrapper createChannel(String host, int port)
             throws InterruptedException, TimeoutException {
-        ChannelFuture connectFuture = bootstrap.connect(
-                serverNodeURI.getHost(),
-                serverNodeURI.getPort());
-        if (!connectFuture.await(CONNECTION_TIMEOUT, TimeUnit.MILLISECONDS)) {
+        ChannelFuture connectFuture = bootstrap.connect(host, port);
+        if (!connectFuture.await(CONNECTION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
             throw new TimeoutException("netty connect timeout");
         }
         Channel channel = connectFuture.channel();
@@ -152,17 +183,5 @@ public class NettyChannelHolder {
             throw new IllegalStateException("netty channel is not active");
         }
         return new ChannelWrapper(channel);
-    }
-
-    public synchronized void close() {
-        if (this.close) {
-            return;
-        }
-        this.close = true;
-        for (ChannelWrapper channelWrapper : this.channelMap.values()) {
-            channelWrapper.closeChannel();
-        }
-        this.channelMap.clear();
-        this.eventLoopGroup.shutdownGracefully();
     }
 }

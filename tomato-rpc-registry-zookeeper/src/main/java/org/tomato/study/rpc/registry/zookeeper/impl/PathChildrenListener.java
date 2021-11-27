@@ -64,7 +64,7 @@ public class PathChildrenListener implements CuratorWatcher, ChildrenListener {
     }
 
     @Override
-    public void childrenChanged(String path, List<String> children) throws IOException {
+    public void childrenChanged(String path, List<String> children) throws Exception {
         // 节点为空, 表明监听的父路径下已无实例节点
         if (CollectionUtils.isEmpty(children)) {
             registry.notify(path, new ArrayList<>(0));

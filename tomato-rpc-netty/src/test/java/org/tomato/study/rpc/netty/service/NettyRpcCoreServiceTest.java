@@ -46,7 +46,9 @@ import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
+import org.tomato.study.rpc.core.transport.RpcInvokerFactory;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
+import org.tomato.study.rpc.netty.invoker.NettyRpcInvokerFactory;
 import org.tomato.study.rpc.netty.proxy.JdkStubFactory;
 import org.tomato.study.rpc.netty.transport.server.NettyRpcServer;
 
@@ -79,6 +81,7 @@ public class NettyRpcCoreServiceTest {
     private NettyRpcServer mockNettyRpcServer;
 
     private final JdkStubFactory jdkStubFactory = new JdkStubFactory();
+    private final NettyRpcInvokerFactory nettyRpcInvokerFactory = new NettyRpcInvokerFactory();
 
     @Before
     public void init() throws Exception {
@@ -86,16 +89,18 @@ public class NettyRpcCoreServiceTest {
         SpiLoader<ProviderRegistry> providerLoader = (SpiLoader<ProviderRegistry>) mock(SpiLoader.class);
         SpiLoader<NameServerFactory> nameServerLoader = (SpiLoader<NameServerFactory>) mock(SpiLoader.class);
         SpiLoader<StubFactory> stubFactoryLoader = (SpiLoader<StubFactory>) mock(SpiLoader.class);
+        SpiLoader<RpcInvokerFactory> rpcInvokerFactorySpiLoader = (SpiLoader<RpcInvokerFactory>) mock(SpiLoader.class);
 
         NameServerFactory mockNameServerFactory = mock(NameServerFactory.class);
         when(providerLoader.load()).thenReturn(mockProviderRegistry);
         when(nameServerLoader.load()).thenReturn(mockNameServerFactory);
         when(stubFactoryLoader.load()).thenReturn(jdkStubFactory);
+        when(rpcInvokerFactorySpiLoader.load()).thenReturn(nettyRpcInvokerFactory);
 
         when(SpiLoader.getLoader(eq(ProviderRegistry.class))).thenReturn(providerLoader);
         when(SpiLoader.getLoader(eq(NameServerFactory.class))).thenReturn(nameServerLoader);
         when(SpiLoader.getLoader(eq(StubFactory.class))).thenReturn(stubFactoryLoader);
-
+        when(SpiLoader.getLoader(RpcInvokerFactory.class)).thenReturn(rpcInvokerFactorySpiLoader);
         when(mockNameServerFactory.createNameService(any())).thenReturn(mockNameService);
         whenNew(NettyRpcServer.class).withAnyArguments().thenReturn(mockNettyRpcServer);
 

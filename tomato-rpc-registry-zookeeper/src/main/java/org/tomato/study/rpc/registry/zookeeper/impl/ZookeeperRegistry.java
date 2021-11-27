@@ -18,8 +18,9 @@ import lombok.Getter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
-import org.tomato.study.rpc.core.router.RpcInvoker;
+import org.tomato.study.rpc.core.transport.RpcInvoker;
 import org.tomato.study.rpc.registry.zookeeper.ChildrenListener;
 import org.tomato.study.rpc.registry.zookeeper.CuratorClient;
 import org.tomato.study.rpc.registry.zookeeper.data.ZookeeperConfig;
@@ -179,7 +180,7 @@ public class ZookeeperRegistry {
      * 取消订阅RPC服务
      * @param microServices 取消订阅的RPC服务列表
      */
-    public void unsubscribe(MicroServiceSpace[] microServices) throws IOException {
+    public void unsubscribe(MicroServiceSpace[] microServices) throws TomatoRpcException {
         if (microServices == null || microServices.length < 1) {
             return;
         }
@@ -208,7 +209,7 @@ public class ZookeeperRegistry {
      * @param path service provider path, format: /micro-service-id/{stage}/providers
      * @param children current provider node metadata
      */
-    public void notify(String path, Collection<URI> children) throws IOException {
+    public void notify(String path, Collection<URI> children) throws TomatoRpcException {
         if (StringUtils.isBlank(path)) {
             return;
         }

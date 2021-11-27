@@ -31,7 +31,7 @@ public interface ChildrenListener extends CuratorWatcher {
      * @param children 目标路径更新后的子节点
      * @throws IOException exception during children changed callback
      */
-    void childrenChanged(String path, List<String> children) throws IOException;
+    void childrenChanged(String path, List<String> children) throws Exception;
 
     /**
      * 取消订阅

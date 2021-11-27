@@ -16,8 +16,8 @@ package org.tomato.study.rpc.netty.router;
 
 import org.tomato.study.rpc.core.base.BaseMicroServiceSpace;
 import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.router.RpcInvoker;
-import org.tomato.study.rpc.core.router.RpcInvokerFactory;
+import org.tomato.study.rpc.core.transport.RpcInvoker;
+import org.tomato.study.rpc.core.transport.RpcInvokerFactory;
 
 /**
  * 提供基于Netty创建Invoker的方法
@@ -31,14 +31,22 @@ public class NettyMicroServiceSpace extends BaseMicroServiceSpace {
      */
     private final RpcInvokerFactory invokerFactory;
 
+    private final long keepAliveMs;
+
+    private final long timeoutMs;
+
     public NettyMicroServiceSpace(String microServiceId,
-                                  RpcInvokerFactory invokerFactory) {
+                                  RpcInvokerFactory invokerFactory,
+                                  long keepAliveMs,
+                                  long timeoutMs) {
         super(microServiceId);
         this.invokerFactory = invokerFactory;
+        this.keepAliveMs = keepAliveMs;
+        this.timeoutMs = timeoutMs;
     }
 
     @Override
     protected RpcInvoker createInvoker(MetaData metaData) {
-        return invokerFactory.create(metaData).orElse(null);
+        return invokerFactory.create(metaData, keepAliveMs, timeoutMs).orElse(null);
     }
 }

@@ -16,6 +16,7 @@ package org.tomato.study.rpc.core.error;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 /**
  * rpc error info
@@ -23,6 +24,7 @@ import lombok.Getter;
  * Created on 2021.09.23
  */
 @Getter
+@NoArgsConstructor
 @AllArgsConstructor
 public class TomatoRpcErrorInfo {
 

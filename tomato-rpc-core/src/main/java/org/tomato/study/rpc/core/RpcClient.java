@@ -14,27 +14,36 @@
 
 package org.tomato.study.rpc.core;
 
+import org.tomato.study.rpc.core.data.Command;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.observer.LifeCycle;
+
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 
 /**
- * the result of a remote procedure call
+ * send rpc request
  * @author Tomato
- * Created on 2021.07.07
+ * Created on 2021.03.31
  */
-public interface Result {
+public interface RpcClient extends LifeCycle {
 
     /**
-     * get result data sync
-     * @return result data
-     * @throws ExecutionException sync exception
-     * @throws InterruptedException sync interrupt
+     * send rpc request
+     * @param msg request message
+     * @throws TomatoRpcException message send exception
+     * @return response message
      */
-    Response getResultSync() throws ExecutionException, InterruptedException;
+    CompletableFuture<Command> send(Command msg) throws TomatoRpcException;
 
     /**
-     * get result data async
-     * @return result data
+     * get target host
+     * @return host
      */
-    CompletableFuture<Response> getResultAsync();
+    String getHost();
+
+    /**
+     * get target port
+     * @return port
+     */
+    int getPort();
 }

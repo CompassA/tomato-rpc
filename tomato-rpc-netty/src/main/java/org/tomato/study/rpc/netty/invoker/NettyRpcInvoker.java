@@ -14,127 +14,46 @@
 
 package org.tomato.study.rpc.netty.invoker;
 
-import io.netty.channel.ChannelFutureListener;
 import org.tomato.study.rpc.core.Invocation;
-import org.tomato.study.rpc.core.MessageSender;
-import org.tomato.study.rpc.core.Response;
 import org.tomato.study.rpc.core.Result;
-import org.tomato.study.rpc.core.Serializer;
+import org.tomato.study.rpc.core.RpcClient;
+import org.tomato.study.rpc.core.base.BaseRpcInvoker;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
 import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
-import org.tomato.study.rpc.core.router.RpcInvoker;
-import org.tomato.study.rpc.core.spi.SpiLoader;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.netty.data.NettyInvocationResult;
-import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
-import org.tomato.study.rpc.netty.transport.client.NettyChannelHolder;
-import org.tomato.study.rpc.netty.transport.client.NettyResponseHolder;
+import org.tomato.study.rpc.netty.transport.client.NettyRpcClient;
 
 import java.net.URI;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * RPC客户端调用者，负责与一个RPC服务的某个具体节点通信
  * @author Tomato
  * Created on 2021.07.11
  */
-public class NettyRpcInvoker implements RpcInvoker, MessageSender {
+public class NettyRpcInvoker extends BaseRpcInvoker {
 
-    /**
-     * RPC服务节点的ip、端口等数据
-     */
-    private final MetaData nodeInfo;
+    private final RpcClient rpcClient;
 
-    /**
-     * 客户端的连接管理器
-     */
-    private final NettyChannelHolder channelHolder;
-
-    /**
-     * 客户端的响应管理器
-     */
-    private final NettyResponseHolder responseHolder;
-
-    /**
-     * 客户端为请求body体设置的序列化方式
-     */
-    private final Serializer commandSerializer;
-
-    /**
-     * RPC服务节点的ip、端口，URI形式
-     */
-    private final URI uri;
-
-    public NettyRpcInvoker(MetaData nodeInfo,
-                           NettyChannelHolder channelHolder,
-                           NettyResponseHolder responseHolder) {
-        this.nodeInfo = nodeInfo;
-        this.channelHolder = channelHolder;
-        this.responseHolder = responseHolder;
-        this.commandSerializer = SpiLoader.getLoader(Serializer.class).load();
-        this.uri = URI.create("tomato://" + nodeInfo.getHost() + ":" + nodeInfo.getPort());
+    public NettyRpcInvoker(MetaData nodeInfo, long keepAliveMs, long timeoutMs) {
+        super(nodeInfo);
+        this.rpcClient = new NettyRpcClient(
+                URI.create("tomato://" + nodeInfo.getHost() + ":" + nodeInfo.getPort()),
+                keepAliveMs,
+                timeoutMs);
     }
 
     @Override
-    public String getGroup() {
-        return nodeInfo.getGroup();
+    public Result invoke(Invocation invocation) throws TomatoRpcException {
+        Command rpcRequest = CommandFactory.request(
+                invocation, commandSerializer, CommandType.RPC_REQUEST);
+        return new NettyInvocationResult(rpcClient.send(rpcRequest));
     }
 
     @Override
-    public MetaData getMetadata() {
-        return nodeInfo;
-    }
-
-    @Override
-    public Result<Response> invoke(Invocation invocation) {
-        return new NettyInvocationResult(
-                send(CommandFactory.request(invocation, commandSerializer, CommandType.RPC_REQUEST))
-        );
-    }
-
-    @Override
-    public CompletableFuture<Command> send(Command msg) {
-        CompletableFuture<Command> future = new CompletableFuture<>();
-        long id = msg.getHeader().getId();
-        responseHolder.putFeatureResponse(id, future);
-
-        try {
-            channelHolder.getOrCreateChannelWrapper(uri)
-                    .getChannel()
-                    .writeAndFlush(msg)
-                    .addListener((ChannelFutureListener) futureChannel -> {
-                        if (!futureChannel.isSuccess()) {
-                            future.completeExceptionally(
-                                    new TomatoRpcRuntimeException(
-                                            NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create(),
-                                            futureChannel.cause()
-                                    )
-                            );
-                            responseHolder.getAndRemove(id);
-                        }
-                    });
-        } catch (Exception e) {
-            responseHolder.getAndRemove(id);
-            throw new TomatoRpcRuntimeException(
-                    NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create("channel fetch error"), e);
-        }
-        return future;
-    }
-
-    @Override
-    public String getHost() {
-        return uri.getHost();
-    }
-
-    @Override
-    public int getPort() {
-        return uri.getPort();
-    }
-
-    @Override
-    public void close() {
-        channelHolder.removeChannel(uri);
+    public void destroy() throws TomatoRpcException {
+        rpcClient.stop();
     }
 }

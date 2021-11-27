@@ -28,24 +28,21 @@ import java.util.concurrent.ExecutionException;
  * Created on 2021.07.17
  */
 @AllArgsConstructor
-public class NettyInvocationResult implements Result<Response> {
+public class NettyInvocationResult implements Result {
 
     private final CompletableFuture<Command> future;
 
     @Override
     public Response getResultSync() throws ExecutionException, InterruptedException {
-        return this.getResultAsync().get();
+        return getResultAsync().get();
     }
 
     @Override
     public CompletableFuture<Response> getResultAsync() {
-        return this.future.thenApply(
-                command -> (Response) SerializerHolder
-                        .getSerializer(command.getHeader().getSerializeType())
+        return future.thenApply(command ->
+                (Response) SerializerHolder.getSerializer(command.getHeader().getSerializeType())
                         .deserialize(command.getBody(), RpcResponse.class)
-        ).exceptionally(
-                exception -> RpcResponse.fail(exception, exception.getMessage())
-        );
+        ).exceptionally(exception -> RpcResponse.fail(exception, exception.getMessage()));
     }
 
 }

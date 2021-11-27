@@ -22,7 +22,6 @@ import org.tomato.study.rpc.core.api.TomatoApi;
 import java.util.Optional;
 
 /**
- * todo 实现其余配置
  * rpc接口元数据
  * @author Tomato
  * Created on 2021.09.29
@@ -42,6 +41,17 @@ public class ApiConfig<T> {
      */
     private final Class<T> api;
 
+    /**
+     * 调用超时等待时间
+     */
+    private final Long timeoutMs;
+
+    /**
+     * rpc-service节点数据
+     */
+    private final MetaData nodeInfo;
+
+    @Deprecated
     public static <T> Optional<ApiConfig<T>> create(Class<T> api) {
         if (!api.isInterface()) {
             return Optional.empty();

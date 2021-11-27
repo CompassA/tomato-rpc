@@ -14,16 +14,12 @@
 
 package org.tomato.study.rpc.netty.proxy;
 
-import lombok.AllArgsConstructor;
-import org.tomato.study.rpc.core.Invocation;
-import org.tomato.study.rpc.core.NameServer;
-import org.tomato.study.rpc.core.Response;
 import org.tomato.study.rpc.core.StubFactory;
 import org.tomato.study.rpc.core.data.StubConfig;
-import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
-import org.tomato.study.rpc.netty.data.Code;
-import org.tomato.study.rpc.netty.data.RpcRequestDTO;
-import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
+import org.tomato.study.rpc.core.transport.RpcInvoker;
+import org.tomato.study.rpc.netty.invoker.NettyBaseStubInvoker;
+import org.tomato.study.rpc.netty.invoker.NettyDirectStubInvoker;
+import org.tomato.study.rpc.netty.invoker.NettyRouterStubInvoker;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
@@ -39,75 +35,42 @@ public class JdkStubFactory implements StubFactory {
     @Override
     @SuppressWarnings("unchecked cast")
     public <T> T createStub(StubConfig<T> config) {
+        if (config == null || !config.isValid()) {
+            return null;
+        }
+        NettyBaseStubInvoker stubInvoker = new NettyRouterStubInvoker(
+                config.getMicroServiceId(),
+                config.getGroup(),
+                config.getServiceInterface(),
+                config.getNameServer());
         return (T) Proxy.newProxyInstance(
                 JdkStubFactory.class.getClassLoader(),
-                new Class[] { config.getServiceInterface() },
-                new StubHandler(
-                        config.getMicroServiceId(),
-                        config.getGroup(),
-                        config.getNameServer(),
-                        config.getServiceInterface())
+                new Class[]{config.getServiceInterface()},
+                new InvocationHandler() {
+                    @Override
+                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                        return stubInvoker.invoke(proxy, method, args);
+                    }
+                }
         );
     }
 
-    @AllArgsConstructor
-    private static class StubHandler implements InvocationHandler {
-
-        /**
-         * 目标服务的唯一标识
-         */
-        private final String microServiceId;
-
-        /**
-         * 服务分组
-         */
-        private final String group;
-
-        /**
-         * 注册中心
-         */
-        private final NameServer nameServer;
-
-        /**
-         * 服务接口
-         */
-        private final Class<?> serviceInterface;
-
-        @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            Invocation invocation = createInvocation(method, args);
-            Response response = nameServer.lookupInvoker(microServiceId, group)
-                    .orElseThrow(() -> new TomatoRpcRuntimeException(
-                            NettyRpcErrorEnum.STUB_INVOKER_SEARCH_ERROR.create(
-                                    "[invoker not found, micro-service-id=" + microServiceId + ",group=" + group + "]")))
-                    .invoke(invocation)
-                    .getResultSync();
-            if (!Code.SUCCESS.equals(response.getCode())) {
-                throw new TomatoRpcRuntimeException(
-                        NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create(
-                                "[rpc invoke failed, server response: " + response.getMessage() + "]"));
-            }
-            return response.getData();
+    @Override
+    @SuppressWarnings("unchecked cast")
+    public <T> T createStub(String microServiceId, RpcInvoker rpcInvoker, Class<T> rpcInterface) {
+        if (rpcInvoker == null || rpcInterface == null || !rpcInterface.isInterface()) {
+            return null;
         }
-
-        private Invocation createInvocation(Method method, Object[] args) {
-            RpcRequestDTO.RpcRequestDTOBuilder builder = RpcRequestDTO.builder()
-                    .microServiceId(microServiceId)
-                    .interfaceName(serviceInterface.getName())
-                    .methodName(method.getName())
-                    .returnType(method.getReturnType().getName())
-                    .args(args == null ? new Object[0] : args);
-            Class<?>[] parameterTypes = method.getParameterTypes();
-            if (parameterTypes.length == 0) {
-                builder.argsTypes(new String[0]);
-            } else {
-                String[] parameterTypeNames = new String[parameterTypes.length];
-                for (int i = 0; i < parameterTypeNames.length; i++) {
-                    parameterTypeNames[i] = parameterTypes[i].getName();
+        NettyBaseStubInvoker stubInvoker = new NettyDirectStubInvoker(microServiceId, rpcInterface, rpcInvoker);
+        return (T) Proxy.newProxyInstance(
+                JdkStubFactory.class.getClassLoader(),
+                new Class[]{rpcInterface},
+                new InvocationHandler() {
+                    @Override
+                    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                        return stubInvoker.invoke(proxy, method, args);
+                    }
                 }
-                builder.argsTypes(parameterTypeNames);
-            }
-            return builder.build();
-        }
+        );
     }
 }

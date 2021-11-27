@@ -46,24 +46,4 @@ public final class SerializerHolder {
     public static Serializer getSerializer(final byte key) {
         return SERIALIZER_MAP.get(key);
     }
-
-    /**
-     * 给所有序列化器添加包装器
-     * @param wrapperClazz 包装器
-     */
-    public static void configWrapper(Class<? extends Serializer> wrapperClazz) {
-        try {
-            final Constructor<? extends Serializer> constructor = wrapperClazz.getConstructor(Serializer.class);
-            final List<Serializer> wrapperList = new ArrayList<>(0);
-            for (Serializer value : SERIALIZER_MAP.values()) {
-                wrapperList.add(constructor.newInstance(value));
-            }
-            for (Serializer wrapper : wrapperList) {
-                SERIALIZER_MAP.put(wrapper.serializerIndex(), wrapper);
-            }
-        } catch (NoSuchMethodException | InvocationTargetException
-                | InstantiationException | IllegalAccessException e) {
-            log.error(e.getMessage(), e);
-        }
-    }
 }

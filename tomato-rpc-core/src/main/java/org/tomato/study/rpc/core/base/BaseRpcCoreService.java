@@ -11,6 +11,7 @@ import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.observer.BaseLifeCycleComponent;
+import org.tomato.study.rpc.core.transport.RpcInvokerFactory;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 
 import java.util.List;
@@ -40,6 +41,11 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
     private final StubFactory stubFactory;
 
     /**
+     * Invoker创建者
+     */
+    private final RpcInvokerFactory invokerFactory;
+
+    /**
      * rpc configuration
      */
     private final RpcConfig rpcConfig;
@@ -52,12 +58,12 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
         this.rpcConfig = rpcConfig;
         this.providerRegistry = SpiLoader.getLoader(ProviderRegistry.class).load();
         this.stubFactory = SpiLoader.getLoader(StubFactory.class).load();
+        this.invokerFactory = SpiLoader.getLoader(RpcInvokerFactory.class).load();
         this.nameServer = SpiLoader.getLoader(NameServerFactory.class).load()
                 .createNameService(
                         NameServerConfig.builder()
                                 .connString(rpcConfig.getNameServiceURI())
-                                .build()
-                );
+                                .build());
     }
 
     @Override
@@ -92,5 +98,10 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
 
     public RpcConfig getRpcConfig() {
         return rpcConfig;
+    }
+
+    @Override
+    public RpcInvokerFactory getRpcInvokerFactory() {
+        return invokerFactory;
     }
 }

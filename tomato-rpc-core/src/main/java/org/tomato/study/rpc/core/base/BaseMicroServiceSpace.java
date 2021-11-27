@@ -16,7 +16,8 @@ package org.tomato.study.rpc.core.base;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.router.RpcInvoker;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.transport.RpcInvoker;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
 
 import java.io.IOException;
@@ -83,7 +84,7 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
      * @throws IOException 更新异常
      */
     @Override
-    public void refresh(Set<MetaData> newRpcInstanceInfoSet) throws IOException {
+    public void refresh(Set<MetaData> newRpcInstanceInfoSet) throws TomatoRpcException {
         // 若实例节点为空，表明这个服务已经没有节点了，清空Invoker
         if (CollectionUtils.isEmpty(newRpcInstanceInfoSet)) {
             cleanInvoker();
@@ -141,8 +142,8 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
 
                 // 关闭invoker
                 try {
-                    oldInvoker.close();
-                } catch (IOException e) {
+                    oldInvoker.destroy();
+                } catch (TomatoRpcException e) {
                     // 什么都不做
                 }
             }
@@ -150,7 +151,7 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
     }
 
     @Override
-    public synchronized void close() throws IOException {
+    public synchronized void close() throws TomatoRpcException {
         cleanInvoker();
     }
 
@@ -161,10 +162,10 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
      */
     protected abstract RpcInvoker createInvoker(MetaData metaData);
 
-    private void cleanInvoker() throws IOException {
+    private void cleanInvoker() throws TomatoRpcException {
         if (CollectionUtils.isNotEmpty(invokerRegistry.values())) {
             for (RpcInvoker value : invokerRegistry.values()) {
-                value.close();
+                value.destroy();
             }
         }
         invokerRegistry.clear();

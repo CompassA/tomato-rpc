@@ -17,7 +17,7 @@ package org.tomato.study.rpc.core;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.observer.LifeCycle;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
-import org.tomato.study.rpc.core.router.RpcInvoker;
+import org.tomato.study.rpc.core.transport.RpcInvoker;
 
 import java.util.Optional;
 

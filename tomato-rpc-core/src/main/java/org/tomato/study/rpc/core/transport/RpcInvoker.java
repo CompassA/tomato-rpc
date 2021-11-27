@@ -3,7 +3,7 @@
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,21 +12,19 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core.router;
+package org.tomato.study.rpc.core.transport;
 
 import org.tomato.study.rpc.core.Invocation;
-import org.tomato.study.rpc.core.Response;
 import org.tomato.study.rpc.core.Result;
 import org.tomato.study.rpc.core.data.MetaData;
-
-import java.io.Closeable;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
 
 /**
  * divide invoker in the interface dimension
  * @author Tomato
  * Created on 2021.07.07
  */
-public interface RpcInvoker extends Closeable {
+public interface RpcInvoker {
 
     /**
      * get invoker group {@link MetaData#getGroup()}
@@ -43,7 +41,14 @@ public interface RpcInvoker extends Closeable {
     /**
      * invoke rpc method
      * @param invocation procedure call data
+     * @throws TomatoRpcException rpc exception
      * @return result
      */
-    Result<Response> invoke(Invocation invocation);
+    Result invoke(Invocation invocation) throws TomatoRpcException;
+
+    /**
+     * destroy invoker
+     * @throws TomatoRpcException rpc close exception
+     */
+    void destroy() throws TomatoRpcException;
 }

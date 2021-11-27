@@ -17,6 +17,7 @@ package org.tomato.study.rpc.netty.transport.handler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandType;
@@ -29,17 +30,11 @@ import org.tomato.study.rpc.netty.transport.client.NettyResponseHolder;
  * Created on 2021.04.17
  */
 @Slf4j
+@AllArgsConstructor
 @ChannelHandler.Sharable
 public class ResponseHandler extends SimpleChannelInboundHandler<Command> {
 
-    /**
-     * RPC客户端所有的ResponseFuture
-     */
     private final NettyResponseHolder responseHolder;
-
-    public ResponseHandler(NettyResponseHolder responseHolder) {
-        this.responseHolder = responseHolder;
-    }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Command msg) throws Exception {
@@ -58,9 +53,6 @@ public class ResponseHandler extends SimpleChannelInboundHandler<Command> {
             default:
                 log.warn("received unknown command type: {}", type);
         }
-
-
-
     }
 
     private void handleRpcResponse(Command msg, Header header) {

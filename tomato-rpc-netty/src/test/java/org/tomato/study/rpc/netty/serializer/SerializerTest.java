@@ -70,7 +70,7 @@ public class SerializerTest {
     }
 
     @Test
-    public void testJsonGzip() {
+    public void testJson() {
         Map<Integer, Parameter> map = new HashMap<>();
         map.put(1, new Parameter("key", "val"));
         map.put(2, new Parameter("key2", "val2"));
@@ -87,10 +87,6 @@ public class SerializerTest {
                 .methodName("mockMethodName")
                 .args(new Object[] { "mockString", 1, LocalDateTime.now(), listList, map})
                 .build();
-
-        SerializerHolder.configWrapper(GzipWrapper.class);
-        SpiLoader.registerWrapper(Serializer.class, GzipWrapper.class);
-
 
         Command mockCommand = CommandFactory.request(
                 rpcRequest, list, SerializerHolder.getSerializer((byte) 1), CommandType.RPC_REQUEST);

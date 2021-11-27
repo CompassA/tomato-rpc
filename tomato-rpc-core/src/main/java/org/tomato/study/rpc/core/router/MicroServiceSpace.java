@@ -15,9 +15,9 @@
 package org.tomato.study.rpc.core.router;
 
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.transport.RpcInvoker;
 
-import java.io.Closeable;
-import java.io.IOException;
 import java.util.Optional;
 import java.util.Set;
 
@@ -26,7 +26,7 @@ import java.util.Set;
  * @author Tomato
  * Created on 2021.07.07
  */
-public interface MicroServiceSpace extends Closeable {
+public interface MicroServiceSpace {
 
     /**
      * 微服务唯一标识
@@ -45,8 +45,13 @@ public interface MicroServiceSpace extends Closeable {
     /**
      * 刷新节点信息
      * @param metadataSet all rpc node metadata of a provider with same micro-service-id and stage
-     * @throws IOException IO Exception during refresh invoker data
+     * @throws TomatoRpcException exception during refresh invoker data
      */
-    void refresh(Set<MetaData> metadataSet) throws IOException;
+    void refresh(Set<MetaData> metadataSet) throws TomatoRpcException;
 
+    /**
+     * close micro-service space
+     * @throws TomatoRpcException close exception
+     */
+    void close() throws TomatoRpcException;
 }

@@ -12,22 +12,35 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core.router;
+package org.tomato.study.rpc.core.transport;
 
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.spi.SpiInterface;
 
 import java.util.Optional;
 
 /**
+ * 创建Invoker
  * @author Tomato
  * Created on 2021.07.11
  */
+@SpiInterface("netty")
 public interface RpcInvokerFactory {
 
     /**
      * create rpc invoker by service provider metadata
+     * keep-alive and wait-timeout are default
      * @param nodeInfo necessary data for create rpc invoker
-     * @return prc invoker
+     * @return RPC invoker
      */
     Optional<RpcInvoker> create(MetaData nodeInfo);
+
+    /**
+     * create direct-rpc invoker by service provider metadata
+     * @param nodeInfo necessary data for create rpc invoker
+     * @param keepAliveMs client keep alive
+     * @param timeoutMs wait-timeout
+     * @return RPC invoker
+     */
+    Optional<RpcInvoker> create(MetaData nodeInfo, long keepAliveMs, long timeoutMs);
 }

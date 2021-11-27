@@ -14,17 +14,13 @@
 
 package org.tomato.study.rpc.netty.transport;
 
-import com.google.common.collect.Lists;
 import org.junit.Assert;
 import org.junit.Test;
 import org.tomato.study.rpc.core.data.RpcServerConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.netty.TestCommonUtil;
 import org.tomato.study.rpc.netty.transport.client.ChannelWrapper;
-import org.tomato.study.rpc.netty.transport.client.NettyChannelHolder;
-import org.tomato.study.rpc.netty.transport.client.NettyResponseHolder;
-import org.tomato.study.rpc.netty.transport.handler.KeepAliveHandler;
-import org.tomato.study.rpc.netty.transport.handler.ResponseHandler;
+import org.tomato.study.rpc.netty.transport.client.NettyRpcClient;
 import org.tomato.study.rpc.netty.transport.server.NettyRpcServer;
 
 import java.net.URI;
@@ -82,30 +78,27 @@ public class NettyRpcServerTest {
     @SuppressWarnings("all")
     public void idleTest() throws TomatoRpcException, InterruptedException {
         // 创建服务端, 并设置客户端发送keep alive时间大于空闲检测时间
-        RpcServerConfig serverConfig = RpcServerConfig.builder()
+        RpcServerConfig rpcConfig = RpcServerConfig.builder()
                 .serverReadIdleCheckMilliseconds(1000)
                 .clientKeepAliveMilliseconds(1000 * 2)
                 .port(40000)
                 .build();
-        NettyRpcServer nettyRpcServer = spy(new NettyRpcServer(serverConfig));
+        NettyRpcServer nettyRpcServer = spy(new NettyRpcServer(rpcConfig));
         nettyRpcServer.init();
         nettyRpcServer.start();
 
         // 创建一个客户端
-        NettyChannelHolder nettyChannelHolder = new NettyChannelHolder(
-                serverConfig.getClientKeepAliveMilliseconds(),
-                Lists.newArrayList(
-                        new KeepAliveHandler(),
-                        new ResponseHandler(new NettyResponseHolder()))
-        );
+        NettyRpcClient nettyRpcClient = new NettyRpcClient(
+                URI.create("tomato://" + rpcConfig.getHost() + ":" + rpcConfig.getPort()),
+                rpcConfig.getClientKeepAliveMilliseconds(),
+                20000);
 
 
         // 连接上服务端并且什么消息都不发, 并在服务端设置的空闲检测的时间内睡眠
         ChannelWrapper channelWrapper;
         try {
-            channelWrapper = nettyChannelHolder.getOrCreateChannelWrapper(
-                    URI.create("tomato://" + serverConfig.getHost() + ":" + serverConfig.getPort()));
-            Thread.sleep(serverConfig.getServerReadIdleCheckMilliseconds() * 2);
+            channelWrapper = nettyRpcClient.createOrReconnect();
+            Thread.sleep(rpcConfig.getServerReadIdleCheckMilliseconds() * 2);
         } catch (InterruptedException | TimeoutException e) {
             e.printStackTrace();
             Assert.fail();
@@ -124,6 +117,7 @@ public class NettyRpcServerTest {
 
         channelWrapper.closeChannel();
         nettyRpcServer.stop();
+        nettyRpcClient.stop();
         if (!hasChannelClosedException) {
             Assert.fail();
         }
@@ -137,30 +131,25 @@ public class NettyRpcServerTest {
     @SuppressWarnings("all")
     public void keepAliveTest() throws TomatoRpcException, InterruptedException {
         // 创建服务端
-        RpcServerConfig serverConfig = RpcServerConfig.builder()
+        RpcServerConfig rpcConfig = RpcServerConfig.builder()
                 .serverReadIdleCheckMilliseconds(1000)
                 .clientKeepAliveMilliseconds(500)
                 .port(40001)
                 .build();
-        NettyRpcServer nettyRpcServer = spy(new NettyRpcServer(serverConfig));
+        NettyRpcServer nettyRpcServer = spy(new NettyRpcServer(rpcConfig));
         nettyRpcServer.init();
         nettyRpcServer.start();
 
         // 创建一个客户端
-        NettyChannelHolder nettyChannelHolder = new NettyChannelHolder(
-                serverConfig.getClientKeepAliveMilliseconds(),
-                Lists.newArrayList(
-                        // 加上keep alive
-                        new KeepAliveHandler(),
-                        new ResponseHandler(new NettyResponseHolder()))
-        );
+        NettyRpcClient nettyRpcClient = new NettyRpcClient(
+                URI.create("tomato://" + rpcConfig.getHost() + ":" + rpcConfig.getPort()),
+                rpcConfig.getClientKeepAliveMilliseconds(),
+                20000);
 
         // 连接上服务端并且什么消息都不发, 并在服务端设置的空闲检测的时间内睡眠睡眠一段时间
         ChannelWrapper channelWrapper;
         try {
-            channelWrapper = nettyChannelHolder.getOrCreateChannelWrapper(
-                    URI.create("tomato://" + serverConfig.getHost() + ":" + serverConfig.getPort()));
-            Thread.sleep(serverConfig.getServerReadIdleCheckMilliseconds() * 2);
+            channelWrapper = nettyRpcClient.createOrReconnect();
         } catch (Exception e) {
             e.printStackTrace();
             Assert.fail();
@@ -169,6 +158,7 @@ public class NettyRpcServerTest {
 
         // 睡醒后看看连接是否依然活跃
         Assert.assertTrue(channelWrapper.isActiveChannel());
+        nettyRpcClient.stop();
     }
 
 }

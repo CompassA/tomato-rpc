@@ -16,6 +16,7 @@ package org.tomato.study.rpc.core;
 
 import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.spi.SpiInterface;
+import org.tomato.study.rpc.core.transport.RpcInvoker;
 
 /**
  * create rpc client proxy
@@ -32,4 +33,14 @@ public interface StubFactory {
      * @return proxy instance
      */
     <T> T createStub(StubConfig<T> config);
+
+    /**
+     * create a direct-connect proxy instance
+     * @param microServiceId micro-service-id
+     * @param rpcInvoker invoker
+     * @param rpcInterface interface
+     * @param <T> interface type
+     * @return proxy instance
+     */
+    <T> T createStub(String microServiceId, RpcInvoker rpcInvoker, Class<T> rpcInterface);
 }

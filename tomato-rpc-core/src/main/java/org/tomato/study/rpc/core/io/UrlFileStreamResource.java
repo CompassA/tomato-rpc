@@ -27,12 +27,15 @@ import java.net.URL;
 public class UrlFileStreamResource extends FileStreamResource {
 
     private static final String FILE_PROTO = "file";
+    private static final String JAR_FILE_PROTO = "jar";
 
     private final URL url;
 
     public UrlFileStreamResource(URL url) {
-        if (!FILE_PROTO.equals(url.getProtocol())) {
-            throw new IllegalArgumentException("url is not file protocol");
+        String protocol = url.getProtocol();
+        if (!FILE_PROTO.equals(protocol) && !JAR_FILE_PROTO.equals(protocol)) {
+            throw new IllegalArgumentException(
+                    "url is not file protocol, url protocol: " + protocol);
         }
         this.url = url;
     }

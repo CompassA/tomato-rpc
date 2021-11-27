@@ -16,6 +16,7 @@ package org.tomato.study.rpc.core.data;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.NameServer;
 
 /**
@@ -46,4 +47,11 @@ public class StubConfig<T> {
      * service group
      */
     private final String group;
+
+    public boolean isValid() {
+        return nameServer != null && serviceInterface != null
+                && StringUtils.isNotBlank(microServiceId)
+                && StringUtils.isNotBlank(group)
+                && serviceInterface.isInterface();
+    }
 }

@@ -269,6 +269,36 @@ public class RpcClientDemo {
 }
 ```
 
+#### 客户端直连RPC服务端调用
+```java
+@Component
+public class DirectRpcTest {
+    
+    @Autowired
+    private RpcCoreService rpcCoreService;
+    
+    public void test() {
+        EchoService directStub = rpcCoreService.createDirectStub(
+                ApiConfig.<EchoService>builder()
+                        // 目标接口
+                        .api(EchoService.class)
+                        // 目标服务id
+                        .microServiceId(mockMicroServiceId)
+                        // 服务的某个具体实例[127.0.0.1:5555]
+                        .nodeInfo(MetaData.builder()
+                                .microServiceId(mockMicroServiceId)
+                                .protocol("tomato")
+                                .host("127.0.0.1")
+                                .port("5555")
+                                .stage(stage)
+                                .group(group)
+                                .build())
+                        .build());
+        String response = directStub.echo("hello world");
+    }
+}
+
+```
 # 核心类图
 
 ![avatar](./uml/核心类图.png "uml")

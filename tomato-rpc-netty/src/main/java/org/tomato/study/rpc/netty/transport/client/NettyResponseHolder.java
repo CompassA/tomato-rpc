@@ -33,9 +33,9 @@ import java.util.concurrent.TimeUnit;
 public class NettyResponseHolder {
 
     /**
-     * client method call default timeout seconds
+     * client method call default timeout milliseconds
      */
-    private static final long DEFAULT_TIMEOUT_SECONDS = 20;
+    private static final long DEFAULT_TIMEOUT_MS = 20000;
 
     /**
      * message id -> response future
@@ -46,9 +46,11 @@ public class NettyResponseHolder {
      * schedule tasks to handle rpc timeout
      */
     private final HashedWheelTimer timer = new HashedWheelTimer(100, TimeUnit.MILLISECONDS);
+    public NettyResponseHolder() {
+    }
 
     public void putFeatureResponse(long id, CompletableFuture<Command> future) {
-        putFeatureResponse(id, future, DEFAULT_TIMEOUT_SECONDS);
+        putFeatureResponse(id, future, DEFAULT_TIMEOUT_MS);
     }
 
     public void putFeatureResponse(
@@ -66,7 +68,7 @@ public class NettyResponseHolder {
 
     private NettyResponseFuture createFuture(long messageId,
                                              CompletableFuture<Command> future,
-                                             long timeoutSeconds) {
+                                             long timeoutMs) {
         // create future
         NettyResponseFuture responseFuture = new NettyResponseFuture(messageId, future, System.nanoTime());
 
@@ -77,7 +79,7 @@ public class NettyResponseHolder {
                 return;
             }
             timeoutFuture.changeStateToTimeout();
-        }, timeoutSeconds, TimeUnit.SECONDS);
+        }, timeoutMs, TimeUnit.MILLISECONDS);
 
         return responseFuture;
     }
