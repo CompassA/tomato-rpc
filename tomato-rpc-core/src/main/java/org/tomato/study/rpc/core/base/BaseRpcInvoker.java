@@ -28,16 +28,22 @@ public abstract class BaseRpcInvoker implements RpcInvoker {
     /**
      * RPC服务节点的ip、端口等数据
      */
-    protected final MetaData nodeInfo;
+    private final MetaData nodeInfo;
 
     /**
      * 客户端为请求body体设置的序列化方式
      */
-    protected final Serializer commandSerializer;
+    private final Serializer commandSerializer;
 
-    public BaseRpcInvoker(MetaData nodeInfo) {
+    /**
+     * RPC客户端发起调用后的超时时间
+     */
+    private long timeoutMs;
+
+    public BaseRpcInvoker(MetaData nodeInfo, long timeoutMs) {
         this.nodeInfo = nodeInfo;
         this.commandSerializer = SpiLoader.getLoader(Serializer.class).load();
+        this.timeoutMs = timeoutMs;
     }
 
     @Override
@@ -48,5 +54,20 @@ public abstract class BaseRpcInvoker implements RpcInvoker {
     @Override
     public MetaData getMetadata() {
         return nodeInfo;
+    }
+
+    @Override
+    public long getInvocationTimeout() {
+        return timeoutMs;
+    }
+
+    @Override
+    public void setInvocationTimeout(long timeoutMs) {
+        this.timeoutMs = timeoutMs;
+    }
+
+    @Override
+    public Serializer getSerializer() {
+        return commandSerializer;
     }
 }

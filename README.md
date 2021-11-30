@@ -177,7 +177,8 @@ public class EchoApiWrapper {
     // 在SpringBean中，添加RPC接口作为成员变量，并加上@RpcClientStub
     // tomato-rpc在Spring启动时会自动将stub注入
     // 使用此注解时，类必须是一个java bean
-    @RpcClientStub
+    // 可配置客户端接口调用的超时时间，单位为毫秒
+    @RpcClientStub(timeout = 2000)
     private EchoService echoService;
 
     public String echo(String msg) {
@@ -270,6 +271,7 @@ public class RpcClientDemo {
 ```
 
 #### 客户端直连RPC服务端调用
+Tomato-Rpc支持RPC客户端根据ip、端口、service-id、接口直接构造Stub对象，不依赖与注册中心进行RPC。  
 ```java
 @Component
 public class DirectRpcTest {
@@ -303,10 +305,10 @@ public class DirectRpcTest {
 
 ![avatar](./uml/核心类图.png "uml")
 
-## SPI
+# SPI
 服务内部DIY了一个SPI机制，每个组件通过SpiLoader加载依赖的组件，用户可通过添加SPI配置文件、配置JVM参数的方式替换组件实现而无需改变代码。
 
-### 代码样例
+## 代码样例
 ```java
 /**
  * 通过注解标识这是一个SPI接口，"jdk"为配置文件中的key
@@ -332,7 +334,7 @@ public class SpiDemo {
     private final StubFactory stubFactory = SpiLoader.getLoader(StubFactory.class).load();
 }
 ```
-### 依赖注入
+## 依赖注入
 当一个SPI接口实现类依赖了其他SPI组件时,Tomato-Rpc的SPI会尝试依赖注入。  
 Tomato-Rpc的SPI会检测当前SPI接口实现类的所有Setter方法,若Setter方法的入参也是SPI接口,  
 会继续加载Setter入参对应的SPI接口组件，并通过反射，调用Setter其注入到当前SPI实现类中。
@@ -392,7 +394,7 @@ class SpiLoopInjectTest {
 }
 
 ```
-### jvm参数配置spi
+## jvm参数配置spi
 -Dtomato-rpc.spi=spi接口类全名1:组件key1&spi接口类全名2:组件key2
 
 
@@ -400,6 +402,7 @@ class SpiLoopInjectTest {
 目前基于随机策略，从一个微服务的多个实例节点中随机选取一个发起调用。  
 todo 后续增加多种方式
 
-## 待实现功能
-### RPC客户端熔断
-### RPC路由规则
+# 待实现功能
+## RPC客户端熔断
+## 均衡负载
+## RPC路由规则

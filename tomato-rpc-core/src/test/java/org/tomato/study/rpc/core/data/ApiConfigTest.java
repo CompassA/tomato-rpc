@@ -19,6 +19,7 @@ import org.junit.Test;
 import org.tomato.study.rpc.core.StubFactory;
 import org.tomato.study.rpc.core.api.TomatoApi;
 
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -31,16 +32,18 @@ public class ApiConfigTest {
 
     @Test
     public void test() {
-        Assert.assertTrue(ApiConfig.create(StubFactory.class).isEmpty());
-        Assert.assertTrue(ApiConfig.create(Object.class).isEmpty());
-        Optional<ApiConfig<TestApi>> apiConfig = ApiConfig.create(TestApi.class);
+        long timeoutMs = 30000;
+        Assert.assertTrue(ApiConfig.create(StubFactory.class, timeoutMs).isEmpty());
+        Assert.assertTrue(ApiConfig.create(Object.class, timeoutMs).isEmpty());
+        Optional<ApiConfig<TestApi>> apiConfig = ApiConfig.create(TestApi.class, timeoutMs);
         Assert.assertTrue(apiConfig.isPresent());
-        Assert.assertSame(apiConfig.get().getApi(), TestApi.class);
-        Assert.assertEquals(MOCK_SERVICE_ID, apiConfig.get().getMicroServiceId());
+        ApiConfig<TestApi> testApiApiConfig = apiConfig.get();
+        Assert.assertSame(testApiApiConfig.getApi(), TestApi.class);
+        Assert.assertEquals(MOCK_SERVICE_ID, testApiApiConfig.getMicroServiceId());
+        Assert.assertTrue(Objects.equals(timeoutMs, testApiApiConfig.getTimeoutMs()));
     }
 
     @TomatoApi(microServiceId = MOCK_SERVICE_ID)
     public static interface TestApi {
-
     }
 }

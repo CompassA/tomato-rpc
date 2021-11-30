@@ -17,6 +17,7 @@ package org.tomato.study.rpc.core.data;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
+import lombok.Setter;
 import org.tomato.study.rpc.core.api.TomatoApi;
 
 import java.util.Optional;
@@ -32,27 +33,39 @@ import java.util.Optional;
 public class ApiConfig<T> {
 
     /**
-     * 服务唯一标识
+     * 服务唯一标识，必传
      */
     private final String microServiceId;
 
     /**
-     * rpc接口
+     * rpc接口，必传
      */
     private final Class<T> api;
 
     /**
-     * 调用超时等待时间
+     * 调用超时等待时间，非必传
      */
-    private final Long timeoutMs;
+    @Setter
+    private Long timeoutMs;
 
     /**
-     * rpc-service节点数据
+     * 分组，非必传，若未配置，与自身同组
      */
-    private final MetaData nodeInfo;
+    @Setter
+    private String group;
 
-    @Deprecated
+    /**
+     * rpc-service节点数据，非必传，客户端直连时传这个参数
+     */
+    @Setter
+    private MetaData nodeInfo;
+
+
     public static <T> Optional<ApiConfig<T>> create(Class<T> api) {
+        return create(api, null);
+    }
+
+    public static <T> Optional<ApiConfig<T>> create(Class<T> api, Long timeoutMs) {
         if (!api.isInterface()) {
             return Optional.empty();
         }
@@ -64,6 +77,7 @@ public class ApiConfig<T> {
                 ApiConfig.<T>builder()
                         .microServiceId(apiInfo.microServiceId())
                         .api(api)
+                        .timeoutMs(timeoutMs)
                         .build()
         );
     }

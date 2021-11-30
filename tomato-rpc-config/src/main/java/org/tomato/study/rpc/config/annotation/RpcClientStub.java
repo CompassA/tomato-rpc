@@ -34,7 +34,7 @@ public @interface RpcClientStub {
      * 配置客户端调用的超时时间
      * @return 超时时间，单位ms
      */
-    long timeout() default 50000;
+    long timeout() default 5000;
 
     /**
      * 要调用哪个分组的api

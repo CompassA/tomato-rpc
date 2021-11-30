@@ -14,14 +14,13 @@
 
 package org.tomato.study.rpc.netty.transport.client;
 
-import io.netty.util.HashedWheelTimer;
+import lombok.NoArgsConstructor;
 import org.tomato.study.rpc.core.data.Command;
 
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.TimeUnit;
 
 /**
  * rpc client stores the mapping "client request message id -> client future",
@@ -30,57 +29,23 @@ import java.util.concurrent.TimeUnit;
  * @author Tomato
  * Created on 2021.04.08
  */
+@NoArgsConstructor
 public class NettyResponseHolder {
-
-    /**
-     * client method call default timeout milliseconds
-     */
-    private static final long DEFAULT_TIMEOUT_MS = 20000;
 
     /**
      * message id -> response future
      */
     private final ConcurrentMap<Long, NettyResponseFuture> responseMap = new ConcurrentHashMap<>(0);
 
-    /**
-     * schedule tasks to handle rpc timeout
-     */
-    private final HashedWheelTimer timer = new HashedWheelTimer(100, TimeUnit.MILLISECONDS);
-    public NettyResponseHolder() {
-    }
-
     public void putFeatureResponse(long id, CompletableFuture<Command> future) {
-        putFeatureResponse(id, future, DEFAULT_TIMEOUT_MS);
-    }
-
-    public void putFeatureResponse(
-            long id,
-            CompletableFuture<Command> future,
-            long timeoutSeconds) {
-        responseMap.computeIfAbsent(
-                id, messageId -> createFuture(messageId, future, timeoutSeconds)
-        );
+        responseMap.computeIfAbsent(id, messageId -> createFuture(messageId, future));
     }
 
     public Optional<NettyResponseFuture> getAndRemove(long id) {
         return Optional.ofNullable(responseMap.remove(id));
     }
 
-    private NettyResponseFuture createFuture(long messageId,
-                                             CompletableFuture<Command> future,
-                                             long timeoutMs) {
-        // create future
-        NettyResponseFuture responseFuture = new NettyResponseFuture(messageId, future, System.nanoTime());
-
-        // register timeout task
-        timer.newTimeout(timeout -> {
-            NettyResponseFuture timeoutFuture = responseMap.remove(messageId);
-            if (timeoutFuture == null) {
-                return;
-            }
-            timeoutFuture.changeStateToTimeout();
-        }, timeoutMs, TimeUnit.MILLISECONDS);
-
-        return responseFuture;
+    private NettyResponseFuture createFuture(long messageId, CompletableFuture<Command> future) {
+        return new NettyResponseFuture(messageId, future, System.nanoTime());
     }
 }

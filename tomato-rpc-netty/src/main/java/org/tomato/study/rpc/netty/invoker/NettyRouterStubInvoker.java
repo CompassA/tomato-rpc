@@ -48,19 +48,24 @@ public class NettyRouterStubInvoker extends NettyBaseStubInvoker {
             Response response = nameServer.lookupInvoker(microServiceId, group)
                     .orElseThrow(() -> new TomatoRpcRuntimeException(
                             NettyRpcErrorEnum.STUB_INVOKER_SEARCH_ERROR.create(
-                                    String.format("[invoker not found, micro-service-id=%s, group=%s",
-                                            microServiceId, group))))
+                                    String.format("[invoker not found, micro-service-id=%s, group=%s, interface=%s]",
+                                            microServiceId, group, invocation.getInterfaceName()))))
                     .invoke(invocation)
                     .getResultSync();
             if (!Code.SUCCESS.equals(response.getCode())) {
-                throw new TomatoRpcRuntimeException(
-                        NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create(
-                                "[rpc invocation failed, server response: " + response.getMessage() + "]"));
+                if (response.getData() instanceof TomatoRpcRuntimeException) {
+                    throw (TomatoRpcRuntimeException) response.getData();
+                } else {
+                    throw new TomatoRpcRuntimeException(
+                            NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create(
+                                    "[rpc invocation failed, server response: " + response.getMessage() + "]"));
+                }
             }
             return response;
         } catch (ExecutionException | InterruptedException | TomatoRpcException e) {
             throw new TomatoRpcRuntimeException(NettyRpcErrorEnum.STUB_INVOKER_SEARCH_ERROR.create(
-                    String.format("[rpc invocation failed, micro-service-id=%s, group=%s", microServiceId, group)), e);
+                    String.format("[rpc invocation failed, micro-service-id=%s, group=%s, interface=%s]",
+                            microServiceId, group, invocation.getInterfaceName())), e);
         }
     }
 }

@@ -90,8 +90,7 @@ public class NettyRpcServerTest {
         // 创建一个客户端
         NettyRpcClient nettyRpcClient = new NettyRpcClient(
                 URI.create("tomato://" + rpcConfig.getHost() + ":" + rpcConfig.getPort()),
-                rpcConfig.getClientKeepAliveMilliseconds(),
-                20000);
+                rpcConfig.getClientKeepAliveMilliseconds());
 
 
         // 连接上服务端并且什么消息都不发, 并在服务端设置的空闲检测的时间内睡眠
@@ -143,8 +142,7 @@ public class NettyRpcServerTest {
         // 创建一个客户端
         NettyRpcClient nettyRpcClient = new NettyRpcClient(
                 URI.create("tomato://" + rpcConfig.getHost() + ":" + rpcConfig.getPort()),
-                rpcConfig.getClientKeepAliveMilliseconds(),
-                20000);
+                rpcConfig.getClientKeepAliveMilliseconds());
 
         // 连接上服务端并且什么消息都不发, 并在服务端设置的空闲检测的时间内睡眠睡眠一段时间
         ChannelWrapper channelWrapper;

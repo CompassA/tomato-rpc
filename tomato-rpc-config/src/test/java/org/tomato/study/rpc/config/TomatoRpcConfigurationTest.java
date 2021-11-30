@@ -29,7 +29,9 @@ import org.tomato.study.rpc.config.component.TomatoRpcConfiguration;
 import org.tomato.study.rpc.config.data.TomatoRpcProperties;
 import org.tomato.study.rpc.config.test.TestClientBean;
 import org.tomato.study.rpc.core.RpcCoreService;
+import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.utils.ReflectUtils;
 
 import javax.annotation.PostConstruct;
@@ -104,5 +106,18 @@ public class TomatoRpcConfigurationTest {
     public void beanRegisterTest() {
         String echoStr = "echo";
         Assert.assertEquals(echoStr, testClientBean.getTestApi().echo(echoStr));
+    }
+
+    @Test
+    public void annotationTimeoutConfigTest() {
+        boolean hasTimeout = false;
+        try {
+            testClientBean.getTimeoutApi().echo("");
+        } catch (TomatoRpcRuntimeException e) {
+            hasTimeout = Objects.equals(
+                    e.getErrorInfo().getCode(),
+                    TomatoRpcCoreErrorEnum.RPC_CLIENT_TIMEOUT.getCode());
+        }
+        Assert.assertTrue(hasTimeout);
     }
 }

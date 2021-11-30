@@ -26,6 +26,7 @@ import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.tomato.study.rpc.core.Invocation;
 import org.tomato.study.rpc.core.Result;
+import org.tomato.study.rpc.core.Serializer;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
@@ -129,6 +130,12 @@ public class BaseServiceProviderTest extends BaseTest {
                 public String getGroup() { return metadata.getGroup(); }
                 @Override
                 public MetaData getMetadata() { return metadata; }
+                @Override
+                public long getInvocationTimeout() {return 1;}
+                @Override
+                public void setInvocationTimeout(long timeoutMs) {}
+                @Override
+                public Serializer getSerializer() {return null;}
                 @Override
                 public Result invoke(Invocation invocation) { return null; }
                 @Override

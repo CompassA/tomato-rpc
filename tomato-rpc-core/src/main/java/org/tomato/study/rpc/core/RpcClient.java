@@ -14,18 +14,16 @@
 
 package org.tomato.study.rpc.core;
 
-import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.observer.LifeCycle;
 
-import java.util.concurrent.CompletableFuture;
-
 /**
  * send rpc request
+ * @param <T> 网络数据通信类型
  * @author Tomato
  * Created on 2021.03.31
  */
-public interface RpcClient extends LifeCycle {
+public interface RpcClient<T> extends LifeCycle {
 
     /**
      * send rpc request
@@ -33,7 +31,7 @@ public interface RpcClient extends LifeCycle {
      * @throws TomatoRpcException message send exception
      * @return response message
      */
-    CompletableFuture<Command> send(Command msg) throws TomatoRpcException;
+    ResponseFuture<T> send(T msg) throws TomatoRpcException;
 
     /**
      * get target host

@@ -12,35 +12,31 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core.base;
+package org.tomato.study.rpc.core;
 
-import org.tomato.study.rpc.core.RpcClient;
-import org.tomato.study.rpc.core.observer.BaseLifeCycleComponent;
-
-import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 
 /**
+ * 一次网络通信后返回的数据
  * @author Tomato
- * Created on 2021.11.27
+ * Created on 2021.11.28
  */
-public abstract class BaseRpcClient<T> extends BaseLifeCycleComponent implements RpcClient<T> {
+public interface ResponseFuture<T> {
 
     /**
-     * RPC服务节点的ip、端口，URI形式
+     * 获取消息id
+     * @return 消息id
      */
-    private final URI uri;
+    long getMessageId();
 
-    public BaseRpcClient(URI uri) {
-        this.uri = uri;
-    }
+    /**
+     * 获取响应Future
+     * @return 响应
+     */
+    CompletableFuture<T> getFuture();
 
-    @Override
-    public String getHost() {
-        return uri.getHost();
-    }
-
-    @Override
-    public int getPort() {
-        return uri.getPort();
-    }
+    /**
+     * 销毁响应数据
+     */
+    void destroy();
 }

@@ -14,11 +14,12 @@
 
 package org.tomato.study.rpc.core.base;
 
+import lombok.Getter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
-import org.tomato.study.rpc.core.transport.RpcInvoker;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
+import org.tomato.study.rpc.core.transport.RpcInvoker;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -54,6 +55,12 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
      * {@link MetaData#getGroup()} -> RpcInvokers with same group
      */
     private final ConcurrentMap<String, List<RpcInvoker>> sameGroupInvokerMap = new ConcurrentHashMap<>(0);
+
+    /**
+     * 超时时间
+     */
+    @Getter
+    private long timeoutMs;
 
     public BaseMicroServiceSpace(String microServiceId) {
         this.microServiceId = microServiceId;
@@ -170,5 +177,11 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
         }
         invokerRegistry.clear();
         sameGroupInvokerMap.clear();
+    }
+
+    @Override
+    public void resetInvokerTimeout(long timeoutMs) {
+        this.timeoutMs = timeoutMs;
+        invokerRegistry.values().forEach(invoker -> invoker.setInvocationTimeout(timeoutMs));
     }
 }

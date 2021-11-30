@@ -101,6 +101,8 @@ public class RpcStubPostProcessor implements BeanPostProcessor {
                                     ApiConfig.builder()
                                             .api((Class<Object>) metaDataKey.getStubClass())
                                             .microServiceId(metaDataKey.getMicroServiceId())
+                                            .timeoutMs(metaDataKey.getTimeout())
+                                            .group(metaDataKey.getGroup())
                                             .build()));
                     try {
                         field.set(bean, stub);

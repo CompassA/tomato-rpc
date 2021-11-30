@@ -44,9 +44,13 @@ public class NettyDirectStubInvoker extends NettyBaseStubInvoker {
         try {
             Response response = rpcInvoker.invoke(invocation).getResultSync();
             if (!Code.SUCCESS.equals(response.getCode())) {
-                throw new TomatoRpcRuntimeException(
-                        NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create(
-                                "[rpc invocation failed, server response: " + response.getMessage() + "]"));
+                if (response.getData() instanceof TomatoRpcRuntimeException) {
+                    throw (TomatoRpcRuntimeException) response.getData();
+                } else {
+                    throw new TomatoRpcRuntimeException(
+                            NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create(
+                                    "[rpc invocation failed, server response: " + response.getMessage() + "]"));
+                }
             }
             return response;
         } catch (ExecutionException | InterruptedException | TomatoRpcException e) {

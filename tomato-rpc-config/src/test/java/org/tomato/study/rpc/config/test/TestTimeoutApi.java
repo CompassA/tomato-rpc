@@ -14,21 +14,13 @@
 
 package org.tomato.study.rpc.config.test;
 
-import lombok.Getter;
-import org.springframework.stereotype.Component;
-import org.tomato.study.rpc.config.annotation.RpcClientStub;
+import org.tomato.study.rpc.core.api.TomatoApi;
 
 /**
  * @author Tomato
- * Created on 2021.11.21
+ * Created on 2021.11.30
  */
-@Getter
-@Component
-public class TestClientBean {
-
-    @RpcClientStub
-    private TestApi testApi;
-
-    @RpcClientStub(timeout = 500)
-    private TestTimeoutApi timeoutApi;
+@TomatoApi(microServiceId = "rpc-test-service")
+public interface TestTimeoutApi {
+    String echo(String s);
 }

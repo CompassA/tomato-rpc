@@ -39,10 +39,12 @@ public class NettyInvocationResult implements Result {
 
     @Override
     public CompletableFuture<Response> getResultAsync() {
-        return future.thenApply(command ->
-                (Response) SerializerHolder.getSerializer(command.getHeader().getSerializeType())
-                        .deserialize(command.getBody(), RpcResponse.class)
-        ).exceptionally(exception -> RpcResponse.fail(exception, exception.getMessage()));
+        return future.thenApply(response ->
+                (Response) SerializerHolder.getSerializer(response.getHeader().getSerializeType())
+                        .deserialize(response.getBody(), RpcResponse.class)
+        ).exceptionally(exception ->
+                RpcResponse.fail(exception.getCause(), exception.getMessage())
+        );
     }
 
 }

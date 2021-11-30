@@ -12,35 +12,24 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core.base;
+package org.tomato.study.rpc.config.test;
 
-import org.tomato.study.rpc.core.RpcClient;
-import org.tomato.study.rpc.core.observer.BaseLifeCycleComponent;
-
-import java.net.URI;
+import org.tomato.study.rpc.config.annotation.RpcServerStub;
 
 /**
  * @author Tomato
- * Created on 2021.11.27
+ * Created on 2021.11.30
  */
-public abstract class BaseRpcClient<T> extends BaseLifeCycleComponent implements RpcClient<T> {
-
-    /**
-     * RPC服务节点的ip、端口，URI形式
-     */
-    private final URI uri;
-
-    public BaseRpcClient(URI uri) {
-        this.uri = uri;
-    }
+@RpcServerStub
+public class TestTimeoutServerStub implements TestTimeoutApi {
 
     @Override
-    public String getHost() {
-        return uri.getHost();
-    }
-
-    @Override
-    public int getPort() {
-        return uri.getPort();
+    public String echo(String s) {
+        try {
+            Thread.sleep(1000);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return s;
     }
 }

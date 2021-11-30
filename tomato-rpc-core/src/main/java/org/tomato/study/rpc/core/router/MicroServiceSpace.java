@@ -43,6 +43,12 @@ public interface MicroServiceSpace {
     Optional<RpcInvoker> lookUp(String group);
 
     /**
+     * 重置invoker调用超时时间
+     * @param timeoutMs 超时毫秒
+     */
+    void resetInvokerTimeout(long timeoutMs);
+
+    /**
      * 刷新节点信息
      * @param metadataSet all rpc node metadata of a provider with same micro-service-id and stage
      * @throws TomatoRpcException exception during refresh invoker data

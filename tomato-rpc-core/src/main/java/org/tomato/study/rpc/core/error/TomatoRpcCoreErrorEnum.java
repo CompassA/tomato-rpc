@@ -15,15 +15,18 @@
 package org.tomato.study.rpc.core.error;
 
 import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 /**
  * @author Tomato
  * Created on 2021.09.27
  */
+@Getter
 @AllArgsConstructor
 public enum TomatoRpcCoreErrorEnum {
 
     RPC_CONFIG_INITIALIZING_ERROR(10000, "rpc config is null"),
+    RPC_CLIENT_TIMEOUT(10002, "rpc timeout"),
     ;
 
     private int code;

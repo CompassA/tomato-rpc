@@ -29,6 +29,8 @@ import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
+import lombok.AllArgsConstructor;
+import org.tomato.study.rpc.core.ResponseFuture;
 import org.tomato.study.rpc.core.base.BaseRpcClient;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
@@ -50,7 +52,7 @@ import java.util.concurrent.TimeoutException;
  * @author Tomato
  * Created on 2021.11.27
  */
-public class NettyRpcClient extends BaseRpcClient {
+public class NettyRpcClient extends BaseRpcClient<Command> {
 
     private static final String RPC_CLIENT_THREAD_NAME = "rpc-client-worker-thread";
     private static final long CONNECTION_TIMEOUT_MS = 10000;
@@ -75,45 +77,37 @@ public class NettyRpcClient extends BaseRpcClient {
      */
     private final long keepAliveMs;
 
-    /**
-     * 调用超时时间
-     */
-    private final long timeoutMs;
-
     private ChannelWrapper channelWrapper;
 
-    public NettyRpcClient(URI uri, long keepAliveMs, long timeoutMs) {
+    public NettyRpcClient(URI uri, long keepAliveMs) {
         super(uri);
         this.keepAliveMs = keepAliveMs;
-        this.timeoutMs = timeoutMs;
         this.responseHolder = new NettyResponseHolder();
         doInit();
         doStart();
     }
 
     @Override
-    public CompletableFuture<Command> send(Command msg) throws TomatoRpcException {
-        CompletableFuture<Command> future = new CompletableFuture<>();
-        long id = msg.getHeader().getId();
+    public ResponseFuture<Command> send(Command msg) throws TomatoRpcException {
         try {
+            long id = msg.getHeader().getId();
+            CompletableFuture<Command> future = new CompletableFuture<>();
             createOrReconnect().getChannel().writeAndFlush(msg)
                     .addListener((ChannelFutureListener) futureChannel -> {
                         if (futureChannel.isSuccess()) {
-                            responseHolder.putFeatureResponse(id, future, timeoutMs);
+                            responseHolder.putFeatureResponse(id, future);
                         } else {
                             future.completeExceptionally(
                                     new TomatoRpcRuntimeException(
                                             NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create(),
                                             futureChannel.cause()));
-                            responseHolder.getAndRemove(id);
                         }
                     });
+            return new ClientResponseFuture(id, future, responseHolder);
         } catch (Exception e) {
-            responseHolder.getAndRemove(id);
             throw new TomatoRpcException(
                     NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create("channel fetch error"), e);
         }
-        return future;
     }
 
     @Override
@@ -183,5 +177,27 @@ public class NettyRpcClient extends BaseRpcClient {
             throw new IllegalStateException("netty channel is not active");
         }
         return new ChannelWrapper(channel);
+    }
+
+    @AllArgsConstructor
+    private static class ClientResponseFuture implements ResponseFuture<Command> {
+        private long id;
+        private CompletableFuture<Command> future;
+        private NettyResponseHolder responseHolder;
+
+        @Override
+        public long getMessageId() {
+            return id;
+        }
+
+        @Override
+        public CompletableFuture<Command> getFuture() {
+            return future;
+        }
+
+        @Override
+        public void destroy() {
+            responseHolder.getAndRemove(id);
+        }
     }
 }

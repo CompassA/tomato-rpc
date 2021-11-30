@@ -98,7 +98,12 @@ public class ClientStubMetadata<T> {
         if (tomatoApi == null || StringUtils.isBlank(tomatoApi.microServiceId())) {
             return Optional.empty();
         }
-        return Optional.of(new ClientStubMetadata<>(
-                api, tomatoApi.microServiceId(), rpcClientStub.timeout(), rpcClientStub.group()));
+        return Optional.of(
+                new ClientStubMetadata<>(
+                        api,
+                        tomatoApi.microServiceId(),
+                        rpcClientStub.timeout(),
+                        rpcClientStub.group()
+                ));
     }
 }

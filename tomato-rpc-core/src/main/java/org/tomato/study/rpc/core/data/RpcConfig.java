@@ -101,7 +101,7 @@ public class RpcConfig {
         private List<String> subscribedServiceIds = Collections.emptyList();
         private String nameServiceURI;
         private int port = 9090;
-        private int businessThreadPoolSize = 0;
+        private int businessThreadPoolSize = 1;
         private boolean useGzip = false;
         private long serverIdleCheckMilliseconds = 600000;
         private long clientKeepAliveMilliseconds = serverIdleCheckMilliseconds / 3;

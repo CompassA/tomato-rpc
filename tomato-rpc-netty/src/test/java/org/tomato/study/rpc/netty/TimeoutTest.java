@@ -12,23 +12,14 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.config.test;
+package org.tomato.study.rpc.netty;
 
-import lombok.Getter;
-import org.springframework.stereotype.Component;
-import org.tomato.study.rpc.config.annotation.RpcClientStub;
+import java.util.List;
 
 /**
  * @author Tomato
- * Created on 2021.11.21
+ * Created on 2021.11.29
  */
-@Getter
-@Component
-public class TestClientBean {
-
-    @RpcClientStub
-    private TestApi testApi;
-
-    @RpcClientStub(timeout = 500)
-    private TestTimeoutApi timeoutApi;
+public interface TimeoutTest {
+    Integer sum(List<Integer> numbers);
 }
