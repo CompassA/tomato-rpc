@@ -21,7 +21,6 @@ import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.core.transport.RpcInvoker;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -88,7 +87,7 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
     /**
      * 更新RPC服务的实例节点信息
      * @param newRpcInstanceInfoSet 相同micro-service-id、相同Stage的所有实例节点
-     * @throws IOException 更新异常
+     * @throws TomatoRpcException 更新异常
      */
     @Override
     public void refresh(Set<MetaData> newRpcInstanceInfoSet) throws TomatoRpcException {

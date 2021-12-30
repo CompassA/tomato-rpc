@@ -58,7 +58,7 @@ jdk版本:openjdk-11
 
 ## 如何使用
 本段以EchoService接口为例，介绍如何通过Tomato-RPC框架，使RPC服务端能够暴露服务接口、 使RPC客户端能够发起RPC调用。  
-具体代码见项目的tomato-rpc-sample-api包、tomato-rpc-sample-client、  
+具体代码见项目的tomato-rpc-sample-api、tomato-rpc-sample-client、  
 tomato-rpc-sample-server、tomato-rpc-spring-sample-client、tomato-rpc-spring-sample-server
 ### 公共jar包
 Tomato-RPC的RPC通信是基于接口的， 因此RPC的客户端、服务端需保持接口一致。  

@@ -77,6 +77,9 @@ public class NettyRpcClient extends BaseRpcClient<Command> {
      */
     private final long keepAliveMs;
 
+    /**
+     * 与服务端的连接
+     */
     private ChannelWrapper channelWrapper;
 
     public NettyRpcClient(URI uri, long keepAliveMs) {
