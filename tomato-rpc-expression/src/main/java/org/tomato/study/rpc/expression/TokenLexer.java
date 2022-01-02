@@ -26,18 +26,28 @@ import java.util.List;
  */
 public class TokenLexer {
 
+    /**
+     * 对输入的字符做词法分析
+     * @param code 代码
+     * @return 词法分析后的token流
+     */
     public TokenStream tokenize(String code) {
         if (StringUtils.isBlank(code)) {
             throw new IllegalArgumentException("code is empty");
         }
         List<Token> tokens = new ArrayList<>(0);
-        StringBuilder current = new StringBuilder(0);
+        StringBuilder buffer = new StringBuilder(0);
         State state = State.INIT;
         for (char c : code.toCharArray()) {
-            state = state.transfer(c, tokens, current);
+            state = state.transfer(c, tokens, buffer);
             if (state == null) {
                 throw new IllegalStateException("illegal state");
             }
+        }
+
+        // 最后一次需做特殊处理，防止遍历到末尾结束循环的情况但却没清除缓冲区token的情况
+        if (state != State.INIT && buffer.length() > 0) {
+            tokens.add(new Token(buffer.toString(), state.getMatchType()));
         }
         return new TokenStream(tokens);
     }
@@ -52,49 +62,69 @@ public class TokenLexer {
                 if (State.isBlank(c)) {
                     return State.INIT;
                 }
-                buffer.append(c);
                 if (c >= '0' && c <= '9') {
+                    buffer.append(c);
                     return INT_LITERAL;
-                }
-                if ((c >= 'a' && c <='z') || (c >= 'A' && c <= 'Z') || c == '_') {
+                } else if ((c >= 'a' && c <='z') || (c >= 'A' && c <= 'Z') || c == '_') {
+                    buffer.append(c);
                     return IDENTIFIER;
-                }
-                if (c == '"') {
+                } else if (c == '"') {
+                    buffer.append(c);
                     return STR_LITERAL;
-                }
-                if (c == '-') {
+                } else if (c == '-') {
+                    buffer.append(c);
                     return MINUS;
-                }
-                if (c == '&') {
-                    return AND1;
-                }
-                if (c == '|') {
-                    return OR1;
-                }
-                if (c == '=') {
-                    return EQ1;
-                }
-                if (c == '>') {
+                } else if (c == '&') {
+                    buffer.append(c);
+                    return AND;
+                } else if (c == '|') {
+                    buffer.append(c);
+                    return OR;
+                } else if (c == '=') {
+                    buffer.append(c);
+                    return EQ;
+                } else if (c == '>') {
+                    buffer.append(c);
                     return GT;
-                }
-                if (c == '<') {
+                } else if (c == '<') {
+                    buffer.append(c);
                     return LT;
+                } else if (c == '(') {
+                    buffer.append(c);
+                    tokens.add(new Token(buffer.toString(), TokenType.LEFT_PAREN));
+                    buffer.delete(0, buffer.length());
+                    return State.INIT;
+                } else if (c == ')') {
+                    buffer.append(c);
+                    tokens.add(new Token(buffer.toString(), TokenType.RIGHT_PAREN));
+                    buffer.delete(0, buffer.length());
+                    return State.INIT;
+                } else if (c == '+') {
+                    buffer.append(c);
+                    tokens.add(new Token(buffer.toString(), TokenType.PLUS));
+                    buffer.delete(0, buffer.length());
+                    return State.INIT;
+                } else if (c == '*') {
+                    buffer.append(c);
+                    tokens.add(new Token(buffer.toString(), TokenType.MUL));
+                    buffer.delete(0, buffer.length());
+                    return State.INIT;
+                } else if (c == '/') {
+                    buffer.append(c);
+                    tokens.add(new Token(buffer.toString(), TokenType.DIV));
+                    buffer.delete(0, buffer.length());
+                    return State.INIT;
+                } else if (c == '%') {
+                    buffer.append(c);
+                    tokens.add(new Token(buffer.toString(), TokenType.MOD));
+                    buffer.delete(0, buffer.length());
+                    return State.INIT;
                 }
-                if (c == '(') {
-                    return LEFT_PAREN;
-                }
-                if (c == ')') {
-                    return RIGHT_PAREN;
-                }
-                if (c == '+') {
-                    return PLUS;
-                }
-                if (c == '*') {
-                    return MUL;
-                }
-                if (c == '/') {
-                    return DIV;
-                }
+                return null;
+            }
+
+            @Override
+            public TokenType getMatchType() {
                 return null;
             }
         },
@@ -113,6 +143,11 @@ public class TokenLexer {
                 buffer.delete(0, buffer.length());
                 return State.INIT.transfer(c, tokens, buffer);
             }
+
+            @Override
+            public TokenType getMatchType() {
+                return TokenType.INT_LITERAL;
+            }
         },
 
         /**
@@ -124,6 +159,7 @@ public class TokenLexer {
                 if (c == '"') {
                     buffer.append(c);
                     tokens.add(new Token(buffer.toString(), TokenType.STR_LITERAL));
+                    buffer.delete(0, buffer.length());
                     return State.INIT;
                 }
                 if (!State.isBlank(c)) {
@@ -132,6 +168,11 @@ public class TokenLexer {
                 }
                 return null;
             }
+
+            @Override
+            public TokenType getMatchType() {
+                return TokenType.STR_LITERAL;
+            }
         },
         /**
          * 箭头 ->
@@ -139,65 +180,56 @@ public class TokenLexer {
         ARROW {
             @Override
             public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-                return null;
+                tokens.add(new Token(buffer.toString(), TokenType.ARROW));
+                buffer.delete(0, buffer.length());
+                return State.INIT.transfer(c, tokens, buffer);
+            }
+
+            @Override
+            public TokenType getMatchType() {
+                return TokenType.ARROW;
             }
         },
 
         /**
          * 逻辑与 &&
          */
-        AND1 {
+        AND {
             @Override
             public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-                return null;
+                if (c != '&') {
+                    return null;
+                }
+                buffer.append(c);
+                tokens.add(new Token(buffer.toString(), TokenType.AND));
+                buffer.delete(0, buffer.length());
+                return State.INIT;
             }
-        },
-        /**
-         * 逻辑与 &&
-         */
-        AND2 {
+
             @Override
-            public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-                return null;
+            public TokenType getMatchType() {
+                return TokenType.AND;
             }
         },
 
         /**
          * 逻辑或 ||
          */
-        OR1 {
+        OR {
             @Override
             public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-                return null;
+                if (c != '|') {
+                    return null;
+                }
+                buffer.append(c);
+                tokens.add(new Token(buffer.toString(), TokenType.OR));
+                buffer.delete(0, buffer.length());
+                return State.INIT;
             }
-        },
-        /**
-         * 逻辑或 ||
-         */
-        OR2 {
-            @Override
-            public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-                return null;
-            }
-        },
 
-        /**
-         * 左括号(
-         */
-        LEFT_PAREN {
             @Override
-            public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-                return null;
-            }
-        },
-
-        /**
-         * 右括号)
-         */
-        RIGHT_PAREN {
-            @Override
-            public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-                return null;
+            public TokenType getMatchType() {
+                return TokenType.OR;
             }
         },
 
@@ -207,26 +239,39 @@ public class TokenLexer {
         IDENTIFIER {
             @Override
             public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-                return null;
+                if (State.isAlpha(c) || c == '_') {
+                    buffer.append(c);
+                    return State.IDENTIFIER;
+                }
+                tokens.add(new Token(buffer.toString(), TokenType.IDENTIFIER));
+                buffer.delete(0, buffer.length());
+                return State.INIT.transfer(c, tokens, buffer);
+            }
+
+            @Override
+            public TokenType getMatchType() {
+                return TokenType.IDENTIFIER;
             }
         },
 
         /**
          * ==
          */
-        EQ1 {
+        EQ {
             @Override
             public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-                return null;
+                if (c != '=') {
+                    return null;
+                }
+                buffer.append(c);
+                tokens.add(new Token(buffer.toString(), TokenType.EQ));
+                buffer.delete(0, buffer.length());
+                return State.INIT;
             }
-        },
-        /**
-         * ==
-         */
-        EQ2 {
+
             @Override
-            public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-                return null;
+            public TokenType getMatchType() {
+                return TokenType.EQ;
             }
         },
 
@@ -236,17 +281,31 @@ public class TokenLexer {
         GE {
             @Override
             public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-                return null;
+                tokens.add(new Token(buffer.toString(), TokenType.GE));
+                buffer.delete(0, buffer.length());
+                return State.INIT.transfer(c, tokens, buffer);
+            }
+
+            @Override
+            public TokenType getMatchType() {
+                return TokenType.GE;
             }
         },
 
         /**
-         * =<
+         * <=
          */
         LE {
             @Override
             public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-                return null;
+                tokens.add(new Token(buffer.toString(), TokenType.LE));
+                buffer.delete(0, buffer.length());
+                return State.INIT.transfer(c, tokens, buffer);
+            }
+
+            @Override
+            public TokenType getMatchType() {
+                return TokenType.LE;
             }
         },
 
@@ -256,7 +315,18 @@ public class TokenLexer {
         GT {
             @Override
             public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-                return null;
+                if (c == '=') {
+                    buffer.append(c);
+                    return State.GE;
+                }
+                tokens.add(new Token(buffer.toString(), TokenType.GT));
+                buffer.delete(0, buffer.length());
+                return State.INIT.transfer(c, tokens, buffer);
+            }
+
+            @Override
+            public TokenType getMatchType() {
+                return TokenType.GT;
             }
         },
 
@@ -266,17 +336,18 @@ public class TokenLexer {
         LT {
             @Override
             public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-                return null;
+                if (c == '=') {
+                    buffer.append(c);
+                    return State.LE;
+                }
+                tokens.add(new Token(buffer.toString(), TokenType.LT));
+                buffer.delete(0, buffer.length());
+                return State.INIT.transfer(c, tokens, buffer);
             }
-        },
 
-        /**
-         * 加法 +
-         */
-        PLUS {
             @Override
-            public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-                return null;
+            public TokenType getMatchType() {
+                return TokenType.LT;
             }
         },
 
@@ -286,28 +357,18 @@ public class TokenLexer {
         MINUS {
             @Override
             public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-                return null;
+                if (c == '>') {
+                    buffer.append(c);
+                    return State.ARROW;
+                }
+                tokens.add(new Token(buffer.toString(), TokenType.MINUS));
+                buffer.delete(0, buffer.length());
+                return State.INIT.transfer(c, tokens, buffer);
             }
-        },
 
-        /**
-         * 乘法 *
-         */
-        MUL {
             @Override
-            public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-                return null;
-            }
-        },
-
-        /**
-         * 除法 /
-         */
-        DIV {
-            @Override
-            public State transfer(char c, List<Token> tokens, StringBuilder buffer) {
-
-                return null;
+            public TokenType getMatchType() {
+                return TokenType.MINUS;
             }
         },
         ;
@@ -323,8 +384,18 @@ public class TokenLexer {
                                        List<Token> tokens,
                                        StringBuilder buffer);
 
+        /**
+         * 获取当前状态对应的token type
+         * @return token type
+         */
+        public abstract TokenType getMatchType();
+
         private static boolean isBlank(char c) {
             return c == ' ' || c == '\t' || c == '\n';
+        }
+
+        private static boolean isAlpha(char c) {
+            return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
         }
     }
 

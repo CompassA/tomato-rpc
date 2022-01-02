@@ -29,6 +29,7 @@ public class TokenStream {
     /**
      * token列表
      */
+    @Getter
     private final Token[] tokens;
 
     /**

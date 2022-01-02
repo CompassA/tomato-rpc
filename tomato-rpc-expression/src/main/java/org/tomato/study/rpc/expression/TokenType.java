@@ -106,4 +106,9 @@ public enum TokenType {
      */
     DIV,
 
+    /**
+     * 取余
+     */
+    MOD,
+
 }
