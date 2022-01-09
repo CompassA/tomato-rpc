@@ -12,7 +12,7 @@ FROM openjdk:11
 COPY --from=builder /tmp/tomato-rpc-spring-sample-server/target/*.jar /usr/src/myapp/
 WORKDIR /usr/src/myapp/
 EXPOSE 1535
-CMD ["/bin/sh", "-c", "java -jar *.jar $JAVA_OPTIONS"]
+ENTRYPOINT java -jar $JAVA_OPTIONS *.jar
 #--------for debug-----------
 #RUN ls >> log_
 #CMD ["tail", "-f", "log_"]

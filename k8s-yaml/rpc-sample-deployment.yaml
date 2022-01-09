@@ -1,6 +1,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
+  namespace: tomato
   labels:
     app: rpc-sample-deployment
   name: rpc-sample-deployment
@@ -12,6 +13,7 @@ spec:
   strategy: {}
   template:
     metadata:
+      namespace: tomato
       labels:
         app: rpc-sample-server-pod
     spec:
