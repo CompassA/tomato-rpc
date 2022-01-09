@@ -10,4 +10,4 @@ RUN mvn clean install -DskipTests -U -B -e --settings /usr/share/maven/ref/setti
 FROM openjdk:11
 COPY --from=builder /tmp/tomato-rpc-spring-sample-client/target/*.jar /usr/src/myapp/
 WORKDIR /usr/src/myapp/
-CMD ["/bin/sh", "-c", "java -jar *.jar"]
+ENTRYPOINT java -jar $JAVA_OPTIONS *.jar
