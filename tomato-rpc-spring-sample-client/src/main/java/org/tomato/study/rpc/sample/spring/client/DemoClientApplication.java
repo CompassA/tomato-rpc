@@ -66,8 +66,10 @@ public class DemoClientApplication {
             });
         }
         countDownLatch.await();
-        context.close();
-        System.exit(0);
+        while (true) {
+            log.info(bean.echo("hello world"));
+            Thread.sleep(1000);
+        }
     }
 
 }

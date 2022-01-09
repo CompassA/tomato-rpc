@@ -6,7 +6,7 @@ metadata:
     app: rpc-sample-deployment
   name: rpc-sample-deployment
 spec:
-  replicas: 1
+  replicas: 3
   selector:
     matchLabels:
       app: rpc-sample-server-pod
