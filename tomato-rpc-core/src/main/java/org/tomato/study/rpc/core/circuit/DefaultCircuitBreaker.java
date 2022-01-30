@@ -128,7 +128,7 @@ public class DefaultCircuitBreaker implements CircuitBreaker {
     @Override
     public void addFailure() {
         counter.addFailure();
-        if (state == CLOSE) {
+        if (state != OPEN) {
             double errorRate = calcErrorRate();
             // 若错误率大于阈值且熔断器未开启，开启熔断
             if (errorRate >= threshold && STATE_UPGRADER.compareAndSet(this, state, OPEN)) {
