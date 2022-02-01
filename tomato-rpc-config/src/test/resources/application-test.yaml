@@ -24,3 +24,9 @@ tomato-rpc:
   client-keep-alive-ms: 200000
   # 客户端发送数据时是否开启压缩
   use-gzip: true
+  # 开启熔断
+  enable-circuit: true
+  # 错误率超过多少时开启熔断[1, 100]
+  circuit-open-rate: 74
+  # 断路器开启状态的有效期
+  circuit-open-seconds: 59

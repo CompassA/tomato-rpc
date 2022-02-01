@@ -76,6 +76,15 @@ public class TomatoRpcConfiguration {
         if (properties.getClientKeepAliveMs() != null) {
             rpcConfigBuilder.clientKeepAliveMilliseconds(properties.getClientKeepAliveMs());
         }
+        if (properties.isEnableCircuit()) {
+            rpcConfigBuilder.enableCircuit(properties.isEnableCircuit());
+            if (properties.getCircuitOpenRate() != null) {
+                rpcConfigBuilder.circuitOpenRate(properties.getCircuitOpenRate() / 100.0);
+            }
+            if (properties.getCircuitOpenSeconds() != null) {
+                rpcConfigBuilder.circuitOpenSeconds(properties.getCircuitOpenSeconds());
+            }
+        }
         rpcConfigBuilder.group(
                 Optional.ofNullable(System.getProperty(RpcJvmConfigKey.MICRO_SERVICE_GROUP))
                         .orElse(properties.getGroup()));

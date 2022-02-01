@@ -16,6 +16,14 @@ package org.tomato.study.rpc.core.circuit;
 
 import org.junit.Assert;
 import org.junit.Test;
+import org.tomato.study.rpc.core.Invocation;
+import org.tomato.study.rpc.core.Response;
+import org.tomato.study.rpc.core.Result;
+import org.tomato.study.rpc.core.Serializer;
+import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.data.RpcConfig;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.transport.RpcInvoker;
 
 /**
  * @author Tomato
@@ -48,5 +56,87 @@ public class DefaultCircuitBreakerTest {
         Assert.assertEquals(breaker.getStatus().getState(), CircuitBreaker.CLOSE);
         Assert.assertEquals(breaker.getStatus().failureRate(), 0, 0.00001);
 
+    }
+
+    @Test
+    public void invokerTest() throws TomatoRpcException, InterruptedException {
+        RpcInvoker mockInvoker = new RpcInvoker() {
+            @Override
+            public String getGroup() {
+                return null;
+            }
+
+            @Override
+            public MetaData getMetadata() {
+                return null;
+            }
+
+            @Override
+            public long getInvocationTimeout() {
+                return 0;
+            }
+
+            @Override
+            public void setInvocationTimeout(long timeoutMs) {
+
+            }
+
+            @Override
+            public Serializer getSerializer() {
+                return null;
+            }
+
+            @Override
+            public Result invoke(Invocation invocation) throws TomatoRpcException {
+                if (true) {
+                    throw new RuntimeException("error");
+                }
+                return null;
+            }
+
+            @Override
+            public void destroy() throws TomatoRpcException {
+
+            }
+        };
+
+        long seconds = 3;
+        RpcConfig config = RpcConfig.builder()
+                .enableCircuit(true)
+                .circuitOpenRate(0.5)
+                .circuitOpenSeconds(seconds)
+                .build();
+        CircuitRpcInvoker circuitRpcInvoker = new CircuitRpcInvoker(mockInvoker, config) {
+            @Override
+            protected void doHandle(Response response, Throwable exception, CircuitBreaker breaker) {
+                if (exception != null) {
+                    breaker.addFailure();
+                }
+            }
+        };
+
+        for (int i = 0; i < DefaultCircuitBreaker.DEFAULT_RING_LENGTH / 2; ++i) {
+            Assert.assertTrue(circuitRpcInvoker.allow());
+            invokeError(circuitRpcInvoker);
+        }
+
+        Assert.assertFalse(circuitRpcInvoker.allow());
+
+        // 睡眠，进入半开启状态
+        Thread.sleep(seconds * 1000 + 1);
+        Assert.assertTrue(circuitRpcInvoker.allow());
+
+        // 半开启后再次调用，仍然报错会被立马熔断
+        invokeError(circuitRpcInvoker);
+        Assert.assertFalse(circuitRpcInvoker.allow());
+
+    }
+
+    private void invokeError(CircuitRpcInvoker circuitRpcInvoker) {
+        try {
+            circuitRpcInvoker.invoke(null);
+        } catch (Throwable e) {
+            // do nothing
+        }
     }
 }

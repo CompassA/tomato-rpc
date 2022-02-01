@@ -15,8 +15,11 @@
 package org.tomato.study.rpc.core.base;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.tomato.study.rpc.core.circuit.CircuitRpcInvoker;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.core.transport.RpcInvoker;
@@ -36,12 +39,19 @@ import java.util.concurrent.ConcurrentMap;
  * @author Tomato
  * Created on 2021.07.10
  */
+@Slf4j
 public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
 
     /**
      * 服务唯一标识 {@link MetaData#getMicroServiceId()}
      */
     private final String microServiceId;
+
+    /**
+     * RPC配置
+     */
+    @Getter
+    private final RpcConfig rpcConfig;
 
     /**
      * 一个RPC服务的所有实例节点，一个RpcInvoker持有一个与服务实例节点的连接并与其通信
@@ -61,8 +71,9 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
     @Getter
     private long timeoutMs;
 
-    public BaseMicroServiceSpace(String microServiceId) {
+    public BaseMicroServiceSpace(String microServiceId, RpcConfig rpcConfig) {
         this.microServiceId = microServiceId;
+        this.rpcConfig = rpcConfig;
     }
 
     @Override
@@ -161,12 +172,27 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
         cleanInvoker();
     }
 
+    private RpcInvoker createInvoker(MetaData metaData) {
+        RpcInvoker rpcInvoker = doCreateInvoker(metaData);
+        if (!rpcConfig.isEnableCircuit()) {
+            return rpcInvoker;
+        }
+        return doCreateCircuitBreaker(rpcInvoker);
+    }
+
+    /**
+     * 创建熔断包装器
+     * @param invoker 原始invoker
+     * @return 被熔断包装器包装的invoker
+     */
+    protected abstract CircuitRpcInvoker doCreateCircuitBreaker(RpcInvoker invoker);
+
     /**
      * 根据rpc节点信息创建invoker
      * @param metaData rpc节点信息
      * @return 可与rpc节点通信的invoker
      */
-    protected abstract RpcInvoker createInvoker(MetaData metaData);
+    protected abstract RpcInvoker doCreateInvoker(MetaData metaData);
 
     private void cleanInvoker() throws TomatoRpcException {
         if (CollectionUtils.isNotEmpty(invokerRegistry.values())) {

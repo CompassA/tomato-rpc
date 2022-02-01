@@ -8,12 +8,7 @@ Tomato-RPC, 业余时间为了巩固微服务基础知识、RPC基础原理而DI
 ## RPC通信
 Tomato-RPC的RPC是基于接口的。    
 服务端需要注册接口实现类，并将接口数据暴露至注册中心。  
-客户端需要订阅接口，并通过Tomato-RPC框架创建一个stub实例，调用stub实例的方法即可完成RPC调用。  
-## 熔断
-todo
-
-## 路由
-todo
+客户端需要订阅接口，并通过Tomato-RPC框架创建一个stub实例，调用stub实例的方法即可完成RPC调用。
 
 ## 服务治理
 
@@ -50,6 +45,127 @@ RPC服务节点目录结构: /tomato/{micro-service-id}/{stage}/providers/......
 三级目录: 一个微服务在部署在哪几个环境  
 四级目录: 一个微服务在一个环境下的多个元数据（目前只有服务实例信息）  
 五级目录: RPC服务实例信息
+
+## SPI
+Tomato-RPC实现了一个简单的SPI，每个组件通过SpiLoader加载依赖的组件，用户可通过添加SPI配置文件、配置JVM参数的方式替换组件实现而无需改变代码。
+
+### 代码样例
+```java
+/**
+ * 通过注解标识这是一个SPI接口，"jdk"为配置文件中的key
+ * 程序将加载配置文件中"jdk"对应的实现类
+ */
+@SpiInterface("jdk")
+public interface StubFactory {
+    <T> T createStub(StubConfig<T> config);
+}
+```
+
+在项目的资源路径下添加"META-INF/tomato"目录, SPI会读取这个目录下的SPI配置  
+添加一个文件，名字为SPI接口类全名: org.tomato.study.rpc.core.StubFactory  
+每行添加SPI配置参数，形式为"参数名:具体实现类的类全名"
+```text
+jdk : org.tomato.study.rpc.netty.proxy.JdkStubFactory
+```
+
+配置完毕后通过SpiLoader加载接口实现类
+```java
+public class SpiDemo {
+    // 通过spi的方式加载StubFactory组件
+    private final StubFactory stubFactory = SpiLoader.getLoader(StubFactory.class).load();
+}
+```
+### 依赖注入
+当一个SPI接口实现类依赖了其他SPI组件时,Tomato-Rpc的SPI会尝试依赖注入。  
+Tomato-Rpc的SPI会检测当前SPI接口实现类的所有Setter方法,若Setter方法的入参也是SPI接口,  
+会继续加载Setter入参对应的SPI接口组件，并通过反射，调用Setter其注入到当前SPI实现类中。
+
+
+Tomato-Rpc的SPI对单例对象的循环依赖做了处理,若SPI接口被配置为单例,Tomato-Rpc的SPI会在注入依赖前,先将SPI组件缓存至一个Map中。
+```java
+@SpiInterface("a")
+public interface SpiInterfaceA {
+    SpiInterfaceB getB();
+}
+
+@SpiInterface("b")
+public interface SpiInterfaceB {
+    SpiInterfaceC getC();
+}
+
+@SpiInterface("c")
+public interface SpiInterfaceC {
+    SpiInterfaceA getA();
+}
+
+@NoArgsConstructor
+public class SpiInterfaceAImpl implements SpiInterfaceA {
+    @Setter
+    @Getter
+    private SpiInterfaceB b;
+}
+
+@NoArgsConstructor
+public class SpiInterfaceBImpl implements SpiInterfaceB {
+    @Getter
+    @Setter
+    private SpiInterfaceC c;
+}
+
+@NoArgsConstructor
+public class SpiInterfaceCImpl implements SpiInterfaceC {
+    @Setter
+    @Getter
+    private SpiInterfaceA a;
+}
+
+
+class SpiLoopInjectTest {
+    /**
+     * 测试循环依赖
+     */
+    @Test
+    public void loopDependencyTest() {
+        SpiInterfaceA a = SpiLoader.getLoader(SpiInterfaceA.class).load();
+        Assert.assertTrue(a instanceof SpiInterfaceAImpl);
+        Assert.assertTrue(a.getB() instanceof SpiInterfaceBImpl);
+        Assert.assertTrue(a.getB().getC() instanceof SpiInterfaceCImpl);
+        Assert.assertTrue(a.getB().getC().getA() instanceof SpiInterfaceAImpl);
+    }
+}
+
+```
+### jvm参数配置spi
+-Dtomato-rpc.spi=spi接口类全名1:组件key1&spi接口类全名2:组件key2
+
+## 熔断
+Tomato-RPC基于断路器模式实现了一个简单的熔断机制。
+### 断路器计数器
+断路器内部维护一个计数器，计数器记录了断路器所包裹的方法的调用成功次数与失败次数。  
+Tomato-RPC基于BitSet与FenwickTree实现了一个环状计数器，具体代码见SuccessFailureRingCounter.java。
+每次成功或失败时，会使用BitSet中的一位来记录调用的结果(1代表成功, 0代表失败)，并用FenwickTree维护BitSet的区间和。
+PS: 用FenwickTree当作计算成功次数与失败次数的索引只是为了巩固下这个数据结构，没做过实际的性能测试。。。。
+
+### 断路器状态切换
+断路器有三种状态: 关闭、半打开、打开。  
+当断路器处于关闭或半打开状态时，请求会被放行，当断路器处于打开状态时，请求会被立马拒绝。
+断路器的打开状态有时间限制，当超过设置的时间间隔后，断路器会从打开进入到半打开状态。  
+状态间的切换如下所示:  
+关闭 ========(失败率超过阈值)=======> 打开 ====(打开状态超时)=====> 半打开  
+半打开 =======(调用失败)====> 打开  
+半打开 =======(调用成功且当前失败率小于阈值)===========> 关闭
+
+### 配置方式
+需要配置enable-circuit(是否开启熔断)、circuit-open-rate(错误率阈值)、circuit-open-seconds(断路器打开状态的超时秒数)三个参数。
+具体配置方式见下文的"快速开始"中的客户端配置。  
+若应用是通过Spring接入的，在配置文件配这几个参数即可；若应用是手动接入的，设置RpcConfig类的这三个参数即可。
+
+## 均衡负载
+目前基于随机策略，从一个微服务的多个实例节点中随机选取一个发起调用。  
+todo 后续增加多种方式
+
+## 路由
+todo  
 
 # 快速开始
 ## 依赖检查
@@ -167,6 +283,12 @@ tomato-rpc:
   client-keep-alive-ms: 200000
   # 客户端发送数据时是否开启压缩
   use-gzip: false
+  # 开启熔断
+  enable-circuit: true
+  # 错误率超过多少时开启熔断[1, 100]
+  circuit-open-rate: 75
+  # 断路器开启状态的有效期
+  circuit-open-seconds: 60
 ```
 
 客户端发起RPC
@@ -304,105 +426,3 @@ public class DirectRpcTest {
 # 核心类图
 
 ![avatar](./uml/核心类图.png "uml")
-
-# SPI
-服务内部DIY了一个SPI机制，每个组件通过SpiLoader加载依赖的组件，用户可通过添加SPI配置文件、配置JVM参数的方式替换组件实现而无需改变代码。
-
-## 代码样例
-```java
-/**
- * 通过注解标识这是一个SPI接口，"jdk"为配置文件中的key
- * 程序将加载配置文件中"jdk"对应的实现类
- */
-@SpiInterface("jdk")
-public interface StubFactory {
-    <T> T createStub(StubConfig<T> config);
-}
-```
-
-在项目的资源路径下添加"META-INF/tomato"目录, SPI会读取这个目录下的SPI配置  
-添加一个文件，名字为SPI接口类全名: org.tomato.study.rpc.core.StubFactory  
-每行添加SPI配置参数，形式为"参数名:具体实现类的类全名"
-```text
-jdk : org.tomato.study.rpc.netty.proxy.JdkStubFactory
-```
-
-配置完毕后通过SpiLoader加载接口实现类
-```java
-public class SpiDemo {
-    // 通过spi的方式加载StubFactory组件
-    private final StubFactory stubFactory = SpiLoader.getLoader(StubFactory.class).load();
-}
-```
-## 依赖注入
-当一个SPI接口实现类依赖了其他SPI组件时,Tomato-Rpc的SPI会尝试依赖注入。  
-Tomato-Rpc的SPI会检测当前SPI接口实现类的所有Setter方法,若Setter方法的入参也是SPI接口,  
-会继续加载Setter入参对应的SPI接口组件，并通过反射，调用Setter其注入到当前SPI实现类中。
-
-
-Tomato-Rpc的SPI对单例对象的循环依赖做了处理,若SPI接口被配置为单例,Tomato-Rpc的SPI会在注入依赖前,先将SPI组件缓存至一个Map中。
-```java
-@SpiInterface("a")
-public interface SpiInterfaceA {
-    SpiInterfaceB getB();
-}
-
-@SpiInterface("b")
-public interface SpiInterfaceB {
-    SpiInterfaceC getC();
-}
-
-@SpiInterface("c")
-public interface SpiInterfaceC {
-    SpiInterfaceA getA();
-}
-
-@NoArgsConstructor
-public class SpiInterfaceAImpl implements SpiInterfaceA {
-    @Setter
-    @Getter
-    private SpiInterfaceB b;
-}
-
-@NoArgsConstructor
-public class SpiInterfaceBImpl implements SpiInterfaceB {
-    @Getter
-    @Setter
-    private SpiInterfaceC c;
-}
-
-@NoArgsConstructor
-public class SpiInterfaceCImpl implements SpiInterfaceC {
-    @Setter
-    @Getter
-    private SpiInterfaceA a;
-}
-
-
-class SpiLoopInjectTest {
-    /**
-     * 测试循环依赖
-     */
-    @Test
-    public void loopDependencyTest() {
-        SpiInterfaceA a = SpiLoader.getLoader(SpiInterfaceA.class).load();
-        Assert.assertTrue(a instanceof SpiInterfaceAImpl);
-        Assert.assertTrue(a.getB() instanceof SpiInterfaceBImpl);
-        Assert.assertTrue(a.getB().getC() instanceof SpiInterfaceCImpl);
-        Assert.assertTrue(a.getB().getC().getA() instanceof SpiInterfaceAImpl);
-    }
-}
-
-```
-## jvm参数配置spi
--Dtomato-rpc.spi=spi接口类全名1:组件key1&spi接口类全名2:组件key2
-
-
-# 均衡负载
-目前基于随机策略，从一个微服务的多个实例节点中随机选取一个发起调用。  
-todo 后续增加多种方式
-
-# 待实现功能
-## RPC客户端熔断
-## 均衡负载
-## RPC路由规则

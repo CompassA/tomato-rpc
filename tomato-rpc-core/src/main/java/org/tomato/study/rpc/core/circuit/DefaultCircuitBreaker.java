@@ -31,14 +31,14 @@ public class DefaultCircuitBreaker implements CircuitBreaker {
     /**
      * 默认启动熔断比例
      */
-    private static final double DEFAULT_THRESHOLD = 0.5;
+    public static final double DEFAULT_THRESHOLD = 0.5;
 
     /**
      * 默认熔断间隔
      */
-    private static final long DEFAULT_PERIOD_NANO = 60_000_000_000L;
+    public static final long DEFAULT_PERIOD_NANO = 60_000_000_000L;
 
-    private static final int DEFAULT_RING_LENGTH = 10000;
+    public static final int DEFAULT_RING_LENGTH = 10000;
 
     /**
      * 熔断阈值

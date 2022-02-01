@@ -23,6 +23,11 @@ import org.tomato.study.rpc.config.annotation.RpcClientStub;
 import org.tomato.study.rpc.sample.api.EchoService;
 import org.tomato.study.rpc.sample.api.data.DemoRequest;
 
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
+
 /**
  * @author Tomato
  * Created on 2021.11.20
@@ -39,10 +44,40 @@ public class DemoClientApplication {
         return echoService.echo(new DemoRequest(msg)).getData();
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws InterruptedException {
         ConfigurableApplicationContext context = SpringApplication.run(DemoClientApplication.class);
         DemoClientApplication bean = context.getBean(DemoClientApplication.class);
-        log.info(bean.echo("hello world"));
+        int threadNum = 10;
+        int messageNum = 1000;
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                threadNum, threadNum, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1000));
+        CountDownLatch countDownLatch = new CountDownLatch(threadNum);
+        for (int i = 0; i < threadNum; ++i) {
+            executor.execute(() -> {
+                for (int j = 0; j < messageNum; ++j) {
+                    try {
+                        log.info(bean.echo("hello world"));
+                    } catch (Exception e) {
+                        log.error("rpc client error", e);
+                    }
+                    try {
+                        Thread.sleep(1000);
+                    } catch (InterruptedException e) {
+                        log.error(e.getMessage());
+                    }
+                }
+                countDownLatch.countDown();
+            });
+        }
+        countDownLatch.await();
+        for (int i = 0; i < 100000000; ++i) {
+            try {
+                log.info(bean.echo("hello world"));
+            } catch (Exception e) {
+                log.error("rpc client error", e);
+            }
+            Thread.sleep(1500);
+        }
         context.close();
         System.exit(0);
     }

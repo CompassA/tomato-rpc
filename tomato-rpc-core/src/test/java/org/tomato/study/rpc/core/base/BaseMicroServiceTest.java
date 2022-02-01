@@ -27,7 +27,9 @@ import org.powermock.modules.junit4.PowerMockRunner;
 import org.tomato.study.rpc.core.Invocation;
 import org.tomato.study.rpc.core.Result;
 import org.tomato.study.rpc.core.Serializer;
+import org.tomato.study.rpc.core.circuit.CircuitRpcInvoker;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.core.transport.RpcInvoker;
@@ -42,7 +44,7 @@ import java.util.Set;
  */
 @RunWith(PowerMockRunner.class)
 @PowerMockIgnore({"javax.management"})
-public class BaseServiceProviderTest extends BaseTest {
+public class BaseMicroServiceTest extends BaseTest {
 
     private final String mockServiceId = "mock.subscribe.1";
 
@@ -64,7 +66,7 @@ public class BaseServiceProviderTest extends BaseTest {
      * test common refresh execution chain
      * test if {@see org.tomato.study.rpc.registry.zookeeper.impl.BalanceServiceProvider#invokerMap}
      * and {@see org.tomato.study.rpc.registry.zookeeper.impl.BalanceServiceProvider#invokerRegistry}
-     * of ServiceProvider are the same as {@link BaseServiceProviderTest#originMataDataSet}
+     * of ServiceProvider are the same as {@link BaseMicroServiceTest#originMataDataSet}
      */
     @Test
     public void refreshTest() throws Exception {
@@ -120,11 +122,16 @@ public class BaseServiceProviderTest extends BaseTest {
     public static class TestServiceProvider extends BaseMicroServiceSpace {
 
         public TestServiceProvider(String mockServiceId) {
-            super(mockServiceId);
+            super(mockServiceId, RpcConfig.builder().build());
         }
 
         @Override
-        protected RpcInvoker createInvoker(MetaData metadata) {
+        protected CircuitRpcInvoker doCreateCircuitBreaker(RpcInvoker invoker) {
+            return null;
+        }
+
+        @Override
+        protected RpcInvoker doCreateInvoker(MetaData metadata) {
             return new RpcInvoker() {
                 @Override
                 public String getGroup() { return metadata.getGroup(); }
