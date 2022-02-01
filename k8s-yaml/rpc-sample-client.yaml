@@ -1,0 +1,26 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-client-job
+  namespace: tomato
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rpc-client-demo
+  template:
+    metadata:
+      namespace: tomato
+      name: sample-client
+      labels:
+        app: rpc-client-demo
+    spec:
+      containers:
+        - name: sample-client
+          image: compassa/sample-client:1.0.0
+          imagePullPolicy: IfNotPresent
+          stdin: true
+          tty: true
+          env:
+            - name: "JAVA_OPTIONS"
+              value: "-Dtomato-rpc.name-service-uri=zookeeper-set-0.zookeeper.tomato.svc.cluster.local:2181"

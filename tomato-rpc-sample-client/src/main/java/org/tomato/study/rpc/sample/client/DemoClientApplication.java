@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.RpcCoreServiceFactory;
+import org.tomato.study.rpc.core.RpcJvmConfigKey;
 import org.tomato.study.rpc.core.data.ApiConfig;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
@@ -43,7 +44,7 @@ public class DemoClientApplication {
     private static final Logger LOGGER = LoggerFactory.getLogger(DemoClientApplication.class);
 
     public static void main(String[] args) throws Exception {
-        String zkURL = System.getenv("ZK_IP_PORT");
+        String zkURL = System.getProperty(RpcJvmConfigKey.NAME_SERVICE_URI);
         if (StringUtils.isBlank(zkURL)) {
             zkURL = "127.0.0.1:2181";
         }

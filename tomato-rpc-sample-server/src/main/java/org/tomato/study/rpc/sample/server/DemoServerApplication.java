@@ -18,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.RpcCoreServiceFactory;
+import org.tomato.study.rpc.core.RpcJvmConfigKey;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
@@ -32,7 +33,7 @@ import org.tomato.study.rpc.sample.api.data.Constant;
 public class DemoServerApplication {
 
     public static void main(String[] args) throws Exception {
-        String zkURL = System.getenv("ZK_IP_PORT");
+        String zkURL = System.getProperty(RpcJvmConfigKey.NAME_SERVICE_URI);
         if (StringUtils.isBlank(zkURL)) {
             zkURL = "127.0.0.1:2181";
         }
