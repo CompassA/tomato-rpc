@@ -103,6 +103,7 @@ public class TomatoRpcConfigurationTest {
         Assert.assertTrue(properties.isEnableCircuit());
         Assert.assertEquals(properties.getCircuitOpenRate().intValue(), 74);
         Assert.assertEquals(properties.getCircuitOpenSeconds().longValue(), 59L);
+        Assert.assertEquals(properties.getCircuitWindow().intValue(), 98);
     }
 
     @Test

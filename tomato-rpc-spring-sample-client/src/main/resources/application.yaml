@@ -26,6 +26,8 @@ tomato-rpc:
   # 开启熔断
   enable-circuit: true
   # 错误率超过多少时开启熔断[1, 100]
-  circuit-open-rate: 75
+  circuit-open-rate: 50
   # 断路器开启状态的有效期
   circuit-open-seconds: 60
+  # 记录方法最近多少次的调用
+  circuit-window: 100

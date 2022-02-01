@@ -84,6 +84,9 @@ public class TomatoRpcConfiguration {
             if (properties.getCircuitOpenSeconds() != null) {
                 rpcConfigBuilder.circuitOpenSeconds(properties.getCircuitOpenSeconds());
             }
+            if (properties.getCircuitWindow() != null) {
+                rpcConfigBuilder.circuitWindow(properties.getCircuitWindow());
+            }
         }
         rpcConfigBuilder.group(
                 Optional.ofNullable(System.getProperty(RpcJvmConfigKey.MICRO_SERVICE_GROUP))

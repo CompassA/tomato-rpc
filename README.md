@@ -139,9 +139,10 @@ class SpiLoopInjectTest {
 -Dtomato-rpc.spi=spi接口类全名1:组件key1&spi接口类全名2:组件key2
 
 ## 熔断
-Tomato-RPC基于断路器模式实现了一个简单的熔断机制。
+Tomato-RPC基于断路器模式实现了一个简单的熔断机制。  
+Tomato-RPC以TCP连接为单位进行熔断，当RPC客户端与一个服务的n个实例建立的TCP连接后，Tomato-RPC会创建n个熔断实例，分别统计连接失败率。
 ### 断路器计数器
-断路器内部维护一个计数器，计数器记录了断路器所包裹的方法的调用成功次数与失败次数。  
+断路器内部维护一个计数器，计数器记录了断路器所包裹的方法的调用成功次数与失败次数，计数器仅会记录被包裹方法最近n次的调用情况(通过配置采样窗口参数进行控制)。  
 Tomato-RPC基于BitSet与FenwickTree实现了一个环状计数器，具体代码见SuccessFailureRingCounter.java。
 每次成功或失败时，会使用BitSet中的一位来记录调用的结果(1代表成功, 0代表失败)，并用FenwickTree维护BitSet的区间和。
 PS: 用FenwickTree当作计算成功次数与失败次数的索引只是为了巩固下这个数据结构，没做过实际的性能测试。。。。
@@ -156,7 +157,7 @@ PS: 用FenwickTree当作计算成功次数与失败次数的索引只是为了�
 半打开 =======(调用成功且当前失败率小于阈值)===========> 关闭
 
 ### 配置方式
-需要配置enable-circuit(是否开启熔断)、circuit-open-rate(错误率阈值)、circuit-open-seconds(断路器打开状态的超时秒数)三个参数。
+需要配置enable-circuit(是否开启熔断)、circuit-open-rate(错误率阈值)、circuit-open-seconds(断路器打开状态的超时秒数)、circuit-window(采样窗口)四个个参数。
 具体配置方式见下文的"快速开始"中的客户端配置。  
 若应用是通过Spring接入的，在配置文件配这几个参数即可；若应用是手动接入的，设置RpcConfig类的这三个参数即可。
 
@@ -289,6 +290,8 @@ tomato-rpc:
   circuit-open-rate: 75
   # 断路器开启状态的有效期
   circuit-open-seconds: 60
+  # 采样窗口
+  circuit-window: 100
 ```
 
 客户端发起RPC

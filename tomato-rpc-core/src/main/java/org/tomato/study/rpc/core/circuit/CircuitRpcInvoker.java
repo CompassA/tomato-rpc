@@ -37,9 +37,10 @@ public abstract class CircuitRpcInvoker implements RpcInvoker {
 
     public CircuitRpcInvoker(RpcInvoker rpcInvoker, RpcConfig rpcConfig) {
         this.rpcInvoker = rpcInvoker;
-        this.breaker = SpiLoader.getLoader(CircuitBreaker.class).load();
-        this.breaker.resetPeriod(rpcConfig.getCircuitOpenSeconds() * 1000_000_000L);
-        this.breaker.resetThresholdRate((int) (rpcConfig.getCircuitOpenRate() * 100));
+        this.breaker = SpiLoader.getLoader(CircuitBreaker.class).load(
+                rpcConfig.getCircuitOpenRate(),
+                rpcConfig.getCircuitOpenSeconds() * 1000_000_000L,
+                rpcConfig.getCircuitWindow());
     }
 
     public boolean allow() {

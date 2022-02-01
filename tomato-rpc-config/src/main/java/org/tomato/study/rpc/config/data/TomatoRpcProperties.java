@@ -94,4 +94,9 @@ public class TomatoRpcProperties {
      * 断路器开启多久后进入半开模式
      */
     private Long circuitOpenSeconds;
+
+    /**
+     * 采样窗口
+     */
+    private Integer circuitWindow;
 }

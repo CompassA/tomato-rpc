@@ -30,3 +30,5 @@ tomato-rpc:
   circuit-open-rate: 74
   # 断路器开启状态的有效期
   circuit-open-seconds: 59
+  # 采样窗口
+  circuit-window: 98

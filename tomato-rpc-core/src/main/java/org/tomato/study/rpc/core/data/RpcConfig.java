@@ -104,6 +104,11 @@ public class RpcConfig {
      */
     private final long circuitOpenSeconds;
 
+    /**
+     * 采样窗口
+     */
+    private final int circuitWindow;
+
     public static Builder builder() {
         return new Builder();
     }
@@ -124,6 +129,7 @@ public class RpcConfig {
         private boolean enableCircuit = false;
         private double circuitOpenRate = 0.75;
         private long circuitOpenSeconds = 60;
+        private int circuitWindow = 10000;
 
         public Builder protocol(String protocol) {
             this.protocol = protocol;
@@ -200,6 +206,11 @@ public class RpcConfig {
             return this;
         }
 
+        public Builder circuitWindow(int circuitWindow) {
+            this.circuitWindow = circuitWindow;
+            return this;
+        }
+
         public RpcConfig build() {
             return new RpcConfig(
                     this.protocol,
@@ -216,7 +227,8 @@ public class RpcConfig {
                     this.globalClientTimeoutMilliseconds,
                     this.enableCircuit,
                     this.circuitOpenRate,
-                    this.circuitOpenSeconds
+                    this.circuitOpenSeconds,
+                    this.circuitWindow
             );
         }
     }

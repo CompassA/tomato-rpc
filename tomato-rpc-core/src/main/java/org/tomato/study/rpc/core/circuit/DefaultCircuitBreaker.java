@@ -82,7 +82,7 @@ public class DefaultCircuitBreaker implements CircuitBreaker {
         this(threshold, periodNano, 10000);
     }
 
-    public DefaultCircuitBreaker(double threshold, long periodNano, int ringLength) {
+    public DefaultCircuitBreaker(Double threshold, Long periodNano, Integer ringLength) {
         this.threshold = threshold;
         this.periodNano = periodNano;
         this.ringLength = ringLength;

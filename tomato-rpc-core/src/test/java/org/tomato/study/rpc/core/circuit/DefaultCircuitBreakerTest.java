@@ -105,6 +105,7 @@ public class DefaultCircuitBreakerTest {
                 .enableCircuit(true)
                 .circuitOpenRate(0.5)
                 .circuitOpenSeconds(seconds)
+                .circuitWindow(100)
                 .build();
         CircuitRpcInvoker circuitRpcInvoker = new CircuitRpcInvoker(mockInvoker, config) {
             @Override
@@ -115,7 +116,7 @@ public class DefaultCircuitBreakerTest {
             }
         };
 
-        for (int i = 0; i < DefaultCircuitBreaker.DEFAULT_RING_LENGTH / 2; ++i) {
+        for (int i = 0; i < config.getCircuitWindow() / 2; ++i) {
             Assert.assertTrue(circuitRpcInvoker.allow());
             invokeError(circuitRpcInvoker);
         }
