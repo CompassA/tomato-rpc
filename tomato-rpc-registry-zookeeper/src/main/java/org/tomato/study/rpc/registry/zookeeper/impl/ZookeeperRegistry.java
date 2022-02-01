@@ -252,6 +252,14 @@ public class ZookeeperRegistry {
                 .flatMap(provider -> provider.lookUp(group));
     }
 
+    public List<RpcInvoker> listInvokers(String microServiceId) {
+        MicroServiceSpace microServiceSpace = providerMap.get(microServiceId);
+        if (microServiceSpace == null) {
+            return Collections.emptyList();
+        }
+        return microServiceSpace.getAllInvokers();
+    }
+
     public synchronized void close() throws IOException {
         curatorWrapper.close();
     }

@@ -77,6 +77,11 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
     }
 
     @Override
+    public List<RpcInvoker> getAllInvokers() {
+        return new ArrayList<>(invokerRegistry.values());
+    }
+
+    @Override
     public String getMicroServiceId() {
         return microServiceId;
     }

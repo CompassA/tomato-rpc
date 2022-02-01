@@ -19,6 +19,7 @@ import org.tomato.study.rpc.core.observer.LifeCycle;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.core.transport.RpcInvoker;
 
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -65,4 +66,11 @@ public interface NameServer extends LifeCycle {
      * @return provider invoker
      */
     Optional<RpcInvoker> lookupInvoker(String microServiceId, String group);
+
+    /**
+     * list rpc invokers of a service
+     * @param microServiceId rpc service id
+     * @return invokers
+     */
+    List<RpcInvoker> listInvokers(String microServiceId);
 }

@@ -25,6 +25,7 @@ import org.tomato.study.rpc.registry.zookeeper.error.TomatoRegistryErrorEnum;
 import org.tomato.study.rpc.registry.zookeeper.impl.ZookeeperRegistry;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 /**
@@ -64,6 +65,11 @@ public class ZookeeperNameServer extends BaseNameServer {
     @Override
     public Optional<RpcInvoker> lookupInvoker(String microServiceId, String group) {
         return registry.lookup(microServiceId, group);
+    }
+
+    @Override
+    public List<RpcInvoker> listInvokers(String microServiceId) {
+        return registry.listInvokers(microServiceId);
     }
 
     @Override
