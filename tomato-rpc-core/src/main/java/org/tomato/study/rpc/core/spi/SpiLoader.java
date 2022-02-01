@@ -159,15 +159,15 @@ public class SpiLoader<T> {
      * 加载用户指定的SPI组件，若未指定，加载注解指定的默认参数
      * @return spi instance
      */
-    public T load() {
+    public T load(Object... args) {
         String priorityKey = JVM_PRIORITY_CONFIG.get(spiInterface.getCanonicalName());
         if (StringUtils.isNotBlank(priorityKey)) {
-            T component = load(priorityKey);
+            T component = load(priorityKey, args);
             if (component != null) {
                 return component;
             }
         }
-        return load(defaultKey);
+        return load(defaultKey, args);
     }
 
     /**
@@ -175,21 +175,21 @@ public class SpiLoader<T> {
      * @param paramName 参数名
      * @return spi实例
      */
-    public T load(String paramName) {
+    public T load(String paramName, Object... args) {
         // 获取实现类
         Class<? extends T> spiImplClass = componentMap.get(paramName);
         if (spiImplClass == null) {
             return null;
         }
         if (!singletonInstance) {
-            return createSpiInstance(spiImplClass);
+            return createSpiInstance(spiImplClass, args);
         }
         // 加锁，防止把未完成依赖注入的不完整对象暴露
         synchronized (paramName.intern()) {
             T component = singletonMap.get(paramName);
             if (component == null) {
                 // 创建spi实例, 并在注入依赖前，提前加入map，防止循环依赖
-                component = singletonMap.computeIfAbsent(paramName, key -> createSpiInstance(spiImplClass));
+                component = singletonMap.computeIfAbsent(paramName, key -> createSpiInstance(spiImplClass, args));
                 // 注入依赖的其余spi组件
                 injectSpiComponents(spiImplClass, component);
             }
@@ -199,9 +199,18 @@ public class SpiLoader<T> {
 
     @SneakyThrows
     @SuppressWarnings("unchecked")
-    private T createSpiInstance(Class<? extends T> spiImplClass) {
-        // 创建实现类实例(实现类需要有无参构造函数)
-        Object spiInstance = spiImplClass.getConstructor().newInstance();
+    private T createSpiInstance(Class<? extends T> spiImplClass, Object... args) {
+        Object spiInstance = null;
+        if (args.length > 0) {
+            Class<?>[] argTypes = new Class[args.length];
+            for (int i = 0; i < args.length; ++i) {
+                argTypes[i] = args[i].getClass();
+            }
+            spiInstance = spiImplClass.getConstructor(argTypes).newInstance(args);
+        } else {
+            // 创建实现类实例(实现类需要有无参构造函数)
+            spiInstance = spiImplClass.getConstructor().newInstance();
+        }
 
         // 如果该类对象有包装器，构建包装器
         Set<Constructor<?>> constructors = WRAPPER_MAP.get(spiInterface);

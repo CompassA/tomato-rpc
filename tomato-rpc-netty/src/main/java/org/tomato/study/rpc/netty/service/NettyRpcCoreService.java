@@ -90,7 +90,8 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
                         subscribedServiceIds.get(i),
                         getRpcInvokerFactory(),
                         rpcServerConfig.getClientKeepAliveMilliseconds(),
-                        rpcConfig.getGlobalClientTimeoutMilliseconds());
+                        rpcConfig.getGlobalClientTimeoutMilliseconds(),
+                        rpcConfig);
             }
         } else {
             this.microServices = new MicroServiceSpace[0];

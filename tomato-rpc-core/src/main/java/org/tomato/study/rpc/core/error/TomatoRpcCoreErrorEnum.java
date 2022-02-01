@@ -27,6 +27,7 @@ public enum TomatoRpcCoreErrorEnum {
 
     RPC_CONFIG_INITIALIZING_ERROR(10000, "rpc config is null"),
     RPC_CLIENT_TIMEOUT(10002, "rpc timeout"),
+    RPC_CIRCUIT_ERROR(10003, "circuit breaker is open"),
     ;
 
     private int code;

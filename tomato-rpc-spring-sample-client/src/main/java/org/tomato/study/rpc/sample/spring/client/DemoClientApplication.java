@@ -55,7 +55,11 @@ public class DemoClientApplication {
         for (int i = 0; i < threadNum; ++i) {
             executor.execute(() -> {
                 for (int j = 0; j < messageNum; ++j) {
-                    log.info(bean.echo("hello world"));
+                    try {
+                        log.info(bean.echo("hello world"));
+                    } catch (Exception e) {
+                        log.error("rpc client error", e);
+                    }
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
@@ -66,10 +70,16 @@ public class DemoClientApplication {
             });
         }
         countDownLatch.await();
-        while (true) {
-            log.info(bean.echo("hello world"));
-            Thread.sleep(1000);
+        for (int i = 0; i < 100000000; ++i) {
+            try {
+                log.info(bean.echo("hello world"));
+            } catch (Exception e) {
+                log.error("rpc client error", e);
+            }
+            Thread.sleep(1500);
         }
+        context.close();
+        System.exit(0);
     }
 
 }
