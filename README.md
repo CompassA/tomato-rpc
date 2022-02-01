@@ -586,6 +586,162 @@ spec:
               value: "-Dtomato-rpc.name-service-uri=zookeeper-set-0.zookeeper.tomato.svc.cluster.local:2181"
 ```
 
+# k8s部署样例
+
+## 搭建zookeeper
+首先，在k8s集群搭建单节点的zookeeper。  
+```yaml
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: tomato
+  name: zookeeper
+  labels:
+    name: zookeeper
+spec:
+  clusterIP: None
+  ports:
+    - name: zookeeper-port
+      port: 2181
+  selector:
+    app: zookeeper
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: tomato
+  name: zookeeper-set
+spec:
+  serviceName: zookeeper
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zookeeper
+  template:
+    metadata:
+      namespace: tomato
+      labels:
+        app: zookeeper
+    spec:
+      containers:
+      - name: zookeeper
+        image: zookeeper:3.5.9
+        ports:
+          - containerPort: 2181
+        volumeMounts:
+          - name: data-pvc
+            mountPath: /data 
+  volumeClaimTemplates:
+    - metadata:
+        namespace: tomato
+        name: data-pvc
+      spec:
+        storageClassName: manual
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 1Gi
+```
+上面的代码创建了一个stateful-set, 配合headless-service使得集群其他节点可使用dns的方式,  
+用"zookeeper-set-0.zookeeper.tomato.svc.cluster.local"来访问zookeeper。  
+
+## 部署demo-server服务
+demo-server是一个样例服务，会将任何客户端发送的rpc请求数据echo回去，并将服务节点的ip、stage、group等数据信息也发送会客户端。  
+(代码见repo的tomato-rpc-spring-sample-server)
+将tomato-rpc-spring-sample-server制作成镜像，并部署至k8s。
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: tomato
+  labels:
+    app: rpc-sample-deployment
+  name: rpc-sample-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: rpc-sample-server-pod
+  strategy: {}
+  template:
+    metadata:
+      namespace: tomato
+      labels:
+        app: rpc-sample-server-pod
+    spec:
+      containers:
+      - image: compassa/rpc-sample-server:1.0.0
+        env:
+          - name: "JAVA_OPTIONS"
+            value: "-Dtomato-rpc.name-service-uri=zookeeper-set-0.zookeeper.tomato.svc.cluster.local:2181"
+        imagePullPolicy: IfNotPresent
+        name: rpc-sample-server
+        stdin: true
+        tty: true
+        ports:
+          - name: rpc-port
+            containerPort: 1535
+            protocol: TCP
+```
+
+查看是否部署成功
+```bash
+#根据标签搜索pod
+> kubectl get pods --namespace=tomato -l app=rpc-sample-server-pod
+#查询到了结果
+NAME                                     READY   STATUS    RESTARTS   AGE
+rpc-sample-deployment-79f49bd6db-9lhx8   1/1     Running   0          26s
+rpc-sample-deployment-79f49bd6db-djs7x   1/1     Running   0          20m
+rpc-sample-deployment-79f49bd6db-trclt   1/1     Running   0          26s
+
+
+```
+
+去集群中的zookeeper检查服务是否注册成功
+```bash
+# 本地连接到zookeeper容器
+> kubectl exec -it zookeeper-set-0 -n tomato -- bash
+# 容器中检查数据是否完成
+root@zookeeper-set-0:/apache-zookeeper-3.5.9-bin# zkCli.sh
+[zk: localhost:2181(CONNECTED) 6] ls /tomato/demo-rpc-service/dev/providers
+[tomato%3A%2F%2F10.42.219.80%3A4567%2F%3Fmicro-service-id%3Ddemo-rpc-service%26stage%3Ddev%26group%3Dmain]
+```
+
+## 部署demo client
+
+tomato-rpc-spring-sample-client会不停的向demo-service发送rpc请求。(代码见repo的tomato-rpc-spring-sample-client)  
+将tomato-rpc-spring-sample-client制作成镜像，并部署至k8s。
+```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sample-client-job
+  namespace: tomato
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rpc-client-demo
+  template:
+    metadata:
+      namespace: tomato
+      name: sample-client
+      labels:
+        app: rpc-client-demo
+    spec:
+      containers:
+        - name: sample-client
+          image: compassa/sample-client:1.0.0
+          imagePullPolicy: IfNotPresent
+          stdin: true
+          tty: true
+          env:
+            - name: "JAVA_OPTIONS"
+              value: "-Dtomato-rpc.name-service-uri=zookeeper-set-0.zookeeper.tomato.svc.cluster.local:2181"
+```
+
 查看日志，若有下面的响应信息，即部署成功，到这里，所有链路都打通了。
 ```bash
 > kubectl logs sample-client-job-66d658f76f-9x6qq -n tomato -f
