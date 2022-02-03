@@ -30,6 +30,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.ResponseFuture;
 import org.tomato.study.rpc.core.base.BaseRpcClient;
 import org.tomato.study.rpc.core.data.Command;
@@ -52,6 +53,7 @@ import java.util.concurrent.TimeoutException;
  * @author Tomato
  * Created on 2021.11.27
  */
+@Slf4j
 public class NettyRpcClient extends BaseRpcClient<Command> {
 
     private static final String RPC_CLIENT_THREAD_NAME = "rpc-client-worker-thread";
@@ -86,8 +88,12 @@ public class NettyRpcClient extends BaseRpcClient<Command> {
         super(uri);
         this.keepAliveMs = keepAliveMs;
         this.responseHolder = new NettyResponseHolder();
-        doInit();
-        doStart();
+        try {
+            init();
+            start();
+        } catch (TomatoRpcException e) {
+            log.error("start netty rpc client error", e);
+        }
     }
 
     @Override
@@ -111,6 +117,11 @@ public class NettyRpcClient extends BaseRpcClient<Command> {
             throw new TomatoRpcException(
                     NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create("channel fetch error"), e);
         }
+    }
+
+    @Override
+    public boolean isUsable() {
+        return START == getState();
     }
 
     @Override

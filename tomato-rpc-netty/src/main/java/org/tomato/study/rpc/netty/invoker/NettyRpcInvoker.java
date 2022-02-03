@@ -69,6 +69,11 @@ public class NettyRpcInvoker extends BaseRpcInvoker {
     }
 
     @Override
+    public boolean isUsable() {
+        return rpcClient.isUsable();
+    }
+
+    @Override
     public void destroy() throws TomatoRpcException {
         rpcClient.stop();
     }

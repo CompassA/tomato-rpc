@@ -114,7 +114,9 @@ public class BaseMicroServiceTest extends BaseTest {
 
     @Test
     public void lockUpTest() throws Exception {
-        PowerMockito.when(provider, "createInvoker", ArgumentMatchers.any()).thenReturn(PowerMockito.mock(RpcInvoker.class));
+        RpcInvoker mockInvoker = PowerMockito.mock(RpcInvoker.class);
+        PowerMockito.when(mockInvoker.isUsable()).thenReturn(true);
+        PowerMockito.when(provider, "createInvoker", ArgumentMatchers.any()).thenReturn(mockInvoker);
         provider.refresh(originMataDataSet);
         Assert.assertTrue(provider.lookUp("default").isPresent());
     }
@@ -145,6 +147,8 @@ public class BaseMicroServiceTest extends BaseTest {
                 public Serializer getSerializer() {return null;}
                 @Override
                 public Result invoke(Invocation invocation) { return null; }
+                @Override
+                public boolean isUsable() {return true;}
                 @Override
                 public void destroy() throws TomatoRpcException {}
             };

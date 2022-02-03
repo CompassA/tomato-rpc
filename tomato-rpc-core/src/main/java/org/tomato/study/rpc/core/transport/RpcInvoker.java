@@ -66,6 +66,12 @@ public interface RpcInvoker {
     Result invoke(Invocation invocation) throws TomatoRpcException;
 
     /**
+     * 判断invoker状态是否正常
+     * @return true:状态正常
+     */
+    boolean isUsable();
+
+    /**
      * destroy invoker
      * @throws TomatoRpcException rpc close exception
      */
