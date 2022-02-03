@@ -165,6 +165,62 @@ PS: 用FenwickTree当作计算成功次数与失败次数的索引只是为了�
 目前基于随机策略，从一个微服务的多个实例节点中随机选取一个发起调用。  
 todo 后续增加多种方式
 
+## 监控信息
+Tomato-RPC提供了Restful接口，供用户查询服务内部状态。
+当一个SpringBoot应用启动时，Tomato-RPC会注册一个Controller，专门用来暴露服务内部数据。
+
+### 服务invoker信息
+```text
+GET /tomato/status/invoker?service-id=demo-rpc-service
+
+Param
+    service-id: 要查询的微服务的唯一标识
+```
+这个接口可用于查询服务订阅的微服务有多少个节点，接口会按照stage、group对invoker数据进行分组，返回当前服务订阅的微服务的所有实例信息。返回的json如下所示。
+```json
+[
+  {
+    "stage": "dev",
+    "groups": {
+      "main": [
+        {
+          "protocol": "tomato",
+          "host": "192.168.0.163",
+          "port": 4567,
+          "microServiceId": "demo-rpc-service",
+          "stage": "dev",
+          "group": "main"
+        }
+      ],
+      "local-test": [
+        {
+          "protocol": "tomato",
+          "host": "192.168.0.164",
+          "port": 4568,
+          "microServiceId": "demo-rpc-service",
+          "stage": "dev",
+          "group": "local-test"
+        }
+      ]
+    }
+  },
+  {
+    "stage": "prod",
+    "groups": {
+      "main": [
+        {
+          "protocol": "tomato",
+          "host": "192.168.0.163",
+          "port": 4567,
+          "microServiceId": "demo-rpc-service",
+          "stage": "dev",
+          "group": "main"
+        }
+      ]
+    }
+  }
+]
+```
 ## 路由
 todo  
 

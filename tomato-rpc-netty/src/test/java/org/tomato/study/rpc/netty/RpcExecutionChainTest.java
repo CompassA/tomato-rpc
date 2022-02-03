@@ -83,6 +83,7 @@ public class RpcExecutionChainTest {
                         .microServiceId("client")
                         .subscribedServiceIds(Lists.newArrayList(mockMicroServiceId))
                         .nameServiceURI("127.0.0.1:" + zkPort)
+                        .enableCircuit(true)
                         .port(++clientPort)
                         .stage(stage)
                         .group(group)

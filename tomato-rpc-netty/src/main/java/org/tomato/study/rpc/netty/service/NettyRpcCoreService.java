@@ -198,6 +198,7 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
         } catch (Exception e) {
             throw new TomatoRpcException(NettyRpcErrorEnum.LIFE_CYCLE_START_ERROR.create(), e);
         }
+        ready = true;
         RpcConfig rpcConfig = getRpcConfig();
         log.info("netty rpc core service started.\n" +
                         "micro-service-id: {}\n" +

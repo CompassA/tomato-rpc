@@ -18,6 +18,7 @@ import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.transport.RpcInvoker;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 
@@ -34,6 +35,12 @@ public interface MicroServiceSpace {
      * @return id
      */
     String getMicroServiceId();
+
+    /**
+     * 获取所有的invoker
+     * @return invokers
+     */
+    List<RpcInvoker> getAllInvokers();
 
     /**
      * 根据微服务分组找到匹配的一个微服务调用实例

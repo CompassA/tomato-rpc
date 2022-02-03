@@ -25,6 +25,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
+import org.tomato.study.rpc.config.controller.MonitorController;
 import org.tomato.study.rpc.config.data.TomatoRpcProperties;
 import org.tomato.study.rpc.config.error.TomatoRpcConfigurationErrorEnum;
 import org.tomato.study.rpc.core.RpcCoreService;
@@ -102,6 +103,11 @@ public class TomatoRpcConfiguration {
     @Bean
     public RpcStubPostProcessor rpcStubPostProcessor(RpcCoreService rpcCoreService) {
         return new RpcStubPostProcessor(rpcCoreService);
+    }
+
+    @Bean
+    public MonitorController monitorController(RpcCoreService rpcCoreService) {
+        return new MonitorController(rpcCoreService);
     }
 
     @EventListener

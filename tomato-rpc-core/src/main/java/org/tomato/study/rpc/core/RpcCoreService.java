@@ -60,6 +60,18 @@ public interface RpcCoreService extends LifeCycle {
     RpcInvokerFactory getRpcInvokerFactory();
 
     /**
+     * get rpc name server
+     * @return name server
+     */
+    NameServer getNameServer();
+
+    /**
+     * is rpc core service ready;
+     * @return true ready
+     */
+    boolean isReady();
+
+    /**
      * get micro-service-id
      * @return service unique id
      */

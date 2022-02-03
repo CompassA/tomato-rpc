@@ -11,8 +11,8 @@ import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.observer.BaseLifeCycleComponent;
-import org.tomato.study.rpc.core.transport.RpcInvokerFactory;
 import org.tomato.study.rpc.core.spi.SpiLoader;
+import org.tomato.study.rpc.core.transport.RpcInvokerFactory;
 
 import java.util.List;
 
@@ -49,6 +49,8 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
      * rpc configuration
      */
     private final RpcConfig rpcConfig;
+
+    protected boolean ready = false;
 
     public BaseRpcCoreService(RpcConfig rpcConfig) {
         if (rpcConfig == null) {
@@ -103,5 +105,10 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
     @Override
     public RpcInvokerFactory getRpcInvokerFactory() {
         return invokerFactory;
+    }
+
+    @Override
+    public boolean isReady() {
+        return ready;
     }
 }

@@ -44,4 +44,10 @@ public interface RpcClient<T> extends LifeCycle {
      * @return port
      */
     int getPort();
+
+    /**
+     * 是否可用
+     * @return true 可用
+     */
+    boolean isUsable();
 }

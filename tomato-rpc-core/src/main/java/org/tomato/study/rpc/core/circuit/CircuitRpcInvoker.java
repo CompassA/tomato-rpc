@@ -97,6 +97,11 @@ public abstract class CircuitRpcInvoker implements RpcInvoker {
         rpcInvoker.destroy();
     }
 
+    @Override
+    public boolean isUsable() {
+        return breaker.allow() && rpcInvoker.isUsable();
+    }
+
     /**
      * 方法调用完成后处理熔断
      * @param response 调用结果

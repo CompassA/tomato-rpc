@@ -77,6 +77,11 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
     }
 
     @Override
+    public List<RpcInvoker> getAllInvokers() {
+        return new ArrayList<>(invokerRegistry.values());
+    }
+
+    @Override
     public String getMicroServiceId() {
         return microServiceId;
     }
@@ -92,7 +97,18 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
         if (CollectionUtils.isEmpty(invokers)) {
             return Optional.empty();
         }
-        return Optional.of(invokers.get((int) (Math.random() * invokers.size())));
+        for (int i = 0; i < invokers.size(); ++i) {
+            RpcInvoker rpcInvoker = invokers.get((int) (Math.random() * invokers.size()));
+            if (rpcInvoker.isUsable()) {
+                return Optional.of(rpcInvoker);
+            }
+        }
+        for (RpcInvoker rpcInvoker : invokers) {
+            if (rpcInvoker.isUsable()) {
+                return Optional.of(rpcInvoker);
+            }
+        }
+        return Optional.empty();
     }
 
     /**

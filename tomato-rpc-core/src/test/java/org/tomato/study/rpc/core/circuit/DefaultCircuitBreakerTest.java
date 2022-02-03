@@ -62,42 +62,24 @@ public class DefaultCircuitBreakerTest {
     public void invokerTest() throws TomatoRpcException, InterruptedException {
         RpcInvoker mockInvoker = new RpcInvoker() {
             @Override
-            public String getGroup() {
-                return null;
-            }
-
+            public String getGroup() {return null;}
             @Override
-            public MetaData getMetadata() {
-                return null;
-            }
-
+            public MetaData getMetadata() {return null;}
             @Override
-            public long getInvocationTimeout() {
-                return 0;
-            }
-
+            public long getInvocationTimeout() {return 0;}
             @Override
-            public void setInvocationTimeout(long timeoutMs) {
-
-            }
-
+            public void setInvocationTimeout(long timeoutMs) {}
             @Override
-            public Serializer getSerializer() {
-                return null;
-            }
-
+            public Serializer getSerializer() {return null;}
             @Override
             public Result invoke(Invocation invocation) throws TomatoRpcException {
-                if (true) {
-                    throw new RuntimeException("error");
-                }
+                if (true) { throw new RuntimeException("error"); }
                 return null;
             }
-
             @Override
-            public void destroy() throws TomatoRpcException {
-
-            }
+            public boolean isUsable() {return true;}
+            @Override
+            public void destroy() throws TomatoRpcException {}
         };
 
         long seconds = 3;
