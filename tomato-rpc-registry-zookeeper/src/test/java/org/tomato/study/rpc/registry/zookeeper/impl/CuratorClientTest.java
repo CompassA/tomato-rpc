@@ -22,6 +22,7 @@ import org.apache.curator.framework.recipes.cache.TreeCacheListener;
 import org.apache.zookeeper.data.Stat;
 import org.junit.Assert;
 import org.tomato.study.rpc.registry.zookeeper.CuratorClient;
+import org.tomato.study.rpc.registry.zookeeper.data.ZookeeperConfig;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -37,7 +38,11 @@ public class CuratorClientTest {
     public void localTest() throws Exception {
         String nameSpace = "test";
         String path = "/add";
-        CuratorClient curatorClient = new CuratorClient("127.0.0.1:2181", nameSpace);
+        CuratorClient curatorClient = new CuratorClient(
+                ZookeeperConfig.builder()
+                        .connString("127.0.0.1:2181")
+                        .namespace(nameSpace)
+                        .build());
         curatorClient.start();
         curatorClient.subscribe("/", new TestTreeCacheListener());
 

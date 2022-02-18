@@ -1,26 +1,22 @@
 @startuml
 
-title Zookeeper Registry Notify
+title 订阅微服务实例更新
 
 autonumber "."
 
-participant new_rpc_service
+participant 新的微服务实例
 database zookeeper
-participant ClientWatcherCallBack
-participant ChildrenListener
-participant ZookeeperRegistry
-participant ServiceProvider
+participant watcher处理线程
+participant 阻塞队列
+participant 服务实例更新线程
 
-new_rpc_service -> zookeeper: register api\n(ex./namespace/vip/providers/ip:port)
-zookeeper -> ClientWatcherCallBack: trigger watcher
-ClientWatcherCallBack -> zookeeper: request path children data
-ClientWatcherCallBack -> zookeeper: register watcher again
-zookeeper -> ClientWatcherCallBack: response full children data of the path
-ClientWatcherCallBack -> ChildrenListener: childrenChanged(path, children)
-ChildrenListener -> ZookeeperRegistry: notify(path, children)
-ZookeeperRegistry -> zookeeper: request provider api metadata
-zookeeper -> ZookeeperRegistry: response provider api metadata
-ZookeeperRegistry -> ServiceProvider: notify(api metadata)
-ServiceProvider -> ServiceProvider: refreshInvoker
-
+新的微服务实例 -> 新的微服务实例: 初始化自己，创建本地Netty服务
+新的微服务实例 -> zookeeper: 将自己的ip、端口注册到zookeeper\n(向zookeeper创建一个临时节点\nex./namespace/service-id/stage/providers/ip:port)
+zookeeper -> watcher处理线程: 触发当前服务路径下的watcher，\n将节点下所有的实例信息推送给其他服务
+watcher处理线程 -> watcher处理线程: 解析孩子节点url，转化成MetaData类\n(包含service-id、ip、port等信息)
+watcher处理线程 -> 阻塞队列: 将发生更新的MicroServiceSpace对象\n与MetaData集合投递到阻塞队列
+watcher处理线程 -> zookeeper: 重复注册watcher
+服务实例更新线程 -> 阻塞队列: 获取更新任务
+阻塞队列 -> 服务实例更新线程: 返回更新任务
+服务实例更新线程 -> 服务实例更新线程: 根据MetaData集合更新Invoker\n(已经创建过的invoker不会重复创建)
 @enduml

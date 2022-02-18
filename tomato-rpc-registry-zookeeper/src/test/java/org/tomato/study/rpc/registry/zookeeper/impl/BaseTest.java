@@ -35,6 +35,8 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class BaseTest {
 
+    public static final String stage = "dev";
+
     protected void checkInvokerMap(MicroServiceSpace serviceProvider, Collection<MetaData> mataDataSet) {
         ConcurrentMap<MetaData, RpcInvoker> invokerRegistry = ReflectUtils.reflectGet(
                 serviceProvider, BaseMicroServiceSpace.class, "invokerRegistry");
@@ -67,7 +69,7 @@ public class BaseTest {
                         .port(6666)
                         .microServiceId(serviceId)
                         .group("default")
-                        .stage("default")
+                        .stage(stage)
                         .build(),
                 MetaData.builder()
                         .protocol("tomato")
@@ -75,7 +77,7 @@ public class BaseTest {
                         .port(7777)
                         .microServiceId(serviceId)
                         .group("version1")
-                        .stage("default")
+                        .stage(stage)
                         .build(),
                 MetaData.builder()
                         .protocol("tomato")
@@ -83,7 +85,7 @@ public class BaseTest {
                         .port(8888)
                         .microServiceId(serviceId)
                         .group("default")
-                        .stage("default")
+                        .stage(stage)
                         .build()
         ));
     }

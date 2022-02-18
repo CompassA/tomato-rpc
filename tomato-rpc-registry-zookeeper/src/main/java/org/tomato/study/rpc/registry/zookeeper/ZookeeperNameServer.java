@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
+ * 基于zookeeper实现的注册中心
  * @author Tomato
  * Created on 2021.06.19
  */
@@ -36,6 +37,9 @@ public class ZookeeperNameServer extends BaseNameServer {
 
     private static final String ZK_NAME_SPACE = "tomato";
 
+    /**
+     * 注册中心
+     */
     private ZookeeperRegistry registry;
 
     public ZookeeperNameServer(NameServerConfig nameServerConfig) {
@@ -74,21 +78,24 @@ public class ZookeeperNameServer extends BaseNameServer {
 
     @Override
     protected synchronized void doInit() throws TomatoRpcException {
-        registry = new ZookeeperRegistry(
-                ZookeeperConfig.builder()
-                        .namespace(ZK_NAME_SPACE)
-                        .connString(getConnString())
-                        .charset(getCharset())
-                        .build());
+        super.doInit();
+        ZookeeperConfig zookeeperConfig = ZookeeperConfig.builder()
+                .namespace(ZK_NAME_SPACE)
+                .connString(getConnString())
+                .charset(getCharset())
+                .build();
+        this.registry = new ZookeeperRegistry(zookeeperConfig, this);
     }
 
     @Override
     protected synchronized void doStart() throws TomatoRpcException {
+        super.doStart();
         registry.start();
     }
 
     @Override
     protected synchronized void doStop() throws TomatoRpcException {
+        super.doStop();
         try {
             registry.close();
         } catch (IOException e) {

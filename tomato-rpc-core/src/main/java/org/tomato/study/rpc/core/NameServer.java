@@ -15,6 +15,7 @@
 package org.tomato.study.rpc.core;
 
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.data.RefreshInvokerTask;
 import org.tomato.study.rpc.core.observer.LifeCycle;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.core.transport.RpcInvoker;
@@ -73,4 +74,11 @@ public interface NameServer extends LifeCycle {
      * @return invokers
      */
     List<RpcInvoker> listInvokers(String microServiceId);
+
+    /**
+     * 创建更新invoker的任务
+     * @param task 任务
+     * @throws InterruptedException 方法是可能会阻塞的
+     */
+    void submitInvokerRefreshTask(RefreshInvokerTask task) throws InterruptedException;
 }

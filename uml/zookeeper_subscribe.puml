@@ -1,17 +1,17 @@
 @startuml
-title Zookeeper Registry Subscribe
+title 服务订阅初始化
 autonumber
 
 database zookeeper
-participant ZookeeperRegistry
+participant rpc_client
 
 
-ZookeeperRegistry -> setting.yml: load vip config from
-setting.yml -> ZookeeperRegistry: vip list in the config file
-ZookeeperRegistry -> zookeeper: request metadata\n(path: /namespace/vip/providers)
-zookeeper -> ZookeeperRegistry: provider meta data list
-ZookeeperRegistry -> ZookeeperRegistry: create provider instance
-ZookeeperRegistry -> ZookeeperRegistry: create child listener instance
-ZookeeperRegistry -> zookeeper: add watcher
+rpc_client -> setting.yml: 查询配置文件中，当前服务订阅的其他微服务的id、当前微服务的环境
+setting.yml -> rpc_client: 返回订阅的所有微服务id、stage
+rpc_client -> rpc_client: 根据每个id，创建一个MicroService对象
+rpc_client -> zookeeper: 组装成zookeeper路径,向zookeeper查询路径下的所有孩子节点，\n每个孩子节点即为一个微服务实例，\nurl上存放了服务的ip、端口信息\n(path: /tomato/service-id/stage/providers)
+rpc_client -> zookeeper: 注册watcher, 当服务路径下的孩子节点发生更新时，向当前rpc—client推送全量变更
+zookeeper -> rpc_client: 返回孩子节点
+rpc_client -> rpc_client: 将所有孩子节点转化成Invoker对象，存入对应服务的MicroServiceSpace对象中
 
 @enduml
