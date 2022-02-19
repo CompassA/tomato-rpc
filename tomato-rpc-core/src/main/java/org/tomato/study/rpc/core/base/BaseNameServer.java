@@ -2,12 +2,15 @@ package org.tomato.study.rpc.core.base;
 
 import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.NameServer;
+import org.tomato.study.rpc.core.RpcJvmConfigKey;
 import org.tomato.study.rpc.core.data.NameServerConfig;
 import org.tomato.study.rpc.core.data.RefreshInvokerTask;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.observer.BaseLifeCycleComponent;
 
 import java.nio.charset.Charset;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -30,8 +33,25 @@ public abstract class BaseNameServer extends BaseLifeCycleComponent implements N
      */
     private Thread refreshInvokerThread;
 
+    /**
+     * 用户通过jvm参数配置的要订阅的微服务的group
+     * service-id -> jvm配置的group
+     */
+    private final Map<String, String> jvmConfigGroup;
+
     public BaseNameServer(NameServerConfig nameServerConfig) {
         this.nameServerConfig = nameServerConfig;
+        String groupJvmConfigs = System.getProperty(RpcJvmConfigKey.MICRO_SUBSCRIBE_GROUP);
+        this.jvmConfigGroup = RpcJvmConfigKey.parseMultiKeyValue(groupJvmConfigs);
+    }
+
+    /**
+     * 查找服务有无jvm配置的group
+     * @param serviceId 服务id
+     * @return jvm配置的group
+     */
+    public Optional<String> getJvmConfigGroup(String serviceId) {
+        return Optional.ofNullable(jvmConfigGroup.get(serviceId));
     }
 
     public String getConnString() {

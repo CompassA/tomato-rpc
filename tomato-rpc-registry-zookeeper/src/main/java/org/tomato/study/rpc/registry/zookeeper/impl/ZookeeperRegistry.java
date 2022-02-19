@@ -166,9 +166,9 @@ public class ZookeeperRegistry {
             // 将RPC实例节点路径解码并转成Metadata形式
             final Set<MetaData> metadata = new HashSet<>(children.size());
             for (String child : children) {
-                String providerPathDecoded = URLDecoder.decode(child, config.getCharset());
-                URI providerMetadataURI = URI.create(providerPathDecoded);
-                MetaData.convert(providerMetadataURI)
+                String servicePath = URLDecoder.decode(child, charset);
+                URI serviceMetadataURI = URI.create(servicePath);
+                MetaData.convert(serviceMetadataURI)
                         .filter(MetaData::isValid)
                         .ifPresent(metadata::add);
             }
