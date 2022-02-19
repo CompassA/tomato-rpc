@@ -1,6 +1,6 @@
 # 项目简介
-Tomato-RPC, 为了巩固微服务基础知识、RPC基础原理而开发的一个的服务治理/RPC框架。  
-项目基于Netty实现RPC网络通信，并使用Zookeeper作为注册中心实现了简单的服务治理。  
+为了巩固微服务基础知识、RPC基础原理而开发的一个的RPC框架。  
+项目基于Netty实现了RPC网络通信，并使用Zookeeper作为注册中心实现了简单的服务治理。  
 项目参考了dubbo、feign的一些rpc实现思路。  
 
 # 核心类图
@@ -37,10 +37,9 @@ public interface EchoService {
     <version>1.0.0</version>
 </project>
 ```
-### RPC接入
 
-#### SpringBoot自动装配方式
-##### 服务端配置
+### SpringBoot自动装配方式
+#### 服务端配置
 引入tomato-rpc-spring-boot-starter
 ```xml
 <dependency>
@@ -67,7 +66,7 @@ tomato-rpc:
   # 服务分组
   group: "main"
   # 服务端空闲连接检测时间间隔，单位ms
-  server-idle-check-ms: 600000
+  server-idle-check-ms: 60000
 ```
 
 服务端实现RPC接口
@@ -84,7 +83,7 @@ public class EchoServiceImpl implements EchoService {
 }
 ```
 
-##### 客户端配置
+#### 客户端配置
 同样引入tomato-rpc-spring-boot-starter，并引入api的jar包
 ```xml
 <dependencies>
@@ -120,7 +119,7 @@ tomato-rpc:
   # 服务分组
   group: "main"
   # 客户端发送心跳包的时间间隔，单位ms
-  client-keep-alive-ms: 200000
+  client-keep-alive-ms: 20000
   # 客户端发送数据时是否开启压缩
   use-gzip: false
   # 开启熔断
@@ -150,7 +149,7 @@ public class EchoApiWrapper {
     }
 }
 ```
-#### API方式
+### API方式接入
 引入jar包
 ```xml
 <dependency>
@@ -234,7 +233,35 @@ public class RpcClientDemo {
 }
 ```
 
-#### 客户端直连RPC服务端调用
+# 特性介绍
+
+## RPC通信
+本段将会介绍Tomato-RPC是如何屏蔽底层通信细节，让用户向调用本地方法一样调用远程方法的。
+
+从用户使用层面来说，客户端、服务端通过接口完成了调用方式的约定，而RPC框架会基于动态代理，在客户端为接口创建实例对象。  
+客户端在拿到接口实例并调用接口方法时，程序就会走到框架生成的动态代理实例的代码中，剩余的逻辑就全被框架代码接管了。  
+所以，框架使用动态代理向客户端屏蔽了底层通信细节，为接口注入框架写好的代码。
+
+从框架层面来说，框架会通过动态代理，拿到用户调用接口方法时的参数对象等关键数据，并将其序列化成可在网络中传输的二进制数据,框架在序列化结束后，就会开始通信逻辑。  
+Tomato-RPC是基于TCP进行通信的，如果只有TCP，那么通信双方只能看见无尽的二进制流，接收方不知道什么时候停止数据的接收，无法对数据做有意义的处理。  
+因此通信双方需要约定传输层之上的数据格式，使数据有边界，可解析，这就是所谓的应用层通信协议。  
+约定好通信协议后，发送方按协议格式发送二进制流，服务端按协议格式解析二进制流，通信边界问题就解决了。
+
+总结一下，Tomato-RPC的通信流程如下：
+发送方基于动态代理拦截客户端参数，将其序列化成二进制，并按应用层网络协议封装成帧。  
+接收方解析帧，根据发送方的序列化方法反序列化数据，还原调用语义，完成本地调用，并将结果封装成帧，返回给调用方。
+
+### 应用层通信协议
+Tomato-RPC设计的应用层通信协议如下：
+```text
++-------------+-----------------------+---------+---------------------+---------+-----------+---------+------------+------------+
+| magic number| length exclude magic  | version | extension parameter | command | serialize | message | extension  |   body     |
+|             | number and this filed |         |      length         |   type  |    type   |   id    | 0 - MaxInt | 0 - MaxInt |
+|   1 byte    |       4 bytes         | 4 bytes |      4 bytes        | 2 bytes |   1 byte  | 8 bytes |  bytes     |   bytes    |
++-------------+-----------------------+---------+---------------------+---------+-----------+---------+------------+------------+
+```
+
+### 客户端直连服务端调用
 Tomato-Rpc支持RPC客户端根据ip、端口、service-id、接口直接构造Stub对象，不依赖与注册中心进行RPC。
 ```java
 @Component
@@ -244,35 +271,38 @@ public class DirectRpcTest {
     private RpcCoreService rpcCoreService;
     
     public void test() {
-        EchoService directStub = rpcCoreService.createDirectStub(
-                ApiConfig.<EchoService>builder()
-                        // 目标接口
-                        .api(EchoService.class)
-                        // 目标服务id
-                        .microServiceId(mockMicroServiceId)
-                        // 服务的某个具体实例[127.0.0.1:5555]
-                        .nodeInfo(MetaData.builder()
-                                .microServiceId(mockMicroServiceId)
-                                .protocol("tomato")
-                                .host("127.0.0.1")
-                                .port("5555")
-                                .stage(stage)
-                                .group(group)
-                                .build())
-                        .build());
+        // 微服务节点信息
+        MetaData nodeMeta = MetaData.builder()
+                .microServiceId("test")
+                .protocol("tomato")
+                .host("127.0.0.1")
+                .port("5555")
+                .stage("dev")
+                .group("main")
+                .build();
+        // 目标接口信息
+        ApiConfig<EchoService> apiConfig = ApiConfig.<EchoService>builder()
+                // 目标接口
+                .api(EchoService.class)
+                // 目标服务id
+                .microServiceId(mockMicroServiceId)
+                // 超时毫秒
+                .timeout(10000)
+                // 服务的某个具体实例[127.0.0.1:5555]
+                .nodeInfo(nodeMata)
+                .build();
+        // 创建stub
+        EchoService directStub = rpcCoreService.createDirectStub(apiConfig);
+        // 完成调用
         String response = directStub.echo("hello world");
     }
 }
 
 ```
 
-# 功能特性
-
 ## 服务治理
 
-### 微服务管理
-
-#### 服务注册与更新
+### 服务注册与更新
 每个RPC实例都有一个标识自身身份的MicroServiceId。  
 一个MicroServiceId就代表一个微服务，一个微服务可能有多个实例节点，这些实例持有相同的MicroServiceId，作为一个整体对外提供服务。  
 
@@ -295,7 +325,7 @@ RPC服务节点目录结构: /tomato/{micro-service-id}/{stage}/providers/......
 
 注: 开发时没考虑不同服务，MicroServiceId不慎相同而导致冲突的情况，个人认为，另外建立一个微服务创建中心，专门负责新项目MicroServiceId的分配，是个解决方案。
 
-#### 配置stage，实现微服务服务环境隔离
+### 配置stage，实现微服务服务环境隔离
 一个微服务可能会部署在不同的环境中，本项目通过两个方式实现环境隔离。
 1.微服务连接不同的注册中心，由于不同注册中心的数据互相独立，所以注册在不同注册中心的节点因为无法获取到彼此的元数据而无法通信。
 2.微服务使用Tomato-RPC时，配置stage字段，表明自己的服务环境。RPC客户端启动时，仅会订阅stage与自身相同的微服务的元数据。 
@@ -305,7 +335,7 @@ RPC服务节点目录结构: /tomato/{micro-service-id}/{stage}/providers/......
 -Dtomato-rpc.service-stage=dev
 ```
 
-#### 配置group，同环境多实例隔离
+### 配置group，同环境多实例隔离
 同一个微服务，在同一个环境中的多个实例，可能部署的代码版本是不同的。  
 这种场景在实际使用中很常见:  
 1.服务灰度部署，同一个微服务的5个实例，3个部署了旧代码，2个部署了新代码，需要区分旧实例与灰度实例。  
@@ -322,11 +352,6 @@ Tomato-RPC的RPC客户端默认会向group字段与自己相同的其他RPC服�
 // 启动时配置调用test-b的group dev中的实例、test-c的group sit中的实例
 -Dtomato-rpc.subscribed-services-group=test-b:dev&test-c:sit
 ```
-
-## RPC通信
-Tomato-RPC的RPC是基于接口的。    
-服务端需要注册接口实现类，并将接口数据暴露至注册中心。  
-客户端需要订阅接口，并通过Tomato-RPC框架创建一个stub实例，调用stub实例的方法即可完成RPC调用。
 
 ## SPI
 Tomato-RPC实现了一个简单的SPI，每个组件通过SpiLoader加载依赖的组件，用户可通过添加SPI配置文件、配置JVM参数的方式替换组件实现而无需改变代码。
@@ -443,10 +468,6 @@ PS: 用FenwickTree当作计算成功次数与失败次数的索引只是为了�
 具体配置方式见下文的"快速开始"中的客户端配置。  
 若应用是通过Spring接入的，在配置文件配这几个参数即可；若应用是手动接入的，设置RpcConfig类的这三个参数即可。
 
-## 均衡负载
-目前基于随机策略，从一个微服务的多个实例节点中随机选取一个发起调用。  
-todo 后续增加多种方式
-
 ## 监控信息
 Tomato-RPC提供了Restful接口，供用户查询服务内部状态。
 当一个SpringBoot应用启动时，Tomato-RPC会注册一个Controller，专门用来暴露服务内部数据。
@@ -505,6 +526,10 @@ Param
 ```
 ## 路由
 todo
+
+## 均衡负载
+目前基于随机策略，从一个微服务的多个实例节点中随机选取一个发起调用。  
+todo 后续增加多种方式
 
 # k8s部署样例
 
