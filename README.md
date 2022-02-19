@@ -1,237 +1,16 @@
 # 项目简介
 Tomato-RPC, 为了巩固微服务基础知识、RPC基础原理而开发的一个的服务治理/RPC框架。  
 项目基于Netty实现RPC网络通信，并使用Zookeeper作为注册中心实现了简单的服务治理。  
-项目参考了dubbo、feign的一些rpc实现思路。
+项目参考了dubbo、feign的一些rpc实现思路。  
 
-# 功能特性
-
-## 服务治理
-
-### 微服务管理
-每个RPC实例都有一个标识自身身份的MicroServiceId。  
-一个MicroServiceId就代表一个微服务，一个微服务可能有多个实例节点，这些实例持有相同的MicroServiceId，作为一个整体对外提供服务。  
-
-RPC服务端启动时，会将自身唯一标识、ip、端口上报给注册中心。  
-注册中心会维护一个服务目录，记录每个微服务有哪几个实例节点。  
-RPC客户端会配置需订阅的RPC服务节点的MicroServiceId，并在启动时向注册中心拉取订阅的微服务的所有的实例节点元数据。  
-下图为向注册中心拉取数据的具体流程(基于zookeeper)  
-![avatar](./uml/服务订阅流程.png "服务订阅")
-当微服务的实例节点新增/减少时，注册中心会将新增/减少的实例节点的元数据实时下发给订阅该服务的RPC客户端实例。  
-下图为服务更新具体流程(基于zookeeper)  
-![avatar](./uml/服务实例更新流程.png "服务实例更新")
-
-注: 开发时没考虑不同服务，MicroServiceId不慎相同而导致冲突的情况，个人认为，另外建立一个微服务创建中心，专门负责新项目MicroServiceId的分配，是个解决方案。
-
-### 微服务服务环境隔离
-一个微服务可能会部署在不同的环境中，本项目通过两个方式实现环境隔离。
-1.微服务连接不同的注册中心，由于不同注册中心的数据互相独立，所以注册在不同注册中心的节点因为无法获取到彼此的元数据而无法通信。
-2.微服务使用Tomato-RPC时，配置stage字段，表明自己的服务环境。RPC客户端启动时，仅会订阅stage与自身相同的微服务的元数据。
-
-### 同环境多实例隔离
-同一个微服务，在同一个环境中的多个实例，可能部署的代码版本是不同的。  
-这种场景在实际使用中很常见:  
-1.服务灰度部署，同一个微服务的5个实例，3个部署了旧代码，2个部署了新代码，需要区分旧实例与灰度实例。  
-2.内网环境联调测试，在微服务内网集群中，部署一个自己开发的新功能的测试环境，测试在验证时，通过一些配置将流量引入测试环境。  
-
-用户在Tomato-RPC注册微服务时可配置group字段，标识自己的微服务属于哪一个分组。  
-Tomato-RPC的RPC客户端默认会向group字段与自己相同的其他RPC服务实例发起RPC调用。  
-
-
-### 注册中心服务树
-RPC服务节点目录结构: /tomato/{micro-service-id}/{stage}/providers/............  
-一级目录: Tomato-RPC namespace, 与Tomato-RPC相关的数据都在这个目录中  
-二级目录: 各微服务信息  
-三级目录: 一个微服务在部署在哪几个环境  
-四级目录: 一个微服务在一个环境下的多个元数据（目前只有服务实例信息）  
-五级目录: RPC服务实例信息
-
-## RPC通信
-Tomato-RPC的RPC是基于接口的。    
-服务端需要注册接口实现类，并将接口数据暴露至注册中心。  
-客户端需要订阅接口，并通过Tomato-RPC框架创建一个stub实例，调用stub实例的方法即可完成RPC调用。
-
-## SPI
-Tomato-RPC实现了一个简单的SPI，每个组件通过SpiLoader加载依赖的组件，用户可通过添加SPI配置文件、配置JVM参数的方式替换组件实现而无需改变代码。
-
-### 代码样例
-```java
-/**
- * 通过注解标识这是一个SPI接口，"jdk"为配置文件中的key
- * 程序将加载配置文件中"jdk"对应的实现类
- */
-@SpiInterface("jdk")
-public interface StubFactory {
-    <T> T createStub(StubConfig<T> config);
-}
-```
-
-在项目的资源路径下添加"META-INF/tomato"目录, SPI会读取这个目录下的SPI配置  
-添加一个文件，名字为SPI接口类全名: org.tomato.study.rpc.core.StubFactory  
-每行添加SPI配置参数，形式为"参数名:具体实现类的类全名"
-```text
-jdk : org.tomato.study.rpc.netty.proxy.JdkStubFactory
-```
-
-配置完毕后通过SpiLoader加载接口实现类
-```java
-public class SpiDemo {
-    // 通过spi的方式加载StubFactory组件
-    private final StubFactory stubFactory = SpiLoader.getLoader(StubFactory.class).load();
-}
-```
-### 依赖注入
-当一个SPI接口实现类依赖了其他SPI组件时,Tomato-Rpc的SPI会尝试依赖注入。  
-Tomato-Rpc的SPI会检测当前SPI接口实现类的所有Setter方法,若Setter方法的入参也是SPI接口,  
-会继续加载Setter入参对应的SPI接口组件，并通过反射，调用Setter其注入到当前SPI实现类中。
-
-
-Tomato-Rpc的SPI对单例对象的循环依赖做了处理,若SPI接口被配置为单例,Tomato-Rpc的SPI会在注入依赖前,先将SPI组件缓存至一个Map中。
-```java
-@SpiInterface("a")
-public interface SpiInterfaceA {
-    SpiInterfaceB getB();
-}
-
-@SpiInterface("b")
-public interface SpiInterfaceB {
-    SpiInterfaceC getC();
-}
-
-@SpiInterface("c")
-public interface SpiInterfaceC {
-    SpiInterfaceA getA();
-}
-
-@NoArgsConstructor
-public class SpiInterfaceAImpl implements SpiInterfaceA {
-    @Setter
-    @Getter
-    private SpiInterfaceB b;
-}
-
-@NoArgsConstructor
-public class SpiInterfaceBImpl implements SpiInterfaceB {
-    @Getter
-    @Setter
-    private SpiInterfaceC c;
-}
-
-@NoArgsConstructor
-public class SpiInterfaceCImpl implements SpiInterfaceC {
-    @Setter
-    @Getter
-    private SpiInterfaceA a;
-}
-
-
-class SpiLoopInjectTest {
-    /**
-     * 测试循环依赖
-     */
-    @Test
-    public void loopDependencyTest() {
-        SpiInterfaceA a = SpiLoader.getLoader(SpiInterfaceA.class).load();
-        Assert.assertTrue(a instanceof SpiInterfaceAImpl);
-        Assert.assertTrue(a.getB() instanceof SpiInterfaceBImpl);
-        Assert.assertTrue(a.getB().getC() instanceof SpiInterfaceCImpl);
-        Assert.assertTrue(a.getB().getC().getA() instanceof SpiInterfaceAImpl);
-    }
-}
-
-```
-### jvm参数配置spi
--Dtomato-rpc.spi=spi接口类全名1:组件key1&spi接口类全名2:组件key2
-
-## 熔断
-Tomato-RPC基于断路器模式实现了一个简单的熔断机制。  
-Tomato-RPC以TCP连接为单位进行熔断，当RPC客户端与一个服务的n个实例建立的TCP连接后，Tomato-RPC会创建n个熔断实例，分别统计连接失败率。
-### 断路器计数器
-断路器内部维护一个计数器，计数器记录了断路器所包裹的方法的调用成功次数与失败次数，计数器仅会记录被包裹方法最近n次的调用情况(通过配置采样窗口参数进行控制)。  
-Tomato-RPC基于BitSet与FenwickTree实现了一个环状计数器，具体代码见SuccessFailureRingCounter.java。
-每次成功或失败时，会使用BitSet中的一位来记录调用的结果(1代表成功, 0代表失败)，并用FenwickTree维护BitSet的区间和。
-PS: 用FenwickTree当作计算成功次数与失败次数的索引只是为了巩固下这个数据结构，没做过实际的性能测试。。。。
-
-### 断路器状态切换
-断路器有三种状态: 关闭、半打开、打开。  
-当断路器处于关闭或半打开状态时，请求会被放行，当断路器处于打开状态时，请求会被立马拒绝。
-断路器的打开状态有时间限制，当超过设置的时间间隔后，断路器会从打开进入到半打开状态。  
-状态间的切换如下所示:  
-关闭 ========(失败率超过阈值)=======> 打开 ====(打开状态超时)=====> 半打开  
-半打开 =======(调用失败)====> 打开  
-半打开 =======(调用成功且当前失败率小于阈值)===========> 关闭
-
-### 配置方式
-需要配置enable-circuit(是否开启熔断)、circuit-open-rate(错误率阈值)、circuit-open-seconds(断路器打开状态的超时秒数)、circuit-window(采样窗口)四个个参数。
-具体配置方式见下文的"快速开始"中的客户端配置。  
-若应用是通过Spring接入的，在配置文件配这几个参数即可；若应用是手动接入的，设置RpcConfig类的这三个参数即可。
-
-## 均衡负载
-目前基于随机策略，从一个微服务的多个实例节点中随机选取一个发起调用。  
-todo 后续增加多种方式
-
-## 监控信息
-Tomato-RPC提供了Restful接口，供用户查询服务内部状态。
-当一个SpringBoot应用启动时，Tomato-RPC会注册一个Controller，专门用来暴露服务内部数据。
-
-### 服务invoker信息
-```text
-GET /tomato/status/invoker?service-id=demo-rpc-service
-
-Param
-    service-id: 要查询的微服务的唯一标识
-```
-这个接口可用于查询服务订阅的微服务有多少个节点，接口会按照stage、group对invoker数据进行分组，返回当前服务订阅的微服务的所有实例信息。返回的json如下所示。
-```json
-[
-  {
-    "stage": "dev",
-    "groups": {
-      "main": [
-        {
-          "protocol": "tomato",
-          "host": "192.168.0.163",
-          "port": 4567,
-          "microServiceId": "demo-rpc-service",
-          "stage": "dev",
-          "group": "main"
-        }
-      ],
-      "local-test": [
-        {
-          "protocol": "tomato",
-          "host": "192.168.0.164",
-          "port": 4568,
-          "microServiceId": "demo-rpc-service",
-          "stage": "dev",
-          "group": "local-test"
-        }
-      ]
-    }
-  },
-  {
-    "stage": "prod",
-    "groups": {
-      "main": [
-        {
-          "protocol": "tomato",
-          "host": "192.168.0.163",
-          "port": 4567,
-          "microServiceId": "demo-rpc-service",
-          "stage": "dev",
-          "group": "main"
-        }
-      ]
-    }
-  }
-]
-```
-## 路由
-todo  
+# 核心类图
+![04a28c93a2bb83ee0b0e4f946d8a7f201df85d2b7f075652.png](https://www.imageoss.com/images/2022/02/19/04a28c93a2bb83ee0b0e4f946d8a7f201df85d2b7f075652.png "uml")
 
 # 快速开始
+
 ## 依赖检查
 jdk版本:openjdk-11  
-默认注册中心: zookeeper 3.5.9  
+默认注册中心: zookeeper 3.5.9
 
 ## 如何使用
 本段以EchoService接口为例，介绍如何通过Tomato-RPC框架，使RPC服务端能够暴露服务接口、 使RPC客户端能够发起RPC调用。  
@@ -240,7 +19,7 @@ tomato-rpc-sample-server、tomato-rpc-spring-sample-client、tomato-rpc-spring-s
 ### 公共jar包
 Tomato-RPC的RPC通信是基于接口的， 因此RPC的客户端、服务端需保持接口一致。  
 开发RPC程序时，RPC服务端开发者需提供一个公共的jar包，jar包中包含了rpc接口以及接口所需的参数。  
-RPC客户端与RPC服务端需共同引入此jar包，保持接口一致性。  
+RPC客户端与RPC服务端需共同引入此jar包，保持接口一致性。
 
 接口及方法参数
 ```java
@@ -456,7 +235,7 @@ public class RpcClientDemo {
 ```
 
 #### 客户端直连RPC服务端调用
-Tomato-Rpc支持RPC客户端根据ip、端口、service-id、接口直接构造Stub对象，不依赖与注册中心进行RPC。  
+Tomato-Rpc支持RPC客户端根据ip、端口、service-id、接口直接构造Stub对象，不依赖与注册中心进行RPC。
 ```java
 @Component
 public class DirectRpcTest {
@@ -486,9 +265,246 @@ public class DirectRpcTest {
 }
 
 ```
-# 核心类图
 
-![avatar](./uml/核心类图.png "uml")
+# 功能特性
+
+## 服务治理
+
+### 微服务管理
+
+#### 服务注册与更新
+每个RPC实例都有一个标识自身身份的MicroServiceId。  
+一个MicroServiceId就代表一个微服务，一个微服务可能有多个实例节点，这些实例持有相同的MicroServiceId，作为一个整体对外提供服务。  
+
+RPC服务端启动时，会将自身唯一标识、ip、端口上报给注册中心。  
+注册中心会维护一个服务目录，记录每个微服务有哪几个实例节点。  
+RPC客户端会配置需订阅的RPC服务节点的MicroServiceId，并在启动时向注册中心拉取订阅的微服务的所有的实例节点元数据。  
+下图为向注册中心拉取数据的具体流程(基于zookeeper)  
+![e66c7fbbcb4434b686ec6e8d0141e4b64b99e457cd1fb957.png](https://www.imageoss.com/images/2022/02/19/e66c7fbbcb4434b686ec6e8d0141e4b64b99e457cd1fb957.png "服务订阅")  
+当微服务的实例节点新增/减少时，注册中心会将新增/减少的实例节点的元数据实时下发给订阅该服务的RPC客户端实例。  
+下图为服务更新具体流程(基于zookeeper)  
+![87cd38165bdc54ffa9fdf30d5e33064a6bcf38553e59b35c.png](https://www.imageoss.com/images/2022/02/19/87cd38165bdc54ffa9fdf30d5e33064a6bcf38553e59b35c.png "服务实例更新")  
+
+RPC服务节点目录结构: /tomato/{micro-service-id}/{stage}/providers/............  
+一级目录: Tomato-RPC namespace, 与Tomato-RPC相关的数据都在这个目录中  
+二级目录: 各微服务信息  
+三级目录: 一个微服务在部署在哪几个环境  
+四级目录: 一个微服务在一个环境下的多个元数据（目前只有服务实例信息）  
+五级目录: RPC服务实例信息  
+![1f9e7eb8fc766ad1fac7de3abb281dcfebbcfb2a7f3bd710.png](https://www.imageoss.com/images/2022/02/19/1f9e7eb8fc766ad1fac7de3abb281dcfebbcfb2a7f3bd710.png "服务树")  
+
+注: 开发时没考虑不同服务，MicroServiceId不慎相同而导致冲突的情况，个人认为，另外建立一个微服务创建中心，专门负责新项目MicroServiceId的分配，是个解决方案。
+
+#### 配置stage，实现微服务服务环境隔离
+一个微服务可能会部署在不同的环境中，本项目通过两个方式实现环境隔离。
+1.微服务连接不同的注册中心，由于不同注册中心的数据互相独立，所以注册在不同注册中心的节点因为无法获取到彼此的元数据而无法通信。
+2.微服务使用Tomato-RPC时，配置stage字段，表明自己的服务环境。RPC客户端启动时，仅会订阅stage与自身相同的微服务的元数据。 
+例:  
+```text
+// 启动时配置自身stage为dev
+-Dtomato-rpc.service-stage=dev
+```
+
+#### 配置group，同环境多实例隔离
+同一个微服务，在同一个环境中的多个实例，可能部署的代码版本是不同的。  
+这种场景在实际使用中很常见:  
+1.服务灰度部署，同一个微服务的5个实例，3个部署了旧代码，2个部署了新代码，需要区分旧实例与灰度实例。  
+2.内网环境联调测试，在微服务内网集群中，部署一个自己开发的新功能的测试环境，测试在验证时，通过一些配置将流量引入测试环境。  
+
+用户在Tomato-RPC注册微服务时可配置group字段，标识自己的微服务属于哪一个分组。  
+Tomato-RPC的RPC客户端默认会向group字段与自己相同的其他RPC服务实例发起RPC调用。  
+
+例: service-id为"test-a"的服务的group是"alpha"，它想调用group为"dev"的服务B(service-id:"test-b")的实例、group为"sit"的服务C(service-id:"test-c")的实例。  
+那么在服务A启动时，可以加上jvm参数来实现调用。  
+```text
+// 启动时配置自身group为alpha
+-Dtomato-rpc.service-group=alpha  
+// 启动时配置调用test-b的group dev中的实例、test-c的group sit中的实例
+-Dtomato-rpc.subscribed-services-group=test-b:dev&test-c:sit
+```
+
+## RPC通信
+Tomato-RPC的RPC是基于接口的。    
+服务端需要注册接口实现类，并将接口数据暴露至注册中心。  
+客户端需要订阅接口，并通过Tomato-RPC框架创建一个stub实例，调用stub实例的方法即可完成RPC调用。
+
+## SPI
+Tomato-RPC实现了一个简单的SPI，每个组件通过SpiLoader加载依赖的组件，用户可通过添加SPI配置文件、配置JVM参数的方式替换组件实现而无需改变代码。
+
+### 代码样例
+```java
+/**
+ * 通过注解标识这是一个SPI接口，"jdk"为配置文件中的key
+ * 程序将加载配置文件中"jdk"对应的实现类
+ */
+@SpiInterface("jdk")
+public interface StubFactory {
+    <T> T createStub(StubConfig<T> config);
+}
+```
+
+在项目的资源路径下添加"META-INF/tomato"目录, SPI会读取这个目录下的SPI配置  
+添加一个文件，名字为SPI接口类全名: org.tomato.study.rpc.core.StubFactory  
+每行添加SPI配置参数，形式为"参数名:具体实现类的类全名"
+```text
+jdk : org.tomato.study.rpc.netty.proxy.JdkStubFactory
+```
+
+配置完毕后通过SpiLoader加载接口实现类
+```java
+public class SpiDemo {
+    // 通过spi的方式加载StubFactory组件
+    private final StubFactory stubFactory = SpiLoader.getLoader(StubFactory.class).load();
+}
+```
+### 依赖注入
+当一个SPI接口实现类依赖了其他SPI组件时,Tomato-Rpc的SPI会尝试依赖注入。  
+Tomato-Rpc的SPI会检测当前SPI接口实现类的所有Setter方法,若Setter方法的入参也是SPI接口,  
+会继续加载Setter入参对应的SPI接口组件，并通过反射，调用Setter其注入到当前SPI实现类中。
+
+
+Tomato-Rpc的SPI对单例对象的循环依赖做了处理,若SPI接口被配置为单例,Tomato-Rpc的SPI会在注入依赖前,先将SPI组件缓存至一个Map中。
+```java
+@SpiInterface("a")
+public interface SpiInterfaceA {
+    SpiInterfaceB getB();
+}
+
+@SpiInterface("b")
+public interface SpiInterfaceB {
+    SpiInterfaceC getC();
+}
+
+@SpiInterface("c")
+public interface SpiInterfaceC {
+    SpiInterfaceA getA();
+}
+
+@NoArgsConstructor
+public class SpiInterfaceAImpl implements SpiInterfaceA {
+    @Setter
+    @Getter
+    private SpiInterfaceB b;
+}
+
+@NoArgsConstructor
+public class SpiInterfaceBImpl implements SpiInterfaceB {
+    @Getter
+    @Setter
+    private SpiInterfaceC c;
+}
+
+@NoArgsConstructor
+public class SpiInterfaceCImpl implements SpiInterfaceC {
+    @Setter
+    @Getter
+    private SpiInterfaceA a;
+}
+
+
+class SpiLoopInjectTest {
+    /**
+     * 测试循环依赖
+     */
+    @Test
+    public void loopDependencyTest() {
+        SpiInterfaceA a = SpiLoader.getLoader(SpiInterfaceA.class).load();
+        Assert.assertTrue(a instanceof SpiInterfaceAImpl);
+        Assert.assertTrue(a.getB() instanceof SpiInterfaceBImpl);
+        Assert.assertTrue(a.getB().getC() instanceof SpiInterfaceCImpl);
+        Assert.assertTrue(a.getB().getC().getA() instanceof SpiInterfaceAImpl);
+    }
+}
+
+```
+### jvm参数配置spi
+-Dtomato-rpc.spi=spi接口类全名1:组件key1&spi接口类全名2:组件key2
+
+## 熔断
+Tomato-RPC基于断路器模式实现了一个简单的熔断机制。  
+Tomato-RPC以TCP连接为单位进行熔断，当RPC客户端与一个服务的n个实例建立的TCP连接后，Tomato-RPC会创建n个熔断实例，分别统计连接失败率。
+### 断路器计数器
+断路器内部维护一个计数器，计数器记录了断路器所包裹的方法的调用成功次数与失败次数，计数器仅会记录被包裹方法最近n次的调用情况(通过配置采样窗口参数进行控制)。  
+Tomato-RPC基于BitSet与FenwickTree实现了一个环状计数器，具体代码见SuccessFailureRingCounter.java。
+每次成功或失败时，会使用BitSet中的一位来记录调用的结果(1代表成功, 0代表失败)，并用FenwickTree维护BitSet的区间和。
+PS: 用FenwickTree当作计算成功次数与失败次数的索引只是为了巩固下这个数据结构，没做过实际的性能测试。。。。
+
+### 断路器状态切换
+断路器有三种状态: 关闭、半打开、打开。  
+当断路器处于关闭或半打开状态时，请求会被放行，当断路器处于打开状态时，请求会被立马拒绝。
+断路器的打开状态有时间限制，当超过设置的时间间隔后，断路器会从打开进入到半打开状态。  
+状态间的切换如下所示:  
+关闭 ========(失败率超过阈值)=======> 打开 ====(打开状态超时)=====> 半打开  
+半打开 =======(调用失败)====> 打开  
+半打开 =======(调用成功且当前失败率小于阈值)===========> 关闭
+
+### 配置方式
+需要配置enable-circuit(是否开启熔断)、circuit-open-rate(错误率阈值)、circuit-open-seconds(断路器打开状态的超时秒数)、circuit-window(采样窗口)四个个参数。
+具体配置方式见下文的"快速开始"中的客户端配置。  
+若应用是通过Spring接入的，在配置文件配这几个参数即可；若应用是手动接入的，设置RpcConfig类的这三个参数即可。
+
+## 均衡负载
+目前基于随机策略，从一个微服务的多个实例节点中随机选取一个发起调用。  
+todo 后续增加多种方式
+
+## 监控信息
+Tomato-RPC提供了Restful接口，供用户查询服务内部状态。
+当一个SpringBoot应用启动时，Tomato-RPC会注册一个Controller，专门用来暴露服务内部数据。
+
+### 服务invoker信息
+```text
+GET /tomato/status/invoker?service-id=demo-rpc-service
+
+Param
+    service-id: 要查询的微服务的唯一标识
+```
+这个接口可用于查询服务订阅的微服务有多少个节点，接口会按照stage、group对invoker数据进行分组，返回当前服务订阅的微服务的所有实例信息。返回的json如下所示。
+```json
+[
+  {
+    "stage": "dev",
+    "groups": {
+      "main": [
+        {
+          "protocol": "tomato",
+          "host": "192.168.0.163",
+          "port": 4567,
+          "microServiceId": "demo-rpc-service",
+          "stage": "dev",
+          "group": "main"
+        }
+      ],
+      "local-test": [
+        {
+          "protocol": "tomato",
+          "host": "192.168.0.164",
+          "port": 4568,
+          "microServiceId": "demo-rpc-service",
+          "stage": "dev",
+          "group": "local-test"
+        }
+      ]
+    }
+  },
+  {
+    "stage": "prod",
+    "groups": {
+      "main": [
+        {
+          "protocol": "tomato",
+          "host": "192.168.0.163",
+          "port": 4567,
+          "microServiceId": "demo-rpc-service",
+          "stage": "dev",
+          "group": "main"
+        }
+      ]
+    }
+  }
+]
+```
+## 路由
+todo
 
 # k8s部署样例
 
