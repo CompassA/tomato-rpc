@@ -26,6 +26,7 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.tomato.study.rpc.registry.zookeeper.data.ZookeeperConfig;
 
 import java.io.Closeable;
 import java.io.IOException;
@@ -49,16 +50,20 @@ public class CuratorClient implements Closeable {
 
     private final ConcurrentMap<String, TreeCache> listeners = new ConcurrentHashMap<>(0);
 
+    @Getter
+    private final ZookeeperConfig zookeeperConfig;
+
     /**
      * zookeeper namespace
      */
     @Getter
     private final String nameSpace;
 
-    public CuratorClient(String connStr, String nameSpace) {
-        this.nameSpace = nameSpace;
+    public CuratorClient(ZookeeperConfig zookeeperConfig) {
+        this.zookeeperConfig = zookeeperConfig;
+        this.nameSpace = zookeeperConfig.getNamespace();
         this.curatorClient = CuratorFrameworkFactory.builder()
-                .connectString(connStr)
+                .connectString(zookeeperConfig.getConnString())
                 .retryPolicy(new ExponentialBackoffRetry(1000, 3))
                 //15 seconds
                 .connectionTimeoutMs(15 * 1000)

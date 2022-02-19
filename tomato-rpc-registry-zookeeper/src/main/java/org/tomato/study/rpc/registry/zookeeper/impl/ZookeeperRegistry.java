@@ -14,9 +14,9 @@
 
 package org.tomato.study.rpc.registry.zookeeper.impl;
 
-import lombok.Getter;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.tomato.study.rpc.core.NameServer;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
@@ -30,7 +30,6 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.charset.Charset;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -38,7 +37,6 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.stream.Collectors;
 
 /**
  * 基于zookeeper实现的注册中心
@@ -47,50 +45,52 @@ import java.util.stream.Collectors;
  */
 public class ZookeeperRegistry {
 
-    private static final String PATH_DELIMITER = "/";
+    public static final String PATH_DELIMITER = "/";
 
     /**
      * 一个服务的所有实例的上级文件夹: /namespace/micro-service-id/stage/PROVIDER_DICTIONARY
      */
-    private static final String PROVIDER_DICTIONARY = "providers";
+    public static final String PROVIDER_DICTIONARY = "providers";
 
     /**
      * curator client
      */
-    private final CuratorClient curatorWrapper;
+    private final CuratorClient curatorClient;
 
     /**
-     * zookeeper注册器的根路径: /{namespace}/micro-service-id/stage/PROVIDER_DICTIONARY
+     * zookeeper config
      */
-    @Getter
-    private final String namespace;
+    private final ZookeeperConfig config;
 
     /**
-     * zookeeper编解码
+     * zookeeper char set
      */
-    @Getter
-    private final Charset zNodePathCharset;
+    private final Charset charset;
 
     /**
-     * 服务唯一标识 -> MicroServiceProvider
+     * name server
      */
-    private final ConcurrentMap<String, MicroServiceSpace> providerMap = new ConcurrentHashMap<>(0);
+    private final NameServer owner;
 
     /**
-     * provider -> children listener
+     * 服务唯一标识 -> MicroService
      */
-    private final ConcurrentMap<MicroServiceSpace, ChildrenListener> childrenListenerMap = new ConcurrentHashMap<>(0);
+    private final ConcurrentMap<String, MicroServiceSpace> microServiceMap = new ConcurrentHashMap<>(0);
 
-    public ZookeeperRegistry(ZookeeperConfig config) {
-        this.namespace = config.getNamespace();
-        this.zNodePathCharset = config.getCharset();
-        this.curatorWrapper = new CuratorClient(
-                config.getConnString(), config.getNamespace()
-        );
+    /**
+     * MicroService -> children listener
+     */
+    private final ConcurrentMap<MicroServiceSpace, ChildrenListener> listenerMap = new ConcurrentHashMap<>(0);
+
+    public ZookeeperRegistry(ZookeeperConfig config, NameServer owner) {
+        this.config = config;
+        this.charset = config.getCharset();
+        this.curatorClient = new CuratorClient(config);
+        this.owner = owner;
     }
 
     public void start() {
-        curatorWrapper.start();
+        curatorClient.start();
     }
 
     /**
@@ -105,11 +105,12 @@ public class ZookeeperRegistry {
         }
         // 路径：/namespace/micro-service-id/stage/providers/ip+port....
         String zNodePath = convertToZNodePath(
+                charset,
                 metaData.getMicroServiceId(),
                 metaData.getStage(),
                 PROVIDER_DICTIONARY,
                 uriOpt.get().toString());
-        curatorWrapper.createEphemeral(zNodePath);
+        curatorClient.createEphemeral(zNodePath);
     }
 
     /**
@@ -123,11 +124,12 @@ public class ZookeeperRegistry {
             return;
         }
         String zNodePath = convertToZNodePath(
+                charset,
                 metaData.getMicroServiceId(),
                 metaData.getStage(),
                 PROVIDER_DICTIONARY,
                 uriOpt.get().toString());
-        curatorWrapper.delete(zNodePath);
+        curatorClient.delete(zNodePath);
     }
 
     /**
@@ -145,18 +147,18 @@ public class ZookeeperRegistry {
             if (StringUtils.isBlank(microServiceId)) {
                 continue;
             }
-            // 注册微服务对象
-            providerMap.putIfAbsent(microServiceId, microService);
+            // 保存要订阅的微服务对象
+            microServiceMap.putIfAbsent(microServiceId, microService);
 
             // 根据固定的 /micro-service-id/stage/PROVIDER_DICTIONARY规则，计算出被订阅服务的zookeeper路径
-            String targetPath = convertToZNodePath(microServiceId, stage, PROVIDER_DICTIONARY);
+            String targetPath = convertToZNodePath(charset, microServiceId, stage, PROVIDER_DICTIONARY);
 
             // 创建WATCHER, 监听服务节点的子节点变化，保证服务实例的更新与删除能同步到订阅方的内存中
-            ChildrenListener listener = childrenListenerMap.computeIfAbsent(microService,
-                    provider -> new PathChildrenListener(this, curatorWrapper));
+            ChildrenListener listener = listenerMap.computeIfAbsent(microService,
+                    service -> new PathChildrenListener(microService, owner, curatorClient));
 
             // 获取目标服务的所有RPC实例节点, 并注册WATCHER
-            List<String> children = curatorWrapper.getChildrenAndAddWatcher(targetPath, listener);
+            List<String> children = curatorClient.getChildrenAndAddWatcher(targetPath, listener);
             if (CollectionUtils.isEmpty(children)) {
                 continue;
             }
@@ -164,9 +166,9 @@ public class ZookeeperRegistry {
             // 将RPC实例节点路径解码并转成Metadata形式
             final Set<MetaData> metadata = new HashSet<>(children.size());
             for (String child : children) {
-                String providerPathDecoded = URLDecoder.decode(child, zNodePathCharset);
-                URI providerMetadataURI = URI.create(providerPathDecoded);
-                MetaData.convert(providerMetadataURI)
+                String servicePath = URLDecoder.decode(child, charset);
+                URI serviceMetadataURI = URI.create(servicePath);
+                MetaData.convert(serviceMetadataURI)
                         .filter(MetaData::isValid)
                         .ifPresent(metadata::add);
             }
@@ -190,70 +192,30 @@ public class ZookeeperRegistry {
                 continue;
             }
             // 移除微服务对象
-            MicroServiceSpace provider = providerMap.remove(microServiceId);
+            MicroServiceSpace provider = microServiceMap.remove(microServiceId);
             if (provider == null) {
                 continue;
             }
             provider.close();
 
             // 移除对应的Watcher
-            ChildrenListener listener = childrenListenerMap.remove(provider);
+            ChildrenListener listener = listenerMap.remove(provider);
             if (listener != null) {
                 listener.unwatch();
             }
         }
     }
 
-    /**
-     * 监听的路径更新时，更新对应的ServiceProvider
-     * @param path service provider path, format: /micro-service-id/{stage}/providers
-     * @param children current provider node metadata
-     */
-    public void notify(String path, Collection<URI> children) throws TomatoRpcException {
-        if (StringUtils.isBlank(path)) {
-            return;
-        }
-        // 解析路径，找到micro-service-id
-        String[] split = path.split(PATH_DELIMITER);
-        if (split.length == 0) {
-            return;
-        }
-        String microServiceId = null;
-        for (String s : split) {
-            if (!StringUtils.isBlank(s) && !this.namespace.equals(s)) {
-                microServiceId = s;
-                break;
-            }
-        }
-        if (StringUtils.isBlank(microServiceId)) {
-            return;
-        }
-
-        // 获取Provider对象并刷新节点数据, 若Provider不存在，说明已经取消订阅
-        MicroServiceSpace serviceProvider = providerMap.get(microServiceId);
-        if (serviceProvider == null) {
-            return;
-        }
-        serviceProvider.refresh(
-                CollectionUtils.isEmpty(children) ? Collections.emptySet() :
-                        children.stream()
-                                .map(MetaData::convert)
-                                .filter(Optional::isPresent)
-                                .map(Optional::get)
-                                .collect(Collectors.toSet())
-        );
-    }
-
     public Optional<RpcInvoker> lookup(String microServiceId, String group) {
         if (StringUtils.isBlank(microServiceId) || StringUtils.isBlank(group)) {
             return Optional.empty();
         }
-        return Optional.ofNullable(providerMap.get(microServiceId))
+        return Optional.ofNullable(microServiceMap.get(microServiceId))
                 .flatMap(provider -> provider.lookUp(group));
     }
 
     public List<RpcInvoker> listInvokers(String microServiceId) {
-        MicroServiceSpace microServiceSpace = providerMap.get(microServiceId);
+        MicroServiceSpace microServiceSpace = microServiceMap.get(microServiceId);
         if (microServiceSpace == null) {
             return Collections.emptyList();
         }
@@ -261,7 +223,7 @@ public class ZookeeperRegistry {
     }
 
     public synchronized void close() throws IOException {
-        curatorWrapper.close();
+        curatorClient.close();
     }
 
     /**
@@ -269,14 +231,14 @@ public class ZookeeperRegistry {
      * @param parts 多个字符串
      * @return zookeeper路径
      */
-    private String convertToZNodePath(String... parts) {
+    public static String convertToZNodePath(Charset charset, String... parts) {
         if (parts == null || parts.length == 0) {
             return StringUtils.EMPTY;
         }
         StringBuilder builder = new StringBuilder(0);
         for (String part : parts) {
             builder.append(PATH_DELIMITER)
-                    .append(URLEncoder.encode(part, this.zNodePathCharset));
+                    .append(URLEncoder.encode(part, charset));
         }
         return builder.toString();
     }

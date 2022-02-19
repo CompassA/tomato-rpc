@@ -46,13 +46,12 @@ public class NettyRpcInvoker extends BaseRpcInvoker {
 
     public NettyRpcInvoker(MetaData nodeInfo, long keepAliveMs, long timeoutMs) {
         super(nodeInfo, timeoutMs);
-        this.rpcClient = new NettyRpcClient(
-                URI.create("tomato://" + nodeInfo.getHost() + ":" + nodeInfo.getPort()),
-                keepAliveMs);
+        URI uri = URI.create("tomato://" + nodeInfo.getHost() + ":" + nodeInfo.getPort());
+        this.rpcClient = new NettyRpcClient(uri, keepAliveMs);
     }
 
     @Override
-    public Result invoke(Invocation invocation) throws TomatoRpcException {
+    protected Result doInvoke(Invocation invocation) throws TomatoRpcException {
         Command rpcRequest = CommandFactory.request(invocation, getSerializer(), CommandType.RPC_REQUEST);
         ResponseFuture<Command> responseFuture = rpcClient.send(rpcRequest);
         CompletableFuture<Command> future = responseFuture.getFuture();
@@ -70,11 +69,11 @@ public class NettyRpcInvoker extends BaseRpcInvoker {
 
     @Override
     public boolean isUsable() {
-        return rpcClient.isUsable();
+        return super.isUsable() && rpcClient.isUsable();
     }
 
     @Override
-    public void destroy() throws TomatoRpcException {
+    protected void doDestroy() throws TomatoRpcException {
         rpcClient.stop();
     }
 }

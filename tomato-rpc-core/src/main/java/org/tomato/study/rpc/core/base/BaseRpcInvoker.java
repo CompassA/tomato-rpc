@@ -14,10 +14,16 @@
 
 package org.tomato.study.rpc.core.base;
 
+import org.tomato.study.rpc.core.Invocation;
+import org.tomato.study.rpc.core.Result;
 import org.tomato.study.rpc.core.Serializer;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.core.transport.RpcInvoker;
+
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Tomato
@@ -40,10 +46,66 @@ public abstract class BaseRpcInvoker implements RpcInvoker {
      */
     private long timeoutMs;
 
+    /**
+     * 当前正在调用invoker的线程数
+     */
+    private final AtomicLong processingCounter;
+
+    /**
+     * invoker是否已经关闭
+     */
+    private volatile boolean closed = false;
+
     public BaseRpcInvoker(MetaData nodeInfo, long timeoutMs) {
         this.nodeInfo = nodeInfo;
         this.commandSerializer = SpiLoader.getLoader(Serializer.class).load();
         this.timeoutMs = timeoutMs;
+        this.processingCounter = new AtomicLong(0);
+    }
+
+    @Override
+    public Result invoke(Invocation invocation) throws TomatoRpcException {
+        if (!isUsable()) {
+            throw new TomatoRpcException(TomatoRpcCoreErrorEnum.RPC_INVOKER_CLOSED.create());
+        }
+        processingCounter.incrementAndGet();
+        try {
+            return doInvoke(invocation);
+        } finally {
+            processingCounter.decrementAndGet();
+        }
+
+    }
+
+    @Override
+    public boolean isUsable() {
+        return !closed;
+    }
+
+    @Override
+    public void destroy() throws TomatoRpcException {
+        if (closed) {
+            return;
+        }
+        synchronized (this) {
+            if (closed) {
+                return;
+            }
+            // step1, 设置关闭标志, 此时invoker不会再接收任务
+            // step2, 优雅关闭，等60s，若60s没关闭，强行结束
+            closed = true;
+            for (int i = 0; i < 60; ++i) {
+                if (processingCounter.get() == 0) {
+                    break;
+                }
+                try {
+                    Thread.sleep(1000L);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+            }
+            doDestroy();
+        }
     }
 
     @Override
@@ -70,4 +132,8 @@ public abstract class BaseRpcInvoker implements RpcInvoker {
     public Serializer getSerializer() {
         return commandSerializer;
     }
+
+    protected abstract Result doInvoke(Invocation invocation) throws TomatoRpcException;
+
+    protected abstract void doDestroy() throws TomatoRpcException;
 }

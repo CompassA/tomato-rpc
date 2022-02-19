@@ -1,34 +1,341 @@
 # 项目简介
-Tomato-RPC, 业余时间为了巩固微服务基础知识、RPC基础原理而DIY的服务治理/RPC框架。  
-项目基于Netty实现RPC网络通信，并使用Zookeeper作为注册中心实现了简单的服务治理。  
-项目参考了dubbo、SpringCloud的实现思路。
+为了巩固微服务基础知识、RPC基础原理而开发的一个的RPC框架。  
+项目基于Netty实现了RPC网络通信，并使用Zookeeper作为注册中心实现了简单的服务治理。  
+项目参考了dubbo、feign的一些rpc实现思路。  
 
-# 功能特性
+# 核心类图
+![04a28c93a2bb83ee0b0e4f946d8a7f201df85d2b7f075652.png](https://www.imageoss.com/images/2022/02/19/04a28c93a2bb83ee0b0e4f946d8a7f201df85d2b7f075652.png "uml")
+
+# 快速开始
+
+## 依赖检查
+jdk版本:openjdk-11  
+默认注册中心: zookeeper 3.5.9
+
+## 如何使用
+本段以EchoService接口为例，介绍如何通过Tomato-RPC框架，使RPC服务端能够暴露服务接口、 使RPC客户端能够发起RPC调用。  
+具体代码见项目的tomato-rpc-sample-api、tomato-rpc-sample-client、  
+tomato-rpc-sample-server、tomato-rpc-spring-sample-client、tomato-rpc-spring-sample-server
+### 公共jar包
+Tomato-RPC的RPC通信是基于接口的， 因此RPC的客户端、服务端需保持接口一致。  
+开发RPC程序时，RPC服务端开发者需提供一个公共的jar包，jar包中包含了rpc接口以及接口所需的参数。  
+RPC客户端与RPC服务端需共同引入此jar包，保持接口一致性。
+
+接口及方法参数
+```java
+// TomatoApi注解为框架自定义注解，发布的接口需带上此注解，目的是告诉客户端，发布该接口的服务端的唯一标识
+@TomatoApi(microServiceId = "demo-rpc-service")
+public interface EchoService {
+    String echo(String request);
+}
+```
+发布jar包
+```xml
+<project>
+    <groupId>org.tomato.study.rpc</groupId>
+    <artifactId>tomato-rpc-sample-api</artifactId>
+    <version>1.0.0</version>
+</project>
+```
+
+### SpringBoot自动装配方式
+#### 服务端配置
+引入tomato-rpc-spring-boot-starter
+```xml
+<dependency>
+    <groupId>org.tomato.study.rpc</groupId>
+    <artifactId>tomato-rpc-spring-boot-starter</artifactId>
+    <!-- 版本以代码为准，下面的版本仅演示用 -->
+    <version>1.0.0</version>
+</dependency>
+```
+
+在spring-boot的application.yaml中配置RPC
+```yaml
+tomato-rpc:
+  # 微服务id
+  micro-service-id: "demo-rpc-service"
+  # 注册中心地址
+  name-service-uri: "127.0.0.1:2181"
+  # RPC服务暴露的端口
+  port: 4567
+  # RPC服务处理线程池数量
+  business-thread: 4
+  # 服务环境
+  stage: "dev"
+  # 服务分组
+  group: "main"
+  # 服务端空闲连接检测时间间隔，单位ms
+  server-idle-check-ms: 60000
+```
+
+服务端实现RPC接口
+```java
+// 加上@RpcServerStub，标识当前类是个RPC具体接口实现类
+// Spring启动时会将该类加入到IOC容器并注册到RPC接口实现类中
+// 实现类的java文件需放在Spring能扫描到的位置
+@RpcServerStub
+public class EchoServiceImpl implements EchoService {
+    @Override
+    public String echo(String request) {
+        return request;
+    }
+}
+```
+
+#### 客户端配置
+同样引入tomato-rpc-spring-boot-starter，并引入api的jar包
+```xml
+<dependencies>
+    <dependency>
+        <groupId>org.tomato.study.rpc</groupId>
+        <artifactId>tomato-rpc-spring-boot-starter</artifactId>
+        <version>1.0.0</version>
+    </dependency>
+    <dependency>
+        <groupId>org.tomato.study.rpc</groupId>
+        <artifactId>tomato-rpc-sample-api</artifactId>
+        <version>1.0.0</version>
+    </dependency>
+</dependencies>
+```
+
+在spring-boot的application.yaml中配置rpc
+```yaml
+tomato-rpc:
+  # 微服务id
+  micro-service-id: "demo-rpc-client"
+  # 订阅的其他服务
+  subscribed-services:
+    - "demo-rpc-service"
+  # 注册中心地址
+  name-service-uri: "127.0.0.1:2181"
+  # RPC服务暴露的端口
+  port: 3456
+  # RPC服务处理线程池数量
+  business-thread: 1
+  # 服务环境
+  stage: "dev"
+  # 服务分组
+  group: "main"
+  # 客户端发送心跳包的时间间隔，单位ms
+  client-keep-alive-ms: 20000
+  # 客户端发送数据时是否开启压缩
+  use-gzip: false
+  # 开启熔断
+  enable-circuit: true
+  # 错误率超过多少时开启熔断[1, 100]
+  circuit-open-rate: 75
+  # 断路器开启状态的有效期
+  circuit-open-seconds: 60
+  # 采样窗口
+  circuit-window: 100
+```
+
+客户端发起RPC
+```java
+@Component
+public class EchoApiWrapper {
+
+    // 在SpringBean中，添加RPC接口作为成员变量，并加上@RpcClientStub
+    // tomato-rpc在Spring启动时会自动将stub注入
+    // 使用此注解时，类必须是一个java bean
+    // 可配置客户端接口调用的超时时间，单位为毫秒
+    @RpcClientStub(timeout = 2000)
+    private EchoService echoService;
+
+    public String echo(String msg) {
+        return echoService.echo(msg);
+    }
+}
+```
+### API方式接入
+引入jar包
+```xml
+<dependency>
+    <groupId>org.tomato.study.rpc</groupId>
+    <artifactId>tomato-rpc-netty</artifactId>
+    <version>1.0.0</version>
+</dependency>
+```
+服务端暴露RPC方法
+```java
+public class RpcServerDemo {
+    public static void main(String[] args) throws Exception {
+        // 创建RpcCoreService
+        RpcCoreService coreService = SpiLoader.getLoader(RpcCoreServiceFactory.class).load()
+                .create(RpcConfig.builder()
+                        // 服务唯一标识
+                        .microServiceId("DemoRpcServer")
+                        // RPC注册中心ip
+                        .nameServiceURI("127.0.0.1:2181")
+                        // 暴露的端口
+                        .port(4567)
+                        // 微服务环境
+                        .stage("dev")
+                        // 服务分组
+                        .group("default")
+                        // 处理请求的业务线程池的大小
+                        .businessThreadPoolSize(4)
+                        .build()
+                );
+        
+        // 注册一个接口以及实现类给tomato-rpc框架，注册后客户端可基于此接口发起rpc调用
+        coreService.registerProvider(new EchoServiceImpl(), EchoService.class);
+        
+        // 初始化rpc资源
+        coreService.init();
+        
+        // 启动rpc服务
+        coreService.start();
+    }
+}
+```
+
+客户端订阅RPC服务
+```java
+public class RpcClientDemo {
+    public static void main(String[] args) throws Exception {
+        // 创建RpcCoreService
+        RpcCoreService rpcCoreService = SpiLoader.getLoader(RpcCoreServiceFactory.class)
+                .load()
+                .create(RpcConfig.builder()
+                        // 自身微服务标识
+                        .microServiceId("DemoRpcClient")
+                        // 订阅的微服务标识，订阅之后，可与该服务进行RPC通信
+                        .subscribedServiceIds(Collections.singletonList("DemoRpcServer"))
+                        // 注册中心地址
+                        .nameServiceURI("127.0.0.1:2181")
+                        // 自身暴露端口
+                        .port(7890)
+                        // 环境
+                        .stage("dev")
+                        // 分组
+                        .group("default")
+                        // 发送消息时是否启动压缩
+                        .useGzip(true)
+                        .build()
+                );
+        rpcCoreService.init();
+        rpcCoreService.start();
+
+        // 创建RPC客户端stub
+        Optional<ApiConfig<EchoService>> apiConfig = ApiConfig.create(EchoService.class);
+        assert apiConfig.isPresent();
+        EchoService stub = rpcCoreService.createStub(apiConfig.get());
+
+        // RPC调用
+        Sring response = stub.echo("hello rpc server");
+        
+        // 停止服务
+        rpcCoreService.stop();
+    }
+}
+```
+
+# 特性介绍
 
 ## RPC通信
-Tomato-RPC的RPC是基于接口的。    
-服务端需要注册接口实现类，并将接口数据暴露至注册中心。  
-客户端需要订阅接口，并通过Tomato-RPC框架创建一个stub实例，调用stub实例的方法即可完成RPC调用。
+本段将会介绍Tomato-RPC是如何屏蔽底层通信细节，让用户向调用本地方法一样调用远程方法的。
+
+从用户使用层面来说，客户端、服务端通过接口完成了调用方式的约定，而RPC框架会基于动态代理，在客户端为接口创建实例对象。  
+客户端在拿到接口实例并调用接口方法时，程序就会走到框架生成的动态代理实例的代码中，剩余的逻辑就全被框架代码接管了。  
+所以，框架使用动态代理向客户端屏蔽了底层通信细节，为接口注入框架写好的代码。
+
+从框架层面来说，框架会通过动态代理，拿到用户调用接口方法时的参数对象等关键数据，并将其序列化成可在网络中传输的二进制数据,框架在序列化结束后，就会开始通信逻辑。  
+Tomato-RPC是基于TCP进行通信的，如果只有TCP，那么通信双方只能看见无尽的二进制流，接收方不知道什么时候停止数据的接收，无法对数据做有意义的处理。  
+因此通信双方需要约定传输层之上的数据格式，使数据有边界，可解析，这就是所谓的应用层通信协议。  
+约定好通信协议后，发送方按协议格式发送二进制流，服务端按协议格式解析二进制流，通信边界问题就解决了。
+
+总结一下，Tomato-RPC的通信流程如下：
+发送方基于动态代理拦截客户端参数，将其序列化成二进制，并按应用层网络协议封装成帧。  
+接收方解析帧，根据发送方的序列化方法反序列化数据，还原调用语义，完成本地调用，并将结果封装成帧，返回给调用方。
+
+### 应用层通信协议
+Tomato-RPC设计的应用层通信协议如下：
+```text
++-------------+-----------------------+---------+---------------------+---------+-----------+---------+------------+------------+
+| magic number| length exclude magic  | version | extension parameter | command | serialize | message | extension  |   body     |
+|             | number and this filed |         |      length         |   type  |    type   |   id    | 0 - MaxInt | 0 - MaxInt |
+|   1 byte    |       4 bytes         | 4 bytes |      4 bytes        | 2 bytes |   1 byte  | 8 bytes |  bytes     |   bytes    |
++-------------+-----------------------+---------+---------------------+---------+-----------+---------+------------+------------+
+```
+
+### 客户端直连服务端调用
+Tomato-Rpc支持RPC客户端根据ip、端口、service-id、接口直接构造Stub对象，不依赖与注册中心进行RPC。
+```java
+@Component
+public class DirectRpcTest {
+    
+    @Autowired
+    private RpcCoreService rpcCoreService;
+    
+    public void test() {
+        // 微服务节点信息
+        MetaData nodeMeta = MetaData.builder()
+                .microServiceId("test")
+                .protocol("tomato")
+                .host("127.0.0.1")
+                .port("5555")
+                .stage("dev")
+                .group("main")
+                .build();
+        // 目标接口信息
+        ApiConfig<EchoService> apiConfig = ApiConfig.<EchoService>builder()
+                // 目标接口
+                .api(EchoService.class)
+                // 目标服务id
+                .microServiceId(mockMicroServiceId)
+                // 超时毫秒
+                .timeout(10000)
+                // 服务的某个具体实例[127.0.0.1:5555]
+                .nodeInfo(nodeMata)
+                .build();
+        // 创建stub
+        EchoService directStub = rpcCoreService.createDirectStub(apiConfig);
+        // 完成调用
+        String response = directStub.echo("hello world");
+    }
+}
+
+```
 
 ## 服务治理
 
-### 微服务管理
+### 服务注册与更新
 每个RPC实例都有一个标识自身身份的MicroServiceId。  
 一个MicroServiceId就代表一个微服务，一个微服务可能有多个实例节点，这些实例持有相同的MicroServiceId，作为一个整体对外提供服务。  
 
 RPC服务端启动时，会将自身唯一标识、ip、端口上报给注册中心。  
 注册中心会维护一个服务目录，记录每个微服务有哪几个实例节点。  
 RPC客户端会配置需订阅的RPC服务节点的MicroServiceId，并在启动时向注册中心拉取订阅的微服务的所有的实例节点元数据。  
-当微服务的实例节点新增/减少时，注册中心会将新增/减少的实例节点的元数据实时下发给订阅该服务的RPC客户端实例。
+下图为向注册中心拉取数据的具体流程(基于zookeeper)  
+![e66c7fbbcb4434b686ec6e8d0141e4b64b99e457cd1fb957.png](https://www.imageoss.com/images/2022/02/19/e66c7fbbcb4434b686ec6e8d0141e4b64b99e457cd1fb957.png "服务订阅")  
+当微服务的实例节点新增/减少时，注册中心会将新增/减少的实例节点的元数据实时下发给订阅该服务的RPC客户端实例。  
+下图为服务更新具体流程(基于zookeeper)  
+![87cd38165bdc54ffa9fdf30d5e33064a6bcf38553e59b35c.png](https://www.imageoss.com/images/2022/02/19/87cd38165bdc54ffa9fdf30d5e33064a6bcf38553e59b35c.png "服务实例更新")  
+
+RPC服务节点目录结构: /tomato/{micro-service-id}/{stage}/providers/............  
+一级目录: Tomato-RPC namespace, 与Tomato-RPC相关的数据都在这个目录中  
+二级目录: 各微服务信息  
+三级目录: 一个微服务在部署在哪几个环境  
+四级目录: 一个微服务在一个环境下的多个元数据（目前只有服务实例信息）  
+五级目录: RPC服务实例信息  
+![1f9e7eb8fc766ad1fac7de3abb281dcfebbcfb2a7f3bd710.png](https://www.imageoss.com/images/2022/02/19/1f9e7eb8fc766ad1fac7de3abb281dcfebbcfb2a7f3bd710.png "服务树")  
 
 注: 开发时没考虑不同服务，MicroServiceId不慎相同而导致冲突的情况，个人认为，另外建立一个微服务创建中心，专门负责新项目MicroServiceId的分配，是个解决方案。
 
-### 微服务服务环境隔离
+### 配置stage，实现微服务服务环境隔离
 一个微服务可能会部署在不同的环境中，本项目通过两个方式实现环境隔离。
 1.微服务连接不同的注册中心，由于不同注册中心的数据互相独立，所以注册在不同注册中心的节点因为无法获取到彼此的元数据而无法通信。
-2.微服务使用Tomato-RPC时，配置stage字段，表明自己的服务环境。RPC客户端启动时，仅会订阅stage与自身相同的微服务的元数据。
+2.微服务使用Tomato-RPC时，配置stage字段，表明自己的服务环境。RPC客户端启动时，仅会订阅stage与自身相同的微服务的元数据。 
+例:  
+```text
+// 启动时配置自身stage为dev
+-Dtomato-rpc.service-stage=dev
+```
 
-### 同环境多实例隔离
+### 配置group，同环境多实例隔离
 同一个微服务，在同一个环境中的多个实例，可能部署的代码版本是不同的。  
 这种场景在实际使用中很常见:  
 1.服务灰度部署，同一个微服务的5个实例，3个部署了旧代码，2个部署了新代码，需要区分旧实例与灰度实例。  
@@ -37,14 +344,14 @@ RPC客户端会配置需订阅的RPC服务节点的MicroServiceId，并在启动
 用户在Tomato-RPC注册微服务时可配置group字段，标识自己的微服务属于哪一个分组。  
 Tomato-RPC的RPC客户端默认会向group字段与自己相同的其他RPC服务实例发起RPC调用。  
 
-
-### 注册中心服务树
-RPC服务节点目录结构: /tomato/{micro-service-id}/{stage}/providers/............  
-一级目录: Tomato-RPC namespace, 与Tomato-RPC相关的数据都在这个目录中  
-二级目录: 各微服务信息  
-三级目录: 一个微服务在部署在哪几个环境  
-四级目录: 一个微服务在一个环境下的多个元数据（目前只有服务实例信息）  
-五级目录: RPC服务实例信息
+例: service-id为"test-a"的服务的group是"alpha"，它想调用group为"dev"的服务B(service-id:"test-b")的实例、group为"sit"的服务C(service-id:"test-c")的实例。  
+那么在服务A启动时，可以加上jvm参数来实现调用。  
+```text
+// 启动时配置自身group为alpha
+-Dtomato-rpc.service-group=alpha  
+// 启动时配置调用test-b的group dev中的实例、test-c的group sit中的实例
+-Dtomato-rpc.subscribed-services-group=test-b:dev&test-c:sit
+```
 
 ## SPI
 Tomato-RPC实现了一个简单的SPI，每个组件通过SpiLoader加载依赖的组件，用户可通过添加SPI配置文件、配置JVM参数的方式替换组件实现而无需改变代码。
@@ -161,10 +468,6 @@ PS: 用FenwickTree当作计算成功次数与失败次数的索引只是为了�
 具体配置方式见下文的"快速开始"中的客户端配置。  
 若应用是通过Spring接入的，在配置文件配这几个参数即可；若应用是手动接入的，设置RpcConfig类的这三个参数即可。
 
-## 均衡负载
-目前基于随机策略，从一个微服务的多个实例节点中随机选取一个发起调用。  
-todo 后续增加多种方式
-
 ## 监控信息
 Tomato-RPC提供了Restful接口，供用户查询服务内部状态。
 当一个SpringBoot应用启动时，Tomato-RPC会注册一个Controller，专门用来暴露服务内部数据。
@@ -222,269 +525,11 @@ Param
 ]
 ```
 ## 路由
-todo  
+todo
 
-# 快速开始
-## 依赖检查
-jdk版本:openjdk-11  
-默认注册中心: zookeeper 3.5.9  
-
-## 如何使用
-本段以EchoService接口为例，介绍如何通过Tomato-RPC框架，使RPC服务端能够暴露服务接口、 使RPC客户端能够发起RPC调用。  
-具体代码见项目的tomato-rpc-sample-api、tomato-rpc-sample-client、  
-tomato-rpc-sample-server、tomato-rpc-spring-sample-client、tomato-rpc-spring-sample-server
-### 公共jar包
-Tomato-RPC的RPC通信是基于接口的， 因此RPC的客户端、服务端需保持接口一致。  
-开发RPC程序时，RPC服务端开发者需提供一个公共的jar包，jar包中包含了rpc接口以及接口所需的参数。  
-RPC客户端与RPC服务端需共同引入此jar包，保持接口一致性。  
-
-接口及方法参数
-```java
-// TomatoApi注解为框架自定义注解，发布的接口需带上此注解，目的是告诉客户端，发布该接口的服务端的唯一标识
-@TomatoApi(microServiceId = "demo-rpc-service")
-public interface EchoService {
-    String echo(String request);
-}
-```
-发布jar包
-```xml
-<project>
-    <groupId>org.tomato.study.rpc</groupId>
-    <artifactId>tomato-rpc-sample-api</artifactId>
-    <version>1.0.0</version>
-</project>
-```
-### RPC接入
-
-#### SpringBoot自动装配方式
-##### 服务端配置
-引入tomato-rpc-spring-boot-starter
-```xml
-<dependency>
-    <groupId>org.tomato.study.rpc</groupId>
-    <artifactId>tomato-rpc-spring-boot-starter</artifactId>
-    <!-- 版本以代码为准，下面的版本仅演示用 -->
-    <version>1.0.0</version>
-</dependency>
-```
-
-在spring-boot的application.yaml中配置RPC
-```yaml
-tomato-rpc:
-  # 微服务id
-  micro-service-id: "demo-rpc-service"
-  # 注册中心地址
-  name-service-uri: "127.0.0.1:2181"
-  # RPC服务暴露的端口
-  port: 4567
-  # RPC服务处理线程池数量
-  business-thread: 4
-  # 服务环境
-  stage: "dev"
-  # 服务分组
-  group: "main"
-  # 服务端空闲连接检测时间间隔，单位ms
-  server-idle-check-ms: 600000
-```
-
-服务端实现RPC接口
-```java
-// 加上@RpcServerStub，标识当前类是个RPC具体接口实现类
-// Spring启动时会将该类加入到IOC容器并注册到RPC接口实现类中
-// 实现类的java文件需放在Spring能扫描到的位置
-@RpcServerStub
-public class EchoServiceImpl implements EchoService {
-    @Override
-    public String echo(String request) {
-        return request;
-    }
-}
-```
-
-##### 客户端配置
-同样引入tomato-rpc-spring-boot-starter，并引入api的jar包
-```xml
-<dependencies>
-    <dependency>
-        <groupId>org.tomato.study.rpc</groupId>
-        <artifactId>tomato-rpc-spring-boot-starter</artifactId>
-        <version>1.0.0</version>
-    </dependency>
-    <dependency>
-        <groupId>org.tomato.study.rpc</groupId>
-        <artifactId>tomato-rpc-sample-api</artifactId>
-        <version>1.0.0</version>
-    </dependency>
-</dependencies>
-```
-
-在spring-boot的application.yaml中配置rpc
-```yaml
-tomato-rpc:
-  # 微服务id
-  micro-service-id: "demo-rpc-client"
-  # 订阅的其他服务
-  subscribed-services:
-    - "demo-rpc-service"
-  # 注册中心地址
-  name-service-uri: "127.0.0.1:2181"
-  # RPC服务暴露的端口
-  port: 3456
-  # RPC服务处理线程池数量
-  business-thread: 1
-  # 服务环境
-  stage: "dev"
-  # 服务分组
-  group: "main"
-  # 客户端发送心跳包的时间间隔，单位ms
-  client-keep-alive-ms: 200000
-  # 客户端发送数据时是否开启压缩
-  use-gzip: false
-  # 开启熔断
-  enable-circuit: true
-  # 错误率超过多少时开启熔断[1, 100]
-  circuit-open-rate: 75
-  # 断路器开启状态的有效期
-  circuit-open-seconds: 60
-  # 采样窗口
-  circuit-window: 100
-```
-
-客户端发起RPC
-```java
-@Component
-public class EchoApiWrapper {
-
-    // 在SpringBean中，添加RPC接口作为成员变量，并加上@RpcClientStub
-    // tomato-rpc在Spring启动时会自动将stub注入
-    // 使用此注解时，类必须是一个java bean
-    // 可配置客户端接口调用的超时时间，单位为毫秒
-    @RpcClientStub(timeout = 2000)
-    private EchoService echoService;
-
-    public String echo(String msg) {
-        return echoService.echo(msg);
-    }
-}
-```
-#### API方式
-引入jar包
-```xml
-<dependency>
-    <groupId>org.tomato.study.rpc</groupId>
-    <artifactId>tomato-rpc-netty</artifactId>
-    <version>1.0.0</version>
-</dependency>
-```
-服务端暴露RPC方法
-```java
-public class RpcServerDemo {
-    public static void main(String[] args) throws Exception {
-        // 创建RpcCoreService
-        RpcCoreService coreService = SpiLoader.getLoader(RpcCoreServiceFactory.class).load()
-                .create(RpcConfig.builder()
-                        // 服务唯一标识
-                        .microServiceId("DemoRpcServer")
-                        // RPC注册中心ip
-                        .nameServiceURI("127.0.0.1:2181")
-                        // 暴露的端口
-                        .port(4567)
-                        // 微服务环境
-                        .stage("dev")
-                        // 服务分组
-                        .group("default")
-                        // 处理请求的业务线程池的大小
-                        .businessThreadPoolSize(4)
-                        .build()
-                );
-        
-        // 注册一个接口以及实现类给tomato-rpc框架，注册后客户端可基于此接口发起rpc调用
-        coreService.registerProvider(new EchoServiceImpl(), EchoService.class);
-        
-        // 初始化rpc资源
-        coreService.init();
-        
-        // 启动rpc服务
-        coreService.start();
-    }
-}
-```
-
-客户端订阅RPC服务
-```java
-public class RpcClientDemo {
-    public static void main(String[] args) throws Exception {
-        // 创建RpcCoreService
-        RpcCoreService rpcCoreService = SpiLoader.getLoader(RpcCoreServiceFactory.class)
-                .load()
-                .create(RpcConfig.builder()
-                        // 自身微服务标识
-                        .microServiceId("DemoRpcClient")
-                        // 订阅的微服务标识，订阅之后，可与该服务进行RPC通信
-                        .subscribedServiceIds(Collections.singletonList("DemoRpcServer"))
-                        // 注册中心地址
-                        .nameServiceURI("127.0.0.1:2181")
-                        // 自身暴露端口
-                        .port(7890)
-                        // 环境
-                        .stage("dev")
-                        // 分组
-                        .group("default")
-                        // 发送消息时是否启动压缩
-                        .useGzip(true)
-                        .build()
-                );
-        rpcCoreService.init();
-        rpcCoreService.start();
-
-        // 创建RPC客户端stub
-        Optional<ApiConfig<EchoService>> apiConfig = ApiConfig.create(EchoService.class);
-        assert apiConfig.isPresent();
-        EchoService stub = rpcCoreService.createStub(apiConfig.get());
-
-        // RPC调用
-        Sring response = stub.echo("hello rpc server");
-        
-        // 停止服务
-        rpcCoreService.stop();
-    }
-}
-```
-
-#### 客户端直连RPC服务端调用
-Tomato-Rpc支持RPC客户端根据ip、端口、service-id、接口直接构造Stub对象，不依赖与注册中心进行RPC。  
-```java
-@Component
-public class DirectRpcTest {
-    
-    @Autowired
-    private RpcCoreService rpcCoreService;
-    
-    public void test() {
-        EchoService directStub = rpcCoreService.createDirectStub(
-                ApiConfig.<EchoService>builder()
-                        // 目标接口
-                        .api(EchoService.class)
-                        // 目标服务id
-                        .microServiceId(mockMicroServiceId)
-                        // 服务的某个具体实例[127.0.0.1:5555]
-                        .nodeInfo(MetaData.builder()
-                                .microServiceId(mockMicroServiceId)
-                                .protocol("tomato")
-                                .host("127.0.0.1")
-                                .port("5555")
-                                .stage(stage)
-                                .group(group)
-                                .build())
-                        .build());
-        String response = directStub.echo("hello world");
-    }
-}
-
-```
-# 核心类图
-
-![avatar](./uml/核心类图.png "uml")
+## 均衡负载
+目前基于随机策略，从一个微服务的多个实例节点中随机选取一个发起调用。  
+todo 后续增加多种方式
 
 # k8s部署样例
 

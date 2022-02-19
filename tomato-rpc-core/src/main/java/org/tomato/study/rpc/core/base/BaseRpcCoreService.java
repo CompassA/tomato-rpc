@@ -5,6 +5,7 @@ import org.tomato.study.rpc.core.NameServer;
 import org.tomato.study.rpc.core.NameServerFactory;
 import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.RpcCoreService;
+import org.tomato.study.rpc.core.RpcJvmConfigKey;
 import org.tomato.study.rpc.core.StubFactory;
 import org.tomato.study.rpc.core.data.NameServerConfig;
 import org.tomato.study.rpc.core.data.RpcConfig;
@@ -61,11 +62,11 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
         this.providerRegistry = SpiLoader.getLoader(ProviderRegistry.class).load();
         this.stubFactory = SpiLoader.getLoader(StubFactory.class).load();
         this.invokerFactory = SpiLoader.getLoader(RpcInvokerFactory.class).load();
+        NameServerConfig nameServerConfig = NameServerConfig.builder()
+                .connString(rpcConfig.getNameServiceURI())
+                .build();
         this.nameServer = SpiLoader.getLoader(NameServerFactory.class).load()
-                .createNameService(
-                        NameServerConfig.builder()
-                                .connString(rpcConfig.getNameServiceURI())
-                                .build());
+                .createNameService(nameServerConfig);
     }
 
     @Override
@@ -80,11 +81,21 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
 
     @Override
     public String getStage() {
+        // jvm配置的环境优先级最高
+        String stage = System.getProperty(RpcJvmConfigKey.MICRO_SERVICE_STAGE);
+        if (stage != null) {
+            return stage;
+        }
         return rpcConfig.getStage();
     }
 
     @Override
     public String getGroup() {
+        // jvm配置的group优先级最高
+        String group = System.getProperty(RpcJvmConfigKey.MICRO_SERVICE_GROUP);
+        if (group != null) {
+            return group;
+        }
         return rpcConfig.getGroup();
     }
 

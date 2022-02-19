@@ -12,33 +12,30 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core.error;
+package org.tomato.study.rpc.core.data;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import org.tomato.study.rpc.core.router.MicroServiceSpace;
+
+import java.util.Set;
 
 /**
+ * 更新Invoker的任务
  * @author Tomato
- * Created on 2021.09.27
+ * Created on 2022.02.17
  */
 @Getter
 @AllArgsConstructor
-public enum TomatoRpcCoreErrorEnum {
+public class RefreshInvokerTask {
 
-    RPC_CONFIG_INITIALIZING_ERROR(10000, "rpc config is null"),
-    RPC_CLIENT_TIMEOUT(10002, "rpc timeout"),
-    RPC_CIRCUIT_ERROR(10003, "circuit breaker is open"),
-    RPC_INVOKER_CLOSED(10004, "rpc invoker and net connection have been closed"),
-    ;
+    /**
+     * 微服务对象
+     */
+    private MicroServiceSpace microServiceSpace;
 
-    private int code;
-    private String message;
-
-    public TomatoRpcErrorInfo create() {
-        return new TomatoRpcErrorInfo(this.code, this.message);
-    }
-
-    public TomatoRpcErrorInfo create(String customMessage) {
-        return new TomatoRpcErrorInfo(this.code, customMessage);
-    }
+    /**
+     * 当前微服务要更新的全量invoker
+     */
+    private Set<MetaData> invokerInfoSet;
 }

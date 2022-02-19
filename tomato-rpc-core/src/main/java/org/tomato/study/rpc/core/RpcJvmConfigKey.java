@@ -38,6 +38,11 @@ public final class RpcJvmConfigKey {
     public static final String KEY_VALUE_DELIMITER = ":";
 
     /**
+     * 可在jvm参数中配置自身的环境
+     */
+    public static final String MICRO_SERVICE_STAGE = "tomato-rpc.service-stage";
+
+    /**
      * 可在jvm参数中配置自身的服务版本
      */
     public static final String MICRO_SERVICE_GROUP = "tomato-rpc.service-group";
