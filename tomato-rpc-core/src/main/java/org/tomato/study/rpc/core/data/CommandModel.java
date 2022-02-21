@@ -31,6 +31,8 @@ import java.util.List;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
+@Deprecated(since = "本来设计了model层, 但是似乎没啥用")
+@SuppressWarnings("all")
 public class CommandModel<T> {
 
     private Header header;

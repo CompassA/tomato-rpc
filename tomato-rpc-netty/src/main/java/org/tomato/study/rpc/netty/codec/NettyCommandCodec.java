@@ -15,6 +15,7 @@
 package org.tomato.study.rpc.netty.codec;
 
 import io.netty.buffer.ByteBuf;
+import lombok.NonNull;
 import org.tomato.study.rpc.core.Serializer;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandModel;
@@ -71,6 +72,7 @@ public final class NettyCommandCodec {
         }
     }
 
+    @NonNull
     @SuppressWarnings("uncheck")
     public static Command decode(ByteBuf byteBuf) {
         Command.CommandBuilder commandBuilder = Command.builder();
