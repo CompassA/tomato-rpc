@@ -31,6 +31,13 @@ import java.util.Optional;
 public interface NameServer extends LifeCycle {
 
     /**
+     * get micro-service object
+     * @param serviceId service id
+     * @return MicroServiceSpace
+     */
+    Optional<MicroServiceSpace> getMicroService(String serviceId);
+
+    /**
      * register micro service
      * @param metaData service identification、service address
      * @throws Exception register exception

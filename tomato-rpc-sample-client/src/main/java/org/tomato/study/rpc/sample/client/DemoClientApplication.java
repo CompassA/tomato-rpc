@@ -20,8 +20,8 @@ import org.slf4j.LoggerFactory;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.RpcCoreServiceFactory;
 import org.tomato.study.rpc.core.RpcJvmConfigKey;
-import org.tomato.study.rpc.core.data.ApiConfig;
 import org.tomato.study.rpc.core.data.RpcConfig;
+import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
@@ -31,7 +31,6 @@ import org.tomato.study.rpc.sample.api.data.DemoRequest;
 import org.tomato.study.rpc.sample.api.data.DemoResponse;
 
 import java.util.Collections;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
@@ -82,9 +81,14 @@ public class DemoClientApplication {
     }
 
     private static EchoService createStub(RpcCoreService rpcCoreService) {
-        Optional<ApiConfig<EchoService>> apiConfig = ApiConfig.create(EchoService.class);
-        assert apiConfig.isPresent();
-        return rpcCoreService.createStub(apiConfig.get());
+        StubConfig<EchoService> stubConfig = new StubConfig<>(
+                EchoService.class,
+                rpcCoreService.getMicroServiceId(),
+                rpcCoreService.getGroup(),
+                false,
+                5000L,
+                rpcCoreService.getNameServer());
+        return rpcCoreService.createStub(stubConfig);
     }
 
     private static void invokerRpc(EchoService stub) throws InterruptedException {

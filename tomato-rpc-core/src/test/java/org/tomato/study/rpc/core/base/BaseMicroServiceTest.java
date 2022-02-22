@@ -140,10 +140,6 @@ public class BaseMicroServiceTest extends BaseTest {
                 @Override
                 public MetaData getMetadata() { return metadata; }
                 @Override
-                public long getInvocationTimeout() {return 1;}
-                @Override
-                public void setInvocationTimeout(long timeoutMs) {}
-                @Override
                 public Serializer getSerializer() {return null;}
                 @Override
                 public Result invoke(Invocation invocation) { return null; }

@@ -16,10 +16,8 @@ package org.tomato.study.rpc.netty.service;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.NameServer;
 import org.tomato.study.rpc.core.base.BaseRpcCoreService;
-import org.tomato.study.rpc.core.data.ApiConfig;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.data.RpcServerConfig;
@@ -34,8 +32,6 @@ import org.tomato.study.rpc.utils.NetworkUtil;
 
 import java.net.URI;
 import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
 
 /**
  * 基于Netty实现的RPC服务入口类
@@ -87,11 +83,7 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
             this.microServices = new MicroServiceSpace[subscribedServiceIds.size()];
             for (int i = 0; i < subscribedServiceIds.size(); i++) {
                 this.microServices[i] = new NettyMicroServiceSpace(
-                        subscribedServiceIds.get(i),
-                        getRpcInvokerFactory(),
-                        rpcServerConfig.getClientKeepAliveMilliseconds(),
-                        rpcConfig.getGlobalClientTimeoutMilliseconds(),
-                        rpcConfig);
+                        subscribedServiceIds.get(i), getRpcInvokerFactory(), rpcConfig);
             }
         } else {
             this.microServices = new MicroServiceSpace[0];
@@ -118,55 +110,10 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
     }
 
     @Override
-    public <T> T createStub(ApiConfig<T> apiConfig) {
-        Class<T> serviceInterface = apiConfig.getApi();
-        if (!serviceInterface.isInterface()) {
-            throw new TomatoRpcRuntimeException(NettyRpcErrorEnum.CORE_SERVICE_STUB_CREATE_ERROR.create());
-        }
-
-        // 设置后续刷新Invoker时的超时时间
-        String microServiceId = apiConfig.getMicroServiceId();
-        for (MicroServiceSpace microService : microServices) {
-            if (Objects.equals(microService.getMicroServiceId(), microServiceId)) {
-                microService.resetInvokerTimeout(
-                        Optional.ofNullable(apiConfig.getTimeoutMs())
-                                .orElse(getRpcConfig().getGlobalClientTimeoutMilliseconds()));
-                break;
-            }
-        }
-
-        // 创建stub
-        T stub = getStubFactory().createStub(
-                new StubConfig<>(
-                        getNameServer(),
-                        serviceInterface,
-                        microServiceId,
-                        // 先读ApiConfig的group, 若没配置，去读服务自身的group
-                        Optional.ofNullable(apiConfig.getGroup())
-                                .filter(StringUtils::isNotBlank)
-                                .orElse(getGroup())
-                ));
-        log.info("stub " + serviceInterface.getCanonicalName() + " created");
+    public <T> T createStub(StubConfig<T> stubConfig) {
+        T stub = getStubFactory().createStub(stubConfig);
+        log.info("stub " + stubConfig.getServiceInterface().getCanonicalName() + " created");
         return stub;
-    }
-
-    @Override
-    public <T> T createDirectStub(ApiConfig<T> apiConfig) {
-        if (apiConfig == null) {
-            return null;
-        }
-        MetaData nodeInfo = apiConfig.getNodeInfo();
-        Class<T> api = apiConfig.getApi();
-        if (nodeInfo == null || !nodeInfo.isValid() || !api.isInterface()) {
-            return null;
-        }
-        RpcConfig rpcConfig = getRpcConfig();
-        Long timeout = Optional.ofNullable(apiConfig.getTimeoutMs())
-                .orElse(rpcConfig.getGlobalClientTimeoutMilliseconds());
-        return getRpcInvokerFactory()
-                .create(nodeInfo, rpcConfig.getClientKeepAliveMilliseconds(), timeout)
-                .map(invoker -> getStubFactory().createStub(nodeInfo.getMicroServiceId(), invoker, api))
-                .orElse(null);
     }
 
     @Override

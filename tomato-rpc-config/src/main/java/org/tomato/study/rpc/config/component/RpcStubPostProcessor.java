@@ -15,13 +15,14 @@
 package org.tomato.study.rpc.config.component;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.tomato.study.rpc.config.annotation.RpcServerStub;
 import org.tomato.study.rpc.config.data.ClientStubMetadata;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.api.TomatoApi;
-import org.tomato.study.rpc.core.data.ApiConfig;
+import org.tomato.study.rpc.core.data.StubConfig;
 
 import java.lang.reflect.Field;
 import java.util.Map;
@@ -88,30 +89,34 @@ public class RpcStubPostProcessor implements BeanPostProcessor {
 
     }
 
-    @SuppressWarnings("all")
     private void injectClientStub(Object bean) {
         Class<?> clazz = bean.getClass();
         while (!Object.class.equals(clazz)) {
             // 扫描所有类型，找到标注了@RpcClientStub的成员变量
             for (Field field : clazz.getDeclaredFields()) {
-                ClientStubMetadata.create(field).ifPresent(metaData -> {
-                    field.setAccessible(true);
-                    Object stub = stubCache.computeIfAbsent(metaData,
-                            metaDataKey -> rpcCoreService.createStub(
-                                    ApiConfig.builder()
-                                            .api((Class<Object>) metaDataKey.getStubClass())
-                                            .microServiceId(metaDataKey.getMicroServiceId())
-                                            .timeoutMs(metaDataKey.getTimeout())
-                                            .group(metaDataKey.getGroup())
-                                            .build()));
-                    try {
-                        field.set(bean, stub);
-                    } catch (IllegalAccessException e) {
-                        log.error("create stub error", e);
-                    }
-                });
+                ClientStubMetadata.create(field)
+                        .ifPresent(metaData -> createStubObject(bean, field, metaData));
             }
             clazz = clazz.getSuperclass();
+        }
+    }
+
+    @SuppressWarnings("all")
+    private void createStubObject(Object bean, Field field, ClientStubMetadata<?> metaData) {
+        field.setAccessible(true);
+        StubConfig<?> stubConfig = new StubConfig<>(
+                (Class<Object>) metaData.getStubClass(),
+                metaData.getMicroServiceId(),
+                StringUtils.isNotBlank(metaData.getGroup()) ? metaData.getGroup() : rpcCoreService.getGroup(),
+                metaData.isCompressBody(),
+                metaData.getTimeout(),
+                rpcCoreService.getNameServer());
+        Object stub = stubCache.computeIfAbsent(metaData,
+                metaDataKey -> rpcCoreService.createStub(stubConfig));
+        try {
+            field.set(bean, stub);
+        } catch (IllegalAccessException e) {
+            log.error("create stub error", e);
         }
     }
 

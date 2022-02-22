@@ -41,7 +41,6 @@ import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.RpcServer;
 import org.tomato.study.rpc.core.StubFactory;
 import org.tomato.study.rpc.core.base.BaseNameServer;
-import org.tomato.study.rpc.core.data.ApiConfig;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
@@ -80,11 +79,13 @@ public class NettyRpcCoreServiceTest {
     @Mock
     private NettyRpcServer mockNettyRpcServer;
 
-    private final JdkStubFactory jdkStubFactory = new JdkStubFactory();
+    private JdkStubFactory jdkStubFactory;
+
     private final NettyRpcInvokerFactory nettyRpcInvokerFactory = new NettyRpcInvokerFactory();
 
     @Before
     public void init() throws Exception {
+        jdkStubFactory = new JdkStubFactory(nettyRpcCoreService.getRpcConfig(), nettyRpcInvokerFactory);
         mockStatic(SpiLoader.class);
         SpiLoader<ProviderRegistry> providerLoader = (SpiLoader<ProviderRegistry>) mock(SpiLoader.class);
         SpiLoader<NameServerFactory> nameServerLoader = (SpiLoader<NameServerFactory>) mock(SpiLoader.class);
@@ -94,7 +95,7 @@ public class NettyRpcCoreServiceTest {
         NameServerFactory mockNameServerFactory = mock(NameServerFactory.class);
         when(providerLoader.load()).thenReturn(mockProviderRegistry);
         when(nameServerLoader.load()).thenReturn(mockNameServerFactory);
-        when(stubFactoryLoader.load()).thenReturn(jdkStubFactory);
+        when(stubFactoryLoader.load(any(), any())).thenReturn(jdkStubFactory);
         when(rpcInvokerFactorySpiLoader.load()).thenReturn(nettyRpcInvokerFactory);
 
         when(SpiLoader.getLoader(eq(ProviderRegistry.class))).thenReturn(providerLoader);
@@ -124,34 +125,6 @@ public class NettyRpcCoreServiceTest {
             Assert.assertEquals(
                     e.getMessage(),
                     NettyRpcErrorEnum.CORE_SERVICE_REGISTER_PROVIDER_ERROR.create().getMessage());
-            return;
-        }
-        Assert.fail();
-    }
-
-    /**
-     * 测试正常创建stub以及异常传参
-     */
-    @Test
-    public void stubCreateTest() {
-        Assert.assertNotNull(nettyRpcCoreService.createStub(
-                ApiConfig.<RpcServer>builder()
-                        .api(RpcServer.class)
-                        .microServiceId("mock")
-                        .build())
-        );
-
-        try {
-            nettyRpcCoreService.createStub(
-                    ApiConfig.<NettyRpcServer>builder()
-                            .api(NettyRpcServer.class)
-                            .microServiceId("mock")
-                            .build()
-            );
-        } catch (TomatoRpcRuntimeException e) {
-            Assert.assertEquals(
-                    e.getMessage(),
-                    NettyRpcErrorEnum.CORE_SERVICE_STUB_CREATE_ERROR.create().getMessage());
             return;
         }
         Assert.fail();

@@ -42,4 +42,10 @@ public @interface RpcClientStub {
      */
     String group() default "";
 
+    /**
+     * 发送消息时是否压缩消息体
+     * @return true 压缩
+     */
+    boolean compressBody() default false;
+
 }

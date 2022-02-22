@@ -24,6 +24,7 @@ import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
@@ -44,10 +45,10 @@ public class NettyRpcInvoker extends BaseRpcInvoker {
     private final RpcClient<Command> rpcClient;
     private final HashedWheelTimer timer = new HashedWheelTimer(100, TimeUnit.MILLISECONDS);
 
-    public NettyRpcInvoker(MetaData nodeInfo, long keepAliveMs, long timeoutMs) {
-        super(nodeInfo, timeoutMs);
+    public NettyRpcInvoker(MetaData nodeInfo, RpcConfig rpcConfig) {
+        super(nodeInfo, rpcConfig);
         URI uri = URI.create("tomato://" + nodeInfo.getHost() + ":" + nodeInfo.getPort());
-        this.rpcClient = new NettyRpcClient(uri, keepAliveMs);
+        this.rpcClient = new NettyRpcClient(uri, rpcConfig.getClientKeepAliveMilliseconds());
     }
 
     @Override
@@ -62,7 +63,8 @@ public class NettyRpcInvoker extends BaseRpcInvoker {
                             new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.RPC_CLIENT_TIMEOUT.create()));
                     responseFuture.destroy();
                 },
-                getInvocationTimeout(),
+                // todo 重写超时
+                0,
                 TimeUnit.MILLISECONDS);
         return result;
     }

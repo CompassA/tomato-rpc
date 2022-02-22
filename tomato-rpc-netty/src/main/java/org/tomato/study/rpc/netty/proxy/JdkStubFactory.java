@@ -14,9 +14,14 @@
 
 package org.tomato.study.rpc.netty.proxy;
 
+import lombok.AllArgsConstructor;
+import org.tomato.study.rpc.core.NameServer;
 import org.tomato.study.rpc.core.StubFactory;
+import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.transport.RpcInvoker;
+import org.tomato.study.rpc.core.transport.RpcInvokerFactory;
 import org.tomato.study.rpc.netty.invoker.NettyBaseStubInvoker;
 import org.tomato.study.rpc.netty.invoker.NettyDirectStubInvoker;
 import org.tomato.study.rpc.netty.invoker.NettyRouterStubInvoker;
@@ -30,22 +35,42 @@ import java.lang.reflect.Proxy;
  * @author Tomato
  * Created on 2021.04.18
  */
+@AllArgsConstructor
 public class JdkStubFactory implements StubFactory {
 
+    private final RpcConfig rpcConfig;
+    private final RpcInvokerFactory rpcInvokerFactory;
     @Override
-    @SuppressWarnings("unchecked cast")
-    public <T> T createStub(StubConfig<T> config) {
+    public <T> T createStub(StubConfig<T> config) throws IllegalStateException {
         if (config == null || !config.isValid()) {
-            return null;
+            throw new IllegalStateException("stub config is not valid, stub config: " + config);
         }
-        NettyBaseStubInvoker stubInvoker = new NettyRouterStubInvoker(
+        NameServer nameServer = config.getNameServer();
+        if (nameServer != null) {
+            return createServiceDiscoveryStub(config, nameServer);
+        }
+        MetaData nodeInfo = config.getNodeInfo();
+        if (nodeInfo != null && nodeInfo.isValid()) {
+            return createDirectInvoker(config);
+        }
+        throw new IllegalArgumentException("without nameserver to create service-discovery stud and" +
+                "without node-info to create direct stub");
+    }
+
+    @SuppressWarnings("unchecked cast")
+    private <T> T createDirectInvoker(StubConfig<T> config) {
+        RpcInvoker rpcInvoker = rpcInvokerFactory.create(config.getNodeInfo(), rpcConfig).orElse(null);
+        if (rpcInvoker == null) {
+            throw new IllegalArgumentException("createDirectInvoker - create rpc invoker failed");
+        }
+        Class<T> serviceInterface = config.getServiceInterface();
+        NettyBaseStubInvoker stubInvoker = new NettyDirectStubInvoker(
                 config.getMicroServiceId(),
-                config.getGroup(),
-                config.getServiceInterface(),
-                config.getNameServer());
+                serviceInterface,
+                rpcInvoker);
         return (T) Proxy.newProxyInstance(
                 JdkStubFactory.class.getClassLoader(),
-                new Class[]{config.getServiceInterface()},
+                new Class[]{serviceInterface},
                 new InvocationHandler() {
                     @Override
                     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
@@ -55,16 +80,16 @@ public class JdkStubFactory implements StubFactory {
         );
     }
 
-    @Override
     @SuppressWarnings("unchecked cast")
-    public <T> T createStub(String microServiceId, RpcInvoker rpcInvoker, Class<T> rpcInterface) {
-        if (rpcInvoker == null || rpcInterface == null || !rpcInterface.isInterface()) {
-            return null;
-        }
-        NettyBaseStubInvoker stubInvoker = new NettyDirectStubInvoker(microServiceId, rpcInterface, rpcInvoker);
+    private <T> T createServiceDiscoveryStub(StubConfig<T> config, NameServer nameServer) {
+        NettyBaseStubInvoker stubInvoker = new NettyRouterStubInvoker(
+                config.getMicroServiceId(),
+                config.getGroup(),
+                config.getServiceInterface(),
+                nameServer);
         return (T) Proxy.newProxyInstance(
                 JdkStubFactory.class.getClassLoader(),
-                new Class[]{rpcInterface},
+                new Class[]{config.getServiceInterface()},
                 new InvocationHandler() {
                     @Override
                     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
