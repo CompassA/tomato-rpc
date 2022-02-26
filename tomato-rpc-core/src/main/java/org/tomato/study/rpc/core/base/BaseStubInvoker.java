@@ -14,11 +14,11 @@
 
 package org.tomato.study.rpc.core.base;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
 import org.tomato.study.rpc.core.Invocation;
 import org.tomato.study.rpc.core.Response;
 import org.tomato.study.rpc.core.StubInvoker;
+import org.tomato.study.rpc.core.data.StubConfig;
 
 import java.lang.reflect.Method;
 
@@ -26,8 +26,10 @@ import java.lang.reflect.Method;
  * @author Tomato
  * Created on 2021.11.27
  */
-@AllArgsConstructor
 public abstract class BaseStubInvoker implements StubInvoker {
+
+    @Getter
+    private final StubConfig<?> stubConfig;
 
     /**
      * 目标服务的唯一标识
@@ -46,6 +48,13 @@ public abstract class BaseStubInvoker implements StubInvoker {
      */
     @Getter
     private final Class<?> serviceInterface;
+
+    public BaseStubInvoker(StubConfig<?> stubConfig) {
+        this.stubConfig = stubConfig;
+        this.microServiceId = stubConfig.getMicroServiceId();
+        this.group = stubConfig.getGroup();
+        this.serviceInterface = stubConfig.getServiceInterface();
+    }
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) {

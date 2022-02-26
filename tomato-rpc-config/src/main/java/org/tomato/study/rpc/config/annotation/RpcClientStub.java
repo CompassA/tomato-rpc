@@ -37,7 +37,7 @@ public @interface RpcClientStub {
     long timeout() default 5000;
 
     /**
-     * 要调用哪个分组的api
+     * 要调用哪个分组的api，如果没有配置，调用与自身一致的分组
      * @return 分组
      */
     String group() default "";

@@ -14,6 +14,7 @@
 
 package org.tomato.study.rpc.core.base;
 
+import lombok.Getter;
 import org.tomato.study.rpc.core.Invocation;
 import org.tomato.study.rpc.core.Result;
 import org.tomato.study.rpc.core.Serializer;
@@ -40,6 +41,7 @@ public abstract class BaseRpcInvoker implements RpcInvoker {
     /**
      * rpc配置
      */
+    @Getter
     private final RpcConfig rpcConfig;
 
     /**

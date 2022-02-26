@@ -16,6 +16,7 @@ package org.tomato.study.rpc.netty.invoker;
 
 import org.tomato.study.rpc.core.Invocation;
 import org.tomato.study.rpc.core.Response;
+import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.transport.RpcInvoker;
@@ -32,10 +33,8 @@ public class NettyDirectStubInvoker extends NettyBaseStubInvoker {
 
     private final RpcInvoker rpcInvoker;
 
-    public NettyDirectStubInvoker(String microServiceId,
-                                  Class<?> serviceInterface,
-                                  RpcInvoker rpcInvoker) {
-        super(microServiceId, "", serviceInterface);
+    public NettyDirectStubInvoker(StubConfig<?> stubConfig, RpcInvoker rpcInvoker) {
+        super(stubConfig);
         this.rpcInvoker = rpcInvoker;
     }
 

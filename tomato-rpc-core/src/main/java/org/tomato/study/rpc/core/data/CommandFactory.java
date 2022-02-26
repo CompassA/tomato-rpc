@@ -14,9 +14,11 @@
 
 package org.tomato.study.rpc.core.data;
 
+import org.apache.commons.collections4.MapUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.Serializer;
 
-import java.util.List;
+import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
@@ -41,37 +43,27 @@ public final class CommandFactory {
      */
     public static <T> Command request(T requestData,
                                       Serializer serializer,
+                                      Map<String, String> contextParameters,
                                       CommandType type) {
         Command.CommandBuilder commandBuilder = Command.builder();
         if (requestData != null) {
             byte[] body = serializer.serialize(requestData);
-            commandBuilder.header(createHeader(null, type, serializer, 0, body.length)).body(body);
+            commandBuilder.header(createHeader(type, serializer, body.length)).body(body);
         } else {
-            commandBuilder.header(createHeader(null, type, serializer, 0, 0));
+            commandBuilder.header(createHeader(type, serializer, 0));
         }
-        return commandBuilder.build();
-    }
-
-    /**
-     * create request command with parameters
-     * @param requestData request data
-     * @param parameters request command parameters
-     * @param serializer serialize the request data
-     * @param type request command type
-     * @param <T> request data type
-     * @return request data
-     */
-    public static <T> Command request(T requestData,
-                                      List<Parameter> parameters,
-                                      Serializer serializer,
-                                      CommandType type) {
-        byte[] extension = serializer.serializeList(parameters, Parameter.class);
-        byte[] body = serializer.serialize(requestData);
-        return Command.builder()
-                .header(createHeader(null, type, serializer, extension.length, body.length))
-                .extension(extension)
-                .body(body)
-                .build();
+        Command command = commandBuilder.build();
+        if (MapUtils.isNotEmpty(contextParameters)) {
+            ExtensionHeaderBuilder extensionHeaderBuilder = new ExtensionHeaderBuilder(command);
+            for (ExtensionHeader header : ExtensionHeader.values()) {
+                String value = contextParameters.get(header.getName());
+                if (StringUtils.isNotBlank(value)) {
+                    extensionHeaderBuilder.putParam(header.getName(), value);
+                }
+            }
+            return extensionHeaderBuilder.build();
+        }
+        return command;
     }
 
     /**
@@ -89,21 +81,26 @@ public final class CommandFactory {
                                        CommandType type) {
         if (responseData == null) {
             return Command.builder()
-                    .header(createHeader(requestId, type, serializer, 0, 0))
+                    .header(createHeader(requestId, type, serializer, 0))
                     .build();
         }
 
         byte[] body = serializer.serialize(responseData);
         return Command.builder()
-                .header(createHeader(requestId, type, serializer, 0, body.length))
+                .header(createHeader(requestId, type, serializer, body.length))
                 .body(body)
                 .build();
+    }
+
+    private static Header createHeader(CommandType type,
+                                       Serializer serializer,
+                                       int bodyLength) {
+        return createHeader(null, type, serializer, bodyLength);
     }
 
     private static Header createHeader(Long id,
                                        CommandType type,
                                        Serializer serializer,
-                                       int extensionLength,
                                        int bodyLength) {
         return Header.builder()
                 .magicNumber(ProtoConstants.MAGIC_NUMBER)
@@ -111,8 +108,8 @@ public final class CommandFactory {
                 .id(id == null ? ID_GENERATOR.incrementAndGet() : id)
                 .messageType(type.getId())
                 .serializeType(serializer.serializerIndex())
-                .extensionLength(extensionLength)
-                .length(bodyLength + extensionLength + ProtoConstants.HEAD_FIX_LENGTH)
+                .extensionLength(0)
+                .length(bodyLength + ProtoConstants.HEAD_FIX_LENGTH)
                 .build();
     }
 

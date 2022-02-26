@@ -74,6 +74,7 @@ public final class ConvertUtils {
                 .returnType(model.getReturnType() == null
                         ? void.class.getName()
                         : model.getReturnType().getName())
+                .contextParameterMap(model.getContextParameterMap())
                 .methodName(model.getMethodName());
 
         if (args == null && argsType == null) {

@@ -19,7 +19,14 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 import org.tomato.study.rpc.core.Invocation;
+
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 
 /**
  * 一次RPC调用的请求参数
@@ -29,6 +36,7 @@ import org.tomato.study.rpc.core.Invocation;
 @Getter
 @Setter
 @Builder
+@ToString
 @NoArgsConstructor
 @AllArgsConstructor
 public class RpcRequestDTO implements Invocation {
@@ -62,4 +70,71 @@ public class RpcRequestDTO implements Invocation {
      * {@link RpcRequestModel#getParameters()}
      */
     private Object[] args;
+
+    /**
+     * {@link RpcRequestModel#getContextParameterMap()}
+     */
+    private volatile Map<String, String> contextParameterMap;
+
+    @Override
+    public Map<String, String> fetchContextMap() {
+        return this.contextParameterMap;
+    }
+
+    @Override
+    public void putContextParameter(String key, String value) {
+        if (contextParameterMap == null) {
+            synchronized (this) {
+                if (contextParameterMap == null) {
+                    contextParameterMap = new HashMap<>(0);
+                }
+            }
+        }
+        this.contextParameterMap.put(key, value);
+    }
+
+    public Optional<String> fetchContextParameter(String key) {
+        if (contextParameterMap == null) {
+            return Optional.empty();
+        }
+        return Optional.ofNullable(contextParameterMap.get(key));
+    }
+
+    @Override
+    public Invocation cloneInvocationWithoutContext() {
+        return RpcRequestDTO.builder()
+                .microServiceId(microServiceId)
+                .interfaceName(interfaceName)
+                .methodName(methodName)
+                .argsTypes(argsTypes)
+                .returnType(returnType)
+                .args(args)
+                .build();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        RpcRequestDTO that = (RpcRequestDTO) o;
+        return Objects.equals(microServiceId, that.microServiceId)
+                && Objects.equals(interfaceName, that.interfaceName)
+                && Objects.equals(methodName, that.methodName)
+                && Arrays.equals(argsTypes, that.argsTypes)
+                && Objects.equals(returnType, that.returnType)
+                && Arrays.equals(args, that.args)
+                && Objects.equals(contextParameterMap, that.contextParameterMap);
+    }
+
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(microServiceId, interfaceName, methodName, returnType, contextParameterMap);
+        result = 31 * result + Arrays.hashCode(argsTypes);
+        result = 31 * result + Arrays.hashCode(args);
+        return result;
+    }
 }

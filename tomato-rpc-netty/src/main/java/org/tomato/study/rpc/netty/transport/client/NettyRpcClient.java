@@ -45,6 +45,7 @@ import org.tomato.study.rpc.netty.transport.handler.KeepAliveHandler;
 import org.tomato.study.rpc.netty.transport.handler.ResponseHandler;
 
 import java.net.URI;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -101,7 +102,11 @@ public class NettyRpcClient extends BaseRpcClient<Command> {
         try {
             long id = msg.getHeader().getId();
             CompletableFuture<Command> future = new CompletableFuture<>();
-            createOrReconnect().getChannel().writeAndFlush(msg)
+            // get connection
+            Channel connection = createOrReconnect().getChannel();
+
+            // write message
+            connection.writeAndFlush(msg)
                     .addListener((ChannelFutureListener) futureChannel -> {
                         if (futureChannel.isSuccess()) {
                             responseHolder.putFeatureResponse(id, future);
@@ -210,8 +215,9 @@ public class NettyRpcClient extends BaseRpcClient<Command> {
         }
 
         @Override
-        public void destroy() {
-            responseHolder.getAndRemove(id);
+        public Optional<CompletableFuture<Command>> destroy() {
+            return responseHolder.getAndRemove(id)
+                    .map(responseFuture -> responseFuture.getFuture());
         }
     }
 }

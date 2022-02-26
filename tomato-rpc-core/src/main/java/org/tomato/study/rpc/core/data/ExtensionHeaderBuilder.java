@@ -36,14 +36,14 @@ public class ExtensionHeaderBuilder {
         this.command = command;
     }
 
-    public ExtensionHeaderBuilder putParam(ExtensionHeader key, String value) {
-        if (key == null || StringUtils.isBlank(value)) {
+    public ExtensionHeaderBuilder putParam(String key, String value) {
+        if (key == null || StringUtils.isBlank(key) || StringUtils.isBlank(value)) {
             return this;
         }
         if (builder.length() > 0) {
             builder.append(RpcJvmConfigKey.ENTRY_DELIMITER);
         }
-        builder.append(key.getName())
+        builder.append(key)
                 .append(RpcJvmConfigKey.KEY_VALUE_DELIMITER)
                 .append(value);
         return this;
@@ -53,7 +53,12 @@ public class ExtensionHeaderBuilder {
         if (builder.length() < 1) {
             return command;
         }
-        command.setExtension(builder.toString().getBytes(StandardCharsets.UTF_8));
+        byte[] extensionHeader = builder.toString().getBytes(StandardCharsets.UTF_8);
+        command.setExtension(extensionHeader);
+
+        Header header = command.getHeader();
+        header.setExtensionLength(extensionHeader.length);
+        header.setLength(header.getLength() + extensionHeader.length);
         return command;
     }
 

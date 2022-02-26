@@ -73,4 +73,14 @@ public class Command {
         result = 31 * result + Arrays.hashCode(this.body);
         return result;
     }
+
+    @Override
+    public String toString() {
+        return String.format("------header-------\n%s\n" +
+                        "------extension-header------\n%s\n" +
+                        "------body------\n%s",
+                header,
+                extension == null || extension.length < 1 ? "" : new String(extension),
+                body == null || body.length < 1 ? "" : new String(body));
+    }
 }

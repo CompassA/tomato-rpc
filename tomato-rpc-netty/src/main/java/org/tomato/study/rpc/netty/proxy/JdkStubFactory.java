@@ -40,14 +40,14 @@ public class JdkStubFactory implements StubFactory {
 
     private final RpcConfig rpcConfig;
     private final RpcInvokerFactory rpcInvokerFactory;
+
     @Override
     public <T> T createStub(StubConfig<T> config) throws IllegalStateException {
         if (config == null || !config.isValid()) {
             throw new IllegalStateException("stub config is not valid, stub config: " + config);
         }
-        NameServer nameServer = config.getNameServer();
-        if (nameServer != null) {
-            return createServiceDiscoveryStub(config, nameServer);
+        if (config.getNameServer() != null) {
+            return createServiceDiscoveryStub(config);
         }
         MetaData nodeInfo = config.getNodeInfo();
         if (nodeInfo != null && nodeInfo.isValid()) {
@@ -64,10 +64,7 @@ public class JdkStubFactory implements StubFactory {
             throw new IllegalArgumentException("createDirectInvoker - create rpc invoker failed");
         }
         Class<T> serviceInterface = config.getServiceInterface();
-        NettyBaseStubInvoker stubInvoker = new NettyDirectStubInvoker(
-                config.getMicroServiceId(),
-                serviceInterface,
-                rpcInvoker);
+        NettyBaseStubInvoker stubInvoker = new NettyDirectStubInvoker(config, rpcInvoker);
         return (T) Proxy.newProxyInstance(
                 JdkStubFactory.class.getClassLoader(),
                 new Class[]{serviceInterface},
@@ -81,12 +78,8 @@ public class JdkStubFactory implements StubFactory {
     }
 
     @SuppressWarnings("unchecked cast")
-    private <T> T createServiceDiscoveryStub(StubConfig<T> config, NameServer nameServer) {
-        NettyBaseStubInvoker stubInvoker = new NettyRouterStubInvoker(
-                config.getMicroServiceId(),
-                config.getGroup(),
-                config.getServiceInterface(),
-                nameServer);
+    private <T> T createServiceDiscoveryStub(StubConfig<T> config) {
+        NettyBaseStubInvoker stubInvoker = new NettyRouterStubInvoker(config);
         return (T) Proxy.newProxyInstance(
                 JdkStubFactory.class.getClassLoader(),
                 new Class[]{config.getServiceInterface()},

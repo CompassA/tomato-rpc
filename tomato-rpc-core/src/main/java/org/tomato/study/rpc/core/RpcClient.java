@@ -19,7 +19,7 @@ import org.tomato.study.rpc.core.observer.LifeCycle;
 
 /**
  * send rpc request
- * @param <T> 网络数据通信类型
+ * @param <T> 网络数据通信协议对象
  * @author Tomato
  * Created on 2021.03.31
  */

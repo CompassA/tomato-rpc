@@ -17,6 +17,7 @@ package org.tomato.study.rpc.netty.invoker;
 import org.tomato.study.rpc.core.Invocation;
 import org.tomato.study.rpc.core.NameServer;
 import org.tomato.study.rpc.core.Response;
+import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.netty.data.Code;
@@ -32,12 +33,9 @@ public class NettyRouterStubInvoker extends NettyBaseStubInvoker {
 
     private final NameServer nameServer;
 
-    public NettyRouterStubInvoker(String microServiceId,
-                                  String group,
-                                  Class<?> serviceInterface,
-                                  NameServer nameServer) {
-        super(microServiceId, group, serviceInterface);
-        this.nameServer = nameServer;
+    public NettyRouterStubInvoker(StubConfig<?> stubConfig) {
+        super(stubConfig);
+        this.nameServer = stubConfig.getNameServer();
     }
 
     @Override

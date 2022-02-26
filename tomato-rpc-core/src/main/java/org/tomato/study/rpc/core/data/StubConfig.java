@@ -102,6 +102,7 @@ public class StubConfig<T> {
                 && StringUtils.isNotBlank(group)
                 && timeoutMs != null
                 && serviceInterface.isInterface()
+                // RPC直连 或者 服务发现，二选一
                 && (nodeInfo != null || nameServer != null);
     }
 }

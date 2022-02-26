@@ -16,15 +16,11 @@ package org.tomato.study.rpc.netty.codec;
 
 import io.netty.buffer.ByteBuf;
 import lombok.NonNull;
-import org.tomato.study.rpc.core.Serializer;
 import org.tomato.study.rpc.core.data.Command;
-import org.tomato.study.rpc.core.data.CommandModel;
 import org.tomato.study.rpc.core.data.Header;
-import org.tomato.study.rpc.core.data.Parameter;
 import org.tomato.study.rpc.core.data.ProtoConstants;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
-import org.tomato.study.rpc.netty.serializer.SerializerHolder;
 
 /**
  * 对基于Netty实现的RPC数据帧进行编解码
@@ -106,26 +102,5 @@ public final class NettyCommandCodec {
         }
 
         return commandBuilder.build();
-    }
-
-    public static <T> CommandModel<T> toModel(Command command, Class<T> bodyType) {
-        CommandModel.CommandModelBuilder<T> commandModelBuilder = CommandModel.<T>builder();
-
-        Header header = command.getHeader();
-        commandModelBuilder.header(header);
-
-        Serializer serializer = SerializerHolder.getSerializer(header.getSerializeType());
-
-        byte[] extension = command.getExtension();
-        if (extension != null && extension.length > 0) {
-            commandModelBuilder.extension(serializer.deserializeList(extension, Parameter.class));
-        }
-
-        byte[] body = command.getBody();
-        if (body != null && body.length > 0) {
-            commandModelBuilder.body(serializer.deserialize(body, bodyType));
-        }
-
-        return commandModelBuilder.build();
     }
 }

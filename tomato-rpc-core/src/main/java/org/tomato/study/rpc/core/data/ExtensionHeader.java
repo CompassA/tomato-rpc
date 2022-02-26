@@ -25,7 +25,7 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum ExtensionHeader {
-    GZIP("gzip"),
+    COMPRESS("compress"),
     ;
 
     private String name;
