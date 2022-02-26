@@ -3,7 +3,7 @@
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,27 +15,18 @@
 package org.tomato.study.rpc.core.data;
 
 import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-
-import java.util.List;
 
 /**
+ * 拓展头部的key {@link Command#getExtension()}
  * @author Tomato
- * Created on 2021.04.04
+ * Created on 2022.02.20
  */
 @Getter
-@Setter
-@Builder
-@NoArgsConstructor
 @AllArgsConstructor
-public class CommandModel<T> {
+public enum ExtensionHeader {
+    COMPRESS("compress"),
+    ;
 
-    private Header header;
-
-    private List<Parameter> extension;
-
-    private T body;
+    private String name;
 }

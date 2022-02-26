@@ -36,17 +36,11 @@ public class NettyMicroServiceSpace extends BaseMicroServiceSpace {
      */
     private final RpcInvokerFactory invokerFactory;
 
-    private final long keepAliveMs;
-
     public NettyMicroServiceSpace(String microServiceId,
                                   RpcInvokerFactory invokerFactory,
-                                  long keepAliveMs,
-                                  long timeoutMs,
                                   RpcConfig rpcConfig) {
         super(microServiceId, rpcConfig);
         this.invokerFactory = invokerFactory;
-        this.keepAliveMs = keepAliveMs;
-        resetInvokerTimeout(timeoutMs);
     }
 
     @Override
@@ -65,6 +59,6 @@ public class NettyMicroServiceSpace extends BaseMicroServiceSpace {
 
     @Override
     protected RpcInvoker doCreateInvoker(MetaData metaData) {
-        return invokerFactory.create(metaData, keepAliveMs, getTimeoutMs()).orElse(null);
+        return invokerFactory.create(metaData, getRpcConfig()).orElse(null);
     }
 }

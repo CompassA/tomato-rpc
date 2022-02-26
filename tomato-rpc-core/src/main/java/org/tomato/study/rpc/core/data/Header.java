@@ -96,4 +96,15 @@ public class Header {
                 this.serializeType,
                 this.id);
     }
+
+    @Override
+    public String toString() {
+        return "magicNumber: " + magicNumber + "\n" +
+                "length: " + length +"\n" +
+                "version: " + version +"\n" +
+                "extensionLength: " + extensionLength +"\n" +
+                "messageType: " + messageType +"\n" +
+                "serializeType: " + serializeType +"\n" +
+                "id: " + id;
+    }
 }

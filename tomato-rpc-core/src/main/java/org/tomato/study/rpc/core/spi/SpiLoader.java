@@ -202,11 +202,18 @@ public class SpiLoader<T> {
     private T createSpiInstance(Class<? extends T> spiImplClass, Object... args) {
         Object spiInstance = null;
         if (args.length > 0) {
-            Class<?>[] argTypes = new Class[args.length];
-            for (int i = 0; i < args.length; ++i) {
-                argTypes[i] = args[i].getClass();
+            for (Constructor<?> constructor : spiImplClass.getConstructors()) {
+                if (constructor.getParameterCount() != args.length) {
+                    continue;
+                }
+                try {
+                    spiInstance = constructor.newInstance(args);
+                    break;
+                } catch (Exception e) {
+                    // do nothing
+                }
             }
-            spiInstance = spiImplClass.getConstructor(argTypes).newInstance(args);
+
         } else {
             // 创建实现类实例(实现类需要有无参构造函数)
             spiInstance = spiImplClass.getConstructor().newInstance();

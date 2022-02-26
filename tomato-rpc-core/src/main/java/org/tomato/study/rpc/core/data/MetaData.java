@@ -31,6 +31,7 @@ package org.tomato.study.rpc.core.data;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.ToString;
 
 import java.net.URI;
 import java.util.HashMap;
@@ -45,6 +46,7 @@ import java.util.Optional;
  */
 @Getter
 @Builder
+@ToString
 public class MetaData {
 
     /**

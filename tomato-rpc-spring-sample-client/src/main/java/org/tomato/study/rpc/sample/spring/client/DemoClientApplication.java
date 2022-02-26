@@ -37,7 +37,7 @@ import java.util.concurrent.TimeUnit;
 @SpringBootApplication
 public class DemoClientApplication {
 
-    @RpcClientStub
+    @RpcClientStub(compressBody = true, timeout = 1000)
     private EchoService echoService;
 
     public String echo(String msg) {

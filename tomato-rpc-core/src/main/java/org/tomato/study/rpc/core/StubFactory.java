@@ -16,10 +16,12 @@ package org.tomato.study.rpc.core;
 
 import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.spi.SpiInterface;
-import org.tomato.study.rpc.core.transport.RpcInvoker;
 
 /**
  * create rpc client proxy
+ * Constructor Args:
+ * @see org.tomato.study.rpc.core.data.RpcConfig
+ * @see org.tomato.study.rpc.core.transport.RpcInvokerFactory
  * @author Tomato
  * Created on 2021.03.31
  */
@@ -30,17 +32,8 @@ public interface StubFactory {
      * create a proxy instance which can send message to provider
      * @param config necessary data for creating a stub
      * @param <T> proxy interface type
+     * @throws IllegalArgumentException illegal argument
      * @return proxy instance
      */
-    <T> T createStub(StubConfig<T> config);
-
-    /**
-     * create a direct-connect proxy instance
-     * @param microServiceId micro-service-id
-     * @param rpcInvoker invoker
-     * @param rpcInterface interface
-     * @param <T> interface type
-     * @return proxy instance
-     */
-    <T> T createStub(String microServiceId, RpcInvoker rpcInvoker, Class<T> rpcInterface);
+    <T> T createStub(StubConfig<T> config) throws IllegalArgumentException;
 }

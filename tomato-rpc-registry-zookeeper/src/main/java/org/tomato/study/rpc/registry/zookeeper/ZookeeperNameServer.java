@@ -47,6 +47,11 @@ public class ZookeeperNameServer extends BaseNameServer {
     }
 
     @Override
+    public Optional<MicroServiceSpace> getMicroService(String serviceId) {
+        return registry.getMicroService(serviceId);
+    }
+
+    @Override
     public void registerService(MetaData metaData) throws Exception {
         registry.register(metaData);
     }

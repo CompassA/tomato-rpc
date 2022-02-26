@@ -66,10 +66,6 @@ public class DefaultCircuitBreakerTest {
             @Override
             public MetaData getMetadata() {return null;}
             @Override
-            public long getInvocationTimeout() {return 0;}
-            @Override
-            public void setInvocationTimeout(long timeoutMs) {}
-            @Override
             public Serializer getSerializer() {return null;}
             @Override
             public Result invoke(Invocation invocation) throws TomatoRpcException {

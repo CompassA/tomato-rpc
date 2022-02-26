@@ -14,10 +14,12 @@
 
 package org.tomato.study.rpc.core.base;
 
+import lombok.Getter;
 import org.tomato.study.rpc.core.Invocation;
 import org.tomato.study.rpc.core.Result;
 import org.tomato.study.rpc.core.Serializer;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
@@ -37,14 +39,15 @@ public abstract class BaseRpcInvoker implements RpcInvoker {
     private final MetaData nodeInfo;
 
     /**
+     * rpc配置
+     */
+    @Getter
+    private final RpcConfig rpcConfig;
+
+    /**
      * 客户端为请求body体设置的序列化方式
      */
     private final Serializer commandSerializer;
-
-    /**
-     * RPC客户端发起调用后的超时时间
-     */
-    private long timeoutMs;
 
     /**
      * 当前正在调用invoker的线程数
@@ -56,10 +59,10 @@ public abstract class BaseRpcInvoker implements RpcInvoker {
      */
     private volatile boolean closed = false;
 
-    public BaseRpcInvoker(MetaData nodeInfo, long timeoutMs) {
+    public BaseRpcInvoker(MetaData nodeInfo, RpcConfig rpcConfig) {
         this.nodeInfo = nodeInfo;
+        this.rpcConfig = rpcConfig;
         this.commandSerializer = SpiLoader.getLoader(Serializer.class).load();
-        this.timeoutMs = timeoutMs;
         this.processingCounter = new AtomicLong(0);
     }
 
@@ -116,16 +119,6 @@ public abstract class BaseRpcInvoker implements RpcInvoker {
     @Override
     public MetaData getMetadata() {
         return nodeInfo;
-    }
-
-    @Override
-    public long getInvocationTimeout() {
-        return timeoutMs;
-    }
-
-    @Override
-    public void setInvocationTimeout(long timeoutMs) {
-        this.timeoutMs = timeoutMs;
     }
 
     @Override

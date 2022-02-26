@@ -15,6 +15,10 @@
 package org.tomato.study.rpc.netty.invoker;
 
 import io.netty.util.HashedWheelTimer;
+import io.netty.util.Timeout;
+import io.netty.util.TimerTask;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.Invocation;
 import org.tomato.study.rpc.core.ResponseFuture;
 import org.tomato.study.rpc.core.Result;
@@ -24,6 +28,7 @@ import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
@@ -31,7 +36,6 @@ import org.tomato.study.rpc.netty.data.NettyInvocationResult;
 import org.tomato.study.rpc.netty.transport.client.NettyRpcClient;
 
 import java.net.URI;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -42,29 +46,40 @@ import java.util.concurrent.TimeUnit;
 public class NettyRpcInvoker extends BaseRpcInvoker {
 
     private final RpcClient<Command> rpcClient;
+
+    /**
+     * 定时任务，将超时的Future删除
+     */
     private final HashedWheelTimer timer = new HashedWheelTimer(100, TimeUnit.MILLISECONDS);
 
-    public NettyRpcInvoker(MetaData nodeInfo, long keepAliveMs, long timeoutMs) {
-        super(nodeInfo, timeoutMs);
+    public NettyRpcInvoker(MetaData nodeInfo, RpcConfig rpcConfig) {
+        super(nodeInfo, rpcConfig);
         URI uri = URI.create("tomato://" + nodeInfo.getHost() + ":" + nodeInfo.getPort());
-        this.rpcClient = new NettyRpcClient(uri, keepAliveMs);
+        this.rpcClient = new NettyRpcClient(uri, rpcConfig.getClientKeepAliveMilliseconds());
     }
 
     @Override
     protected Result doInvoke(Invocation invocation) throws TomatoRpcException {
-        Command rpcRequest = CommandFactory.request(invocation, getSerializer(), CommandType.RPC_REQUEST);
+        // 将方法调用的数据转化为协议对象
+        Command rpcRequest = CommandFactory.request(
+                invocation.cloneInvocationWithoutContext(),
+                getSerializer(),
+                invocation.fetchContextMap(),
+                CommandType.RPC_REQUEST);
+
+        // 发送数据
         ResponseFuture<Command> responseFuture = rpcClient.send(rpcRequest);
-        CompletableFuture<Command> future = responseFuture.getFuture();
-        NettyInvocationResult result = new NettyInvocationResult(future);
-        timer.newTimeout(
-                timeout -> {
-                    future.completeExceptionally(
-                            new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.RPC_CLIENT_TIMEOUT.create()));
-                    responseFuture.destroy();
-                },
-                getInvocationTimeout(),
-                TimeUnit.MILLISECONDS);
-        return result;
+
+        // 设置客户端超时
+        addTimeoutTask(invocation, responseFuture);
+        return new NettyInvocationResult(responseFuture);
+    }
+
+    private void addTimeoutTask(Invocation invocation, ResponseFuture<Command> responseFuture) {
+        Long timeoutMs = invocation.fetchContextParameter(RpcParameterKey.TIMEOUT)
+                .map(Long::valueOf)
+                .orElse(getRpcConfig().getGlobalClientTimeoutMilliseconds());
+        timer.newTimeout(new RpcTimeoutTask(responseFuture, invocation), timeoutMs, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -75,5 +90,24 @@ public class NettyRpcInvoker extends BaseRpcInvoker {
     @Override
     protected void doDestroy() throws TomatoRpcException {
         rpcClient.stop();
+    }
+
+    @Slf4j
+    @RequiredArgsConstructor
+    private static class RpcTimeoutTask implements TimerTask {
+
+        private final ResponseFuture<Command> responseFuture;
+        private final Invocation invocation;
+
+        @Override
+        public void run(Timeout timeout) throws Exception {
+            responseFuture.destroy().ifPresent(future -> {
+                future.completeExceptionally(
+                        new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.RPC_CLIENT_TIMEOUT.create()));
+                log.warn("rpc timeout, message id: {}, invocation: {}",
+                        responseFuture.getMessageId(),
+                        invocation);
+            });
+        }
     }
 }

@@ -12,34 +12,28 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core;
+package org.tomato.study.rpc.netty.invoker;
 
-import org.tomato.study.rpc.core.data.Command;
-
-import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import org.tomato.study.rpc.core.data.ExtensionHeader;
+import org.tomato.study.rpc.netty.data.RpcRequestDTO;
 
 /**
- * 一次网络通信后返回的数据
+ * parameter key。
+ * 由于parameter的value均为序列化后的String，为规范使用，请表明value类型
+ * {@link RpcRequestDTO#fetchContextMap()}
  * @author Tomato
- * Created on 2021.11.28
+ * Created on 2022.02.26
  */
-public interface ResponseFuture<T> {
+public final class RpcParameterKey {
+    /**
+     * 超时时间
+     * type: {@link Long}
+     */
+    public static final String TIMEOUT = "timeout";
 
     /**
-     * 获取消息id
-     * @return 消息id
+     * 压缩
+     * type: {@link Boolean}
      */
-    long getMessageId();
-
-    /**
-     * 获取响应Future
-     * @return 响应
-     */
-    CompletableFuture<T> getFuture();
-
-    /**
-     * 销毁响应数据
-     */
-    Optional<CompletableFuture<Command>> destroy();
+    public static final String COMPRESS = ExtensionHeader.COMPRESS.getName();
 }

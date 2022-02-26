@@ -15,6 +15,7 @@
 package org.tomato.study.rpc.core.transport;
 
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.spi.SpiInterface;
 
 import java.util.Optional;
@@ -33,14 +34,5 @@ public interface RpcInvokerFactory {
      * @param nodeInfo necessary data for create rpc invoker
      * @return RPC invoker
      */
-    Optional<RpcInvoker> create(MetaData nodeInfo);
-
-    /**
-     * create direct-rpc invoker by service provider metadata
-     * @param nodeInfo necessary data for create rpc invoker
-     * @param keepAliveMs client keep alive
-     * @param timeoutMs wait-timeout
-     * @return RPC invoker
-     */
-    Optional<RpcInvoker> create(MetaData nodeInfo, long keepAliveMs, long timeoutMs);
+    Optional<RpcInvoker> create(MetaData nodeInfo, RpcConfig rpcConfig);
 }

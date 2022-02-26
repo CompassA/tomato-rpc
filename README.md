@@ -149,89 +149,6 @@ public class EchoApiWrapper {
     }
 }
 ```
-### API方式接入
-引入jar包
-```xml
-<dependency>
-    <groupId>org.tomato.study.rpc</groupId>
-    <artifactId>tomato-rpc-netty</artifactId>
-    <version>1.0.0</version>
-</dependency>
-```
-服务端暴露RPC方法
-```java
-public class RpcServerDemo {
-    public static void main(String[] args) throws Exception {
-        // 创建RpcCoreService
-        RpcCoreService coreService = SpiLoader.getLoader(RpcCoreServiceFactory.class).load()
-                .create(RpcConfig.builder()
-                        // 服务唯一标识
-                        .microServiceId("DemoRpcServer")
-                        // RPC注册中心ip
-                        .nameServiceURI("127.0.0.1:2181")
-                        // 暴露的端口
-                        .port(4567)
-                        // 微服务环境
-                        .stage("dev")
-                        // 服务分组
-                        .group("default")
-                        // 处理请求的业务线程池的大小
-                        .businessThreadPoolSize(4)
-                        .build()
-                );
-        
-        // 注册一个接口以及实现类给tomato-rpc框架，注册后客户端可基于此接口发起rpc调用
-        coreService.registerProvider(new EchoServiceImpl(), EchoService.class);
-        
-        // 初始化rpc资源
-        coreService.init();
-        
-        // 启动rpc服务
-        coreService.start();
-    }
-}
-```
-
-客户端订阅RPC服务
-```java
-public class RpcClientDemo {
-    public static void main(String[] args) throws Exception {
-        // 创建RpcCoreService
-        RpcCoreService rpcCoreService = SpiLoader.getLoader(RpcCoreServiceFactory.class)
-                .load()
-                .create(RpcConfig.builder()
-                        // 自身微服务标识
-                        .microServiceId("DemoRpcClient")
-                        // 订阅的微服务标识，订阅之后，可与该服务进行RPC通信
-                        .subscribedServiceIds(Collections.singletonList("DemoRpcServer"))
-                        // 注册中心地址
-                        .nameServiceURI("127.0.0.1:2181")
-                        // 自身暴露端口
-                        .port(7890)
-                        // 环境
-                        .stage("dev")
-                        // 分组
-                        .group("default")
-                        // 发送消息时是否启动压缩
-                        .useGzip(true)
-                        .build()
-                );
-        rpcCoreService.init();
-        rpcCoreService.start();
-
-        // 创建RPC客户端stub
-        Optional<ApiConfig<EchoService>> apiConfig = ApiConfig.create(EchoService.class);
-        assert apiConfig.isPresent();
-        EchoService stub = rpcCoreService.createStub(apiConfig.get());
-
-        // RPC调用
-        Sring response = stub.echo("hello rpc server");
-        
-        // 停止服务
-        rpcCoreService.stop();
-    }
-}
-```
 
 # 特性介绍
 
@@ -261,6 +178,75 @@ Tomato-RPC设计的应用层通信协议如下：
 +-------------+-----------------------+---------+---------------------+---------+-----------+---------+------------+------------+
 ```
 
+#### 服务端线程模型
+作为服务端，Tomato-RPC建立了三个线程池：Boss线程池、Worker线程池、业务线程池。  
+Boss线程池负责调用操作系统的select/epoll，监听server socket accept的可读状况，当accept可读时，Boss线程会调用accept，取出连接，并将连接交给一个Worker线程。  
+Worker线程池负责连接的读写、协议的解析(也许可以把协议的解析也放到业务线程池，目前Tomato-RPC没这么做)。   
+业务线程池则负责执行暴露给客户端的接口的本机实现方法。
+
+### 连接管理
+#### 数据结构
+Tomato-RPC的每个[RpcInvoker](https://github.com/CompassA/tomato-rpc/blob/master/tomato-rpc-netty/src/main/java/org/tomato/study/rpc/netty/invoker/NettyRpcInvoker.java)对象维护了与RPC服务端某个实例的TCP连接。  
+客户端会内存中会维护[MicroServiceId -> List\<RpcInvoker\>]这样的映射关系。假设客户端订阅了1个微服务(id="test-service")，该微服务有5个实例，则内存中会有5个与"test-service"相关联的RpcInvoker对象。  
+每个RpcInvoker对象组合了一个[NettyClient](https://github.com/CompassA/tomato-rpc/blob/285948ca36ca7861cb0223331d30e71ad39c3a66/tomato-rpc-netty/src/main/java/org/tomato/study/rpc/netty/transport/client/NettyRpcClient.java)对象，NettyClient对象封装了客户端的连接通信逻辑。  
+#### 心跳机制
+Tomato-RPC的客户端会与RPC服务端的每个实例建立TCP长连接，并根据配置的心跳间隔向服务端发送心跳包(参数: client-keep-alive-ms)。  
+而Tomato-RPC的服务端则有空闲连接检测机制，会关闭不活跃的连接(超过一定时间未发消息的连接即为不活跃连接，阈值配置参数: server-idle-check-ms)。  
+心跳机制是基于Netty的IdleStateHandler实现的，这里就不赘述其具体原理了。  
+#### 优雅关闭
+RpcInvoker内部维护了一个计数器，一个标记位。  
+计数器记录了当前RpcInvoker被多少个线程调用。  
+标记位标记了当前RpcInvoker是否能被调用。 
+当RpcInvoker要进行关闭时，首先会将标记为置为false，此时新的想要调用RpcInvoker的线程就会被阻挡住，并收到一个异常。  
+设置完标记位后，RpcInvoker会每隔1s检测一次计数器是否为0，只有当计数器为0时，RpcInvoker才会真正关闭连接。  
+当然，RpcInvoker也不是无限等待的，当等待时间超过60s后，RpcInvoker就没法"优雅"了，他会强制关闭连接。
+[具体逻辑](https://github.com/CompassA/tomato-rpc/blob/master/tomato-rpc-core/src/main/java/org/tomato/study/rpc/core/base/BaseRpcInvoker.java)
+
+### 调用模型与超时
+
+#### 调用模型
+客户端向服务端发送的每个消息对象都有一个唯一的消息id，客户端本地会维护[消息id-> ResponseFuture]的一个消息Map。  
+每当消息发送完成后，客户端会将消息存入Map，并让RPC调用线程阻塞在Future对象的get方法中。  
+当服务端完成消息处理，向客户端发送响应时，也会将消息id放入响应数据中。  
+客户端收到服务端响应后，会查找本地的消息Map，取出响应消息的id对应的Future对象，将响应对象注入Future中，结束客户端RPC调用线程的阻塞。  
+
+#### 超时
+Tomato-RPC可配置RPC调用的超时时间，本项目的调用超时是基于Netty的时间轮定时任务实现的。  
+上一节介绍了Tomato-RPC的调用模型，客户端调用RPC方法的线程会阻塞在Future对象的get方法直到服务端返回对象。  
+基于这个调用模型，客户端在消息发送完毕后，会在时间轮中注册一个定时任务，定时任务会将ResponseFuture对象从消息Map中移除，并向Future中注入异常对象。  
+注入异常对象后，RPC调用线程也会结束阻塞，并收到一个异常。  
+  
+上文介绍的就是本项目超时的实现方式，可以看到，这个超时仅是客户端的超时，本项目没有做基于服务端的超时处理。
+即使超时，服务端仍然会处理客户端发送的消息，并发送响应，而客户端也会接收到服务端的响应。  
+只是，调用超时后，客户端本地的消息Map已经没有了对应消息的Future对象，所以客户端接收到超时的响应后，只会简单丢弃响应，什么都不做。
+[具体实现](https://github.com/CompassA/tomato-rpc/blob/master/tomato-rpc-netty/src/main/java/org/tomato/study/rpc/netty/invoker/NettyRpcInvoker.java)  
+
+### 熔断
+Tomato-RPC基于断路器模式实现了一个简单的熔断机制。  
+Tomato-RPC以TCP连接为单位进行熔断，当RPC客户端与一个服务的n个实例建立的TCP连接后，Tomato-RPC会创建n个熔断实例，分别统计连接失败率。  
+
+#### 断路器计数器
+断路器内部维护一个计数器，计数器记录了断路器所包裹的方法的调用成功次数与失败次数，计数器仅会记录被包裹方法最近n次的调用情况(通过配置采样窗口参数进行控制)。  
+Tomato-RPC基于BitSet与FenwickTree实现了一个环状计数器，具体代码见SuccessFailureRingCounter.java。  
+每次成功或失败时，会使用BitSet中的一位来记录调用的结果(1代表成功, 0代表失败)，并用FenwickTree维护BitSet的区间和。  
+PS: 用FenwickTree当作计算成功次数与失败次数的索引只是为了巩固下这个数据结构，没做过实际的性能测试。。。。  
+[具体逻辑](https://github.com/CompassA/tomato-rpc/blob/master/tomato-rpc-core/src/main/java/org/tomato/study/rpc/core/circuit/SuccessFailureRingCounter.java)
+
+#### 断路器状态切换
+断路器有三种状态: 关闭、半打开、打开。  
+当断路器处于关闭或半打开状态时，请求会被放行，当断路器处于打开状态时，请求会被立马拒绝。
+断路器的打开状态有时间限制，当超过设置的时间间隔后，断路器会从打开进入到半打开状态。  
+状态间的切换如下所示:  
+关闭 ========(失败率超过阈值)=======> 打开 ====(打开状态超时)=====> 半打开  
+半打开 =======(调用失败)====> 打开  
+半打开 =======(调用成功且当前失败率小于阈值)===========> 关闭
+[具体逻辑](https://github.com/CompassA/tomato-rpc/blob/master/tomato-rpc-core/src/main/java/org/tomato/study/rpc/core/circuit/DefaultCircuitBreaker.java)
+
+#### 配置方式
+需要配置enable-circuit(是否开启熔断)、circuit-open-rate(错误率阈值)、circuit-open-seconds(断路器打开状态的超时秒数)、circuit-window(采样窗口)四个个参数。
+具体配置方式见下文的"快速开始"中的客户端配置。  
+若应用是通过Spring接入的，在配置文件配这几个参数即可；若应用是手动接入的，设置RpcConfig类的这三个参数即可。
+
 ### 客户端直连服务端调用
 Tomato-Rpc支持RPC客户端根据ip、端口、service-id、接口直接构造Stub对象，不依赖与注册中心进行RPC。
 ```java
@@ -281,18 +267,22 @@ public class DirectRpcTest {
                 .group("main")
                 .build();
         // 目标接口信息
-        ApiConfig<EchoService> apiConfig = ApiConfig.<EchoService>builder()
+        StubConfig<EchoService> stubConfig = new StubConfig<>(
                 // 目标接口
-                .api(EchoService.class)
+                EchoService.class,
                 // 目标服务id
-                .microServiceId(mockMicroServiceId)
+                mockMicroServiceId,
+                // 分组信息
+                nodeMeta.getGroup(),
+                // 是否压缩
+                false,
                 // 超时毫秒
-                .timeout(10000)
+                10000,
                 // 服务的某个具体实例[127.0.0.1:5555]
-                .nodeInfo(nodeMata)
-                .build();
+                nodeMata
+        );
         // 创建stub
-        EchoService directStub = rpcCoreService.createDirectStub(apiConfig);
+        EchoService directStub = rpcCoreService.createStub(stubConfig);
         // 完成调用
         String response = directStub.echo("hello world");
     }
@@ -444,29 +434,6 @@ class SpiLoopInjectTest {
 ```
 ### jvm参数配置spi
 -Dtomato-rpc.spi=spi接口类全名1:组件key1&spi接口类全名2:组件key2
-
-## 熔断
-Tomato-RPC基于断路器模式实现了一个简单的熔断机制。  
-Tomato-RPC以TCP连接为单位进行熔断，当RPC客户端与一个服务的n个实例建立的TCP连接后，Tomato-RPC会创建n个熔断实例，分别统计连接失败率。
-### 断路器计数器
-断路器内部维护一个计数器，计数器记录了断路器所包裹的方法的调用成功次数与失败次数，计数器仅会记录被包裹方法最近n次的调用情况(通过配置采样窗口参数进行控制)。  
-Tomato-RPC基于BitSet与FenwickTree实现了一个环状计数器，具体代码见SuccessFailureRingCounter.java。
-每次成功或失败时，会使用BitSet中的一位来记录调用的结果(1代表成功, 0代表失败)，并用FenwickTree维护BitSet的区间和。
-PS: 用FenwickTree当作计算成功次数与失败次数的索引只是为了巩固下这个数据结构，没做过实际的性能测试。。。。
-
-### 断路器状态切换
-断路器有三种状态: 关闭、半打开、打开。  
-当断路器处于关闭或半打开状态时，请求会被放行，当断路器处于打开状态时，请求会被立马拒绝。
-断路器的打开状态有时间限制，当超过设置的时间间隔后，断路器会从打开进入到半打开状态。  
-状态间的切换如下所示:  
-关闭 ========(失败率超过阈值)=======> 打开 ====(打开状态超时)=====> 半打开  
-半打开 =======(调用失败)====> 打开  
-半打开 =======(调用成功且当前失败率小于阈值)===========> 关闭
-
-### 配置方式
-需要配置enable-circuit(是否开启熔断)、circuit-open-rate(错误率阈值)、circuit-open-seconds(断路器打开状态的超时秒数)、circuit-window(采样窗口)四个个参数。
-具体配置方式见下文的"快速开始"中的客户端配置。  
-若应用是通过Spring接入的，在配置文件配这几个参数即可；若应用是手动接入的，设置RpcConfig类的这三个参数即可。
 
 ## 监控信息
 Tomato-RPC提供了Restful接口，供用户查询服务内部状态。

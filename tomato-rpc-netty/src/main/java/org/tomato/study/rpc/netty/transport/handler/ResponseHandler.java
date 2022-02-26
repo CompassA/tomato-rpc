@@ -17,7 +17,7 @@ package org.tomato.study.rpc.netty.transport.handler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandType;
@@ -30,7 +30,7 @@ import org.tomato.study.rpc.netty.transport.client.NettyResponseHolder;
  * Created on 2021.04.17
  */
 @Slf4j
-@AllArgsConstructor
+@RequiredArgsConstructor
 @ChannelHandler.Sharable
 public class ResponseHandler extends SimpleChannelInboundHandler<Command> {
 

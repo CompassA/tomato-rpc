@@ -40,18 +40,6 @@ public interface RpcInvoker {
     MetaData getMetadata();
 
     /**
-     * timeout of rpc invocation
-     * @return timeout
-     */
-    long getInvocationTimeout();
-
-    /**
-     * set invocation timeout
-     * @param timeoutMs timeout milliseconds
-     */
-    void setInvocationTimeout(long timeoutMs);
-
-    /**
      * get rpc invoker serializer
      * @return rpc serializer
      */

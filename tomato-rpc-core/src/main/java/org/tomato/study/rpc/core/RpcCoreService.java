@@ -14,7 +14,7 @@
 
 package org.tomato.study.rpc.core;
 
-import org.tomato.study.rpc.core.data.ApiConfig;
+import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.observer.LifeCycle;
 import org.tomato.study.rpc.core.transport.RpcInvokerFactory;
 
@@ -39,19 +39,11 @@ public interface RpcCoreService extends LifeCycle {
 
     /**
      * create client proxy consumer
-     * @param apiConfig stub config
+     * @param stubConfig stub config
      * @param <T> consumer class type
      * @return proxy instance
      */
-    <T> T createStub(ApiConfig<T> apiConfig);
-
-    /**
-     * direct-rpc-stub
-     * @param apiConfig rpc server info
-     * @param <T> rpc api
-     * @return direct-rpc-stub
-     */
-    <T> T createDirectStub(ApiConfig<T> apiConfig);
+    <T> T createStub(StubConfig<T> stubConfig);
 
     /**
      * get rpc invoker factory

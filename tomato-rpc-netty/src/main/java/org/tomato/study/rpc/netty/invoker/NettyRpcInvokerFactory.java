@@ -15,6 +15,7 @@
 package org.tomato.study.rpc.netty.invoker;
 
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.transport.RpcInvoker;
 import org.tomato.study.rpc.core.transport.RpcInvokerFactory;
 
@@ -26,19 +27,12 @@ import java.util.Optional;
  * Created on 2021.07.11
  */
 public class NettyRpcInvokerFactory implements RpcInvokerFactory {
-    private static final long DEFAULT_KEEP_ALIVE_MS = 20000;
-    private static final long DEFAULT_TIMEOUT_MS = 20000;
 
     @Override
-    public Optional<RpcInvoker> create(MetaData nodeInfo) {
-        return create(nodeInfo, DEFAULT_KEEP_ALIVE_MS, DEFAULT_TIMEOUT_MS);
-    }
-
-    @Override
-    public Optional<RpcInvoker> create(MetaData nodeInfo, long keepAliveMs, long timeoutMs) {
+    public Optional<RpcInvoker> create(MetaData nodeInfo, RpcConfig rpcConfig) {
         if (nodeInfo == null ) {
             return Optional.empty();
         }
-        return Optional.of(new NettyRpcInvoker(nodeInfo, keepAliveMs, timeoutMs));
+        return Optional.of(new NettyRpcInvoker(nodeInfo, rpcConfig));
     }
 }

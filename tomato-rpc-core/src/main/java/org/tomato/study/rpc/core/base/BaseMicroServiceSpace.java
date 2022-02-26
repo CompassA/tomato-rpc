@@ -65,12 +65,6 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
      */
     private final ConcurrentMap<String, List<RpcInvoker>> sameGroupInvokerMap = new ConcurrentHashMap<>(0);
 
-    /**
-     * 超时时间
-     */
-    @Getter
-    private long timeoutMs;
-
     public BaseMicroServiceSpace(String microServiceId, RpcConfig rpcConfig) {
         this.microServiceId = microServiceId;
         this.rpcConfig = rpcConfig;
@@ -218,11 +212,5 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
         }
         invokerRegistry.clear();
         sameGroupInvokerMap.clear();
-    }
-
-    @Override
-    public void resetInvokerTimeout(long timeoutMs) {
-        this.timeoutMs = timeoutMs;
-        invokerRegistry.values().forEach(invoker -> invoker.setInvocationTimeout(timeoutMs));
     }
 }

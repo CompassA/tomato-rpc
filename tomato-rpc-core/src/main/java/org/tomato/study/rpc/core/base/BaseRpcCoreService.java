@@ -36,15 +36,15 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
     private final NameServer nameServer;
 
     /**
+     * Invoker创建者
+     */
+    private final RpcInvokerFactory invokerFactory;
+
+    /**
      * stub factory for creating client stub
      */
     @Getter
     private final StubFactory stubFactory;
-
-    /**
-     * Invoker创建者
-     */
-    private final RpcInvokerFactory invokerFactory;
 
     /**
      * rpc configuration
@@ -60,8 +60,9 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
         }
         this.rpcConfig = rpcConfig;
         this.providerRegistry = SpiLoader.getLoader(ProviderRegistry.class).load();
-        this.stubFactory = SpiLoader.getLoader(StubFactory.class).load();
         this.invokerFactory = SpiLoader.getLoader(RpcInvokerFactory.class).load();
+        this.stubFactory = SpiLoader.getLoader(StubFactory.class)
+                .load(this.rpcConfig, this.invokerFactory);
         NameServerConfig nameServerConfig = NameServerConfig.builder()
                 .connString(rpcConfig.getNameServiceURI())
                 .build();

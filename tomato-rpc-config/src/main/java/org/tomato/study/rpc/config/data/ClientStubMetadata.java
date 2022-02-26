@@ -55,6 +55,11 @@ public class ClientStubMetadata<T> {
      */
     private String group;
 
+    /**
+     * 消息体是否开启压缩
+     */
+    private boolean compressBody;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -67,7 +72,8 @@ public class ClientStubMetadata<T> {
         return Objects.equals(stubClass, that.stubClass)
                 && Objects.equals(microServiceId, that.microServiceId)
                 && Objects.equals(timeout, that.timeout)
-                && Objects.equals(group, that.group);
+                && Objects.equals(group, that.group)
+                && Objects.equals(compressBody, that.compressBody);
     }
 
     @Override
@@ -77,6 +83,7 @@ public class ClientStubMetadata<T> {
         hashCode = hashCode * 31 + Objects.hashCode(microServiceId);
         hashCode = hashCode * 31 + Objects.hashCode(timeout);
         hashCode = hashCode * 31 + Objects.hashCode(group);
+        hashCode = hashCode * 31 + Objects.hashCode(compressBody);
         return hashCode;
     }
 
@@ -98,12 +105,13 @@ public class ClientStubMetadata<T> {
         if (tomatoApi == null || StringUtils.isBlank(tomatoApi.microServiceId())) {
             return Optional.empty();
         }
-        return Optional.of(
-                new ClientStubMetadata<>(
-                        api,
-                        tomatoApi.microServiceId(),
-                        rpcClientStub.timeout(),
-                        rpcClientStub.group()
-                ));
+        ClientStubMetadata<?> value = new ClientStubMetadata<>(
+                api,
+                tomatoApi.microServiceId(),
+                rpcClientStub.timeout(),
+                rpcClientStub.group(),
+                rpcClientStub.compressBody()
+        );
+        return Optional.of(value);
     }
 }

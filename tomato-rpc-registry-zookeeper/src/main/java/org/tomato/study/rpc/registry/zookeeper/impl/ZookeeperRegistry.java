@@ -226,6 +226,10 @@ public class ZookeeperRegistry {
         curatorClient.close();
     }
 
+    public Optional<MicroServiceSpace> getMicroService(String serviceId) {
+        return Optional.ofNullable(microServiceMap.get(serviceId));
+    }
+
     /**
      * 将传入的字符串拼接成路径
      * @param parts 多个字符串

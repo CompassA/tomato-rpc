@@ -21,9 +21,9 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.tomato.study.rpc.core.RpcCoreService;
-import org.tomato.study.rpc.core.data.ApiConfig;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RpcConfig;
+import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
@@ -106,19 +106,22 @@ public class RpcExecutionChainTest {
      */
     @Test
     public void directRpcTest() {
-        TestService directStub = clientRpcCoreService.createDirectStub(
-                ApiConfig.<TestService>builder()
-                        .api(TestService.class)
-                        .microServiceId(mockMicroServiceId)
-                        .nodeInfo(MetaData.builder()
-                                .microServiceId(mockMicroServiceId)
-                                .protocol("tomato")
-                                .host("127.0.0.1")
-                                .port(serverPort)
-                                .stage(stage)
-                                .group(group)
-                                .build())
-                        .build());
+        MetaData nodeInfo = MetaData.builder()
+                .microServiceId(mockMicroServiceId)
+                .protocol("tomato")
+                .host("127.0.0.1")
+                .port(serverPort)
+                .stage(stage)
+                .group(group)
+                .build();
+        StubConfig<TestService> stubConfig = new StubConfig<>(
+                TestService.class,
+                mockMicroServiceId,
+                group,
+                false,
+                10000L,
+                nodeInfo);
+        TestService directStub = clientRpcCoreService.createStub(stubConfig);
         List<Integer> numbers = Lists.newArrayList(1, 2, 3);
         Assert.assertEquals(directStub.sum(numbers), testService.sum(numbers));
     }
@@ -128,12 +131,14 @@ public class RpcExecutionChainTest {
      */
     @Test
     public void nameServerRouterRpcTest() throws InterruptedException {
-        TestService stub = clientRpcCoreService.createStub(
-                ApiConfig.<TestService>builder()
-                        .microServiceId(mockMicroServiceId)
-                        .api(TestService.class)
-                        .timeoutMs(10000L)
-                        .build());
+        StubConfig<TestService> stubConfig = new StubConfig<>(
+                TestService.class,
+                mockMicroServiceId,
+                group,
+                false,
+                10000L,
+                clientRpcCoreService.getNameServer());
+        TestService stub = clientRpcCoreService.createStub(stubConfig);
         Assert.assertEquals(stub.sum(numbers), testService.sum(numbers));
     }
 
@@ -142,20 +147,23 @@ public class RpcExecutionChainTest {
      */
     @Test
     public void directRpcTimeoutTest() throws InterruptedException {
-        TimeoutTest directStub = clientRpcCoreService.createDirectStub(
-                ApiConfig.<TimeoutTest>builder()
-                        .api(TimeoutTest.class)
-                        .microServiceId(mockMicroServiceId)
-                        .timeoutMs(sleepMs / 2L)
-                        .nodeInfo(MetaData.builder()
-                                .microServiceId(mockMicroServiceId)
-                                .protocol("tomato")
-                                .host("127.0.0.1")
-                                .port(serverPort)
-                                .stage(stage)
-                                .group(group)
-                                .build())
-                        .build());
+        MetaData nodeInfo = MetaData.builder()
+                .microServiceId(mockMicroServiceId)
+                .protocol("tomato")
+                .host("127.0.0.1")
+                .port(serverPort)
+                .stage(stage)
+                .group(group)
+                .build();
+        StubConfig<TimeoutTest> stubConfig = new StubConfig<>(
+                TimeoutTest.class,
+                mockMicroServiceId,
+                group,
+                false,
+                sleepMs / 2L,
+                nodeInfo
+        );
+        TimeoutTest directStub = clientRpcCoreService.createStub(stubConfig);
         boolean hasTimeout = false;
         try {
             directStub.sum(numbers);
@@ -173,16 +181,17 @@ public class RpcExecutionChainTest {
      */
     @Test
     public void nameServerRouterTimeoutTest() throws InterruptedException {
-        TimeoutTest stub = clientRpcCoreService.createStub(
-                ApiConfig.<TimeoutTest>builder()
-                        .microServiceId(mockMicroServiceId)
-                        .api(TimeoutTest.class)
-                        .timeoutMs(sleepMs / 2L)
-                        .build());
+        StubConfig<TimeoutTest> stubConfig = new StubConfig<>(
+                TimeoutTest.class,
+                mockMicroServiceId,
+                group,
+                false,
+                sleepMs / 2L,
+                clientRpcCoreService.getNameServer());
+        TimeoutTest stub = clientRpcCoreService.createStub(stubConfig);
         boolean hasTimeout = false;
-        Integer sum;
         try {
-            sum = stub.sum(numbers);
+            stub.sum(numbers);
         } catch (TomatoRpcRuntimeException timeout) {
             hasTimeout = TomatoRpcCoreErrorEnum.RPC_CLIENT_TIMEOUT.getCode() == timeout.getErrorInfo().getCode();
         }

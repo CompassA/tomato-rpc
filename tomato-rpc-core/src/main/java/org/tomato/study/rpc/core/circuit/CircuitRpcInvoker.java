@@ -58,16 +58,6 @@ public abstract class CircuitRpcInvoker implements RpcInvoker {
     }
 
     @Override
-    public long getInvocationTimeout() {
-        return rpcInvoker.getInvocationTimeout();
-    }
-
-    @Override
-    public void setInvocationTimeout(long timeoutMs) {
-        rpcInvoker.setInvocationTimeout(timeoutMs);
-    }
-
-    @Override
     public Serializer getSerializer() {
         return rpcInvoker.getSerializer();
     }
