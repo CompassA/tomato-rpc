@@ -218,9 +218,8 @@ Tomato-RPC可配置RPC调用的超时时间，本项目的调用超时是基于N
   
 上文介绍的就是本项目超时的实现方式，可以看到，这个超时仅是客户端的超时，本项目没有做基于服务端的超时处理。
 即使超时，服务端仍然会处理客户端发送的消息，并发送响应，而客户端也会接收到服务端的响应。  
-只是，调用超时后，客户端本地的消息Map已经没有了对应消息的Future对象，所以客户端接收到超时的响应后，只会简单丢弃响应，什么都不做。  
-
-
+只是，调用超时后，客户端本地的消息Map已经没有了对应消息的Future对象，所以客户端接收到超时的响应后，只会简单丢弃响应，什么都不做。
+[具体实现](https://github.com/CompassA/tomato-rpc/blob/master/tomato-rpc-netty/src/main/java/org/tomato/study/rpc/netty/invoker/NettyRpcInvoker.java)  
 
 ### 熔断
 Tomato-RPC基于断路器模式实现了一个简单的熔断机制。  
@@ -268,18 +267,22 @@ public class DirectRpcTest {
                 .group("main")
                 .build();
         // 目标接口信息
-        ApiConfig<EchoService> apiConfig = ApiConfig.<EchoService>builder()
+        StubConfig<EchoService> stubConfig = new StubConfig<>(
                 // 目标接口
-                .api(EchoService.class)
+                EchoService.class,
                 // 目标服务id
-                .microServiceId(mockMicroServiceId)
+                mockMicroServiceId,
+                // 分组信息
+                nodeMeta.getGroup(),
+                // 是否压缩
+                false,
                 // 超时毫秒
-                .timeout(10000)
+                10000,
                 // 服务的某个具体实例[127.0.0.1:5555]
-                .nodeInfo(nodeMata)
-                .build();
+                nodeMata
+        );
         // 创建stub
-        EchoService directStub = rpcCoreService.createDirectStub(apiConfig);
+        EchoService directStub = rpcCoreService.createStub(stubConfig);
         // 完成调用
         String response = directStub.echo("hello world");
     }
