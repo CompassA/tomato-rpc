@@ -14,6 +14,7 @@
 
 package org.tomato.study.rpc.core.circuit;
 
+import lombok.Getter;
 import org.tomato.study.rpc.core.Invocation;
 import org.tomato.study.rpc.core.Response;
 import org.tomato.study.rpc.core.Result;
@@ -25,6 +26,9 @@ import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.core.transport.RpcInvoker;
 
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+
 /**
  * Invoker的熔断包装器
  * @author Tomato
@@ -33,18 +37,21 @@ import org.tomato.study.rpc.core.transport.RpcInvoker;
 public abstract class CircuitRpcInvoker implements RpcInvoker {
 
     private final RpcInvoker rpcInvoker;
-    private final CircuitBreaker breaker;
+    private final RpcConfig rpcConfig;
+
+    /**
+     * interfaceName -> breaker;
+     */
+    @Getter
+    private final Map<String, CircuitBreaker> breakerMap = new ConcurrentHashMap<>(0);
 
     public CircuitRpcInvoker(RpcInvoker rpcInvoker, RpcConfig rpcConfig) {
         this.rpcInvoker = rpcInvoker;
-        this.breaker = SpiLoader.getLoader(CircuitBreaker.class).load(
+        this.rpcConfig = rpcConfig;
+        SpiLoader.getLoader(CircuitBreaker.class).load(
                 rpcConfig.getCircuitOpenRate(),
                 rpcConfig.getCircuitOpenSeconds() * 1000_000_000L,
                 rpcConfig.getCircuitWindow());
-    }
-
-    public boolean allow() {
-        return breaker.allow();
     }
 
     @Override
@@ -64,6 +71,10 @@ public abstract class CircuitRpcInvoker implements RpcInvoker {
 
     @Override
     public Result invoke(Invocation invocation) throws TomatoRpcException {
+        CircuitBreaker breaker = breakerMap.computeIfAbsent(invocation.getInterfaceName(), (key) -> SpiLoader.getLoader(CircuitBreaker.class).load(
+                rpcConfig.getCircuitOpenRate(),
+                rpcConfig.getCircuitOpenSeconds() * 1000_000_000L,
+                rpcConfig.getCircuitWindow()));
         if (!breaker.allow()) {
             throw new TomatoRpcException(TomatoRpcCoreErrorEnum.RPC_CIRCUIT_ERROR.create());
         }
@@ -89,7 +100,7 @@ public abstract class CircuitRpcInvoker implements RpcInvoker {
 
     @Override
     public boolean isUsable() {
-        return breaker.allow() && rpcInvoker.isUsable();
+        return rpcInvoker.isUsable();
     }
 
     /**

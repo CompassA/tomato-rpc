@@ -72,7 +72,6 @@ public class DemoClientApplication {
                         .subscribedServiceIds(Collections.singletonList(Constant.serviceId))
                         .nameServiceURI(zkURL)
                         .port(7890)
-                        .useGzip(true)
                         .build()
                 );
         rpcCoreService.init();

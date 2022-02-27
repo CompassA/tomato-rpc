@@ -76,11 +76,6 @@ public class TomatoRpcProperties {
     private Long clientKeepAliveMs;
 
     /**
-     * 客户端发送数据是否开启GZIP压缩
-     */
-    private boolean useGzip;
-
-    /**
      * 是否开启熔断
      */
     private boolean enableCircuit;

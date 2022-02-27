@@ -20,9 +20,11 @@ import org.tomato.study.rpc.core.Response;
 import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
+import org.tomato.study.rpc.core.transport.RpcInvoker;
 import org.tomato.study.rpc.netty.data.Code;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -43,13 +45,14 @@ public class NettyRouterStubInvoker extends NettyBaseStubInvoker {
         String microServiceId = getMicroServiceId();
         String group = getGroup();
         try {
-            Response response = nameServer.lookupInvoker(microServiceId, group)
-                    .orElseThrow(() -> new TomatoRpcRuntimeException(
-                            NettyRpcErrorEnum.STUB_INVOKER_SEARCH_ERROR.create(
-                                    String.format("[invoker not found, micro-service-id=%s, group=%s, interface=%s]",
-                                            microServiceId, group, invocation.getInterfaceName()))))
-                    .invoke(invocation)
-                    .getResultSync();
+            Optional<RpcInvoker> invokerOpt = nameServer.lookupInvoker(microServiceId, group);
+            if (invokerOpt.isEmpty()) {
+                throw new TomatoRpcRuntimeException(
+                        NettyRpcErrorEnum.STUB_INVOKER_SEARCH_ERROR.create(
+                                String.format("[invoker not found, micro-service-id=%s, group=%s, interface=%s]",
+                                        microServiceId, group, invocation.getInterfaceName())));
+            }
+            Response response = invokerOpt.get().invoke(invocation).getResultSync();
             if (!Code.SUCCESS.equals(response.getCode())) {
                 if (response.getData() instanceof TomatoRpcRuntimeException) {
                     throw (TomatoRpcRuntimeException) response.getData();

@@ -70,11 +70,6 @@ public class RpcConfig {
     private final int businessThreadPoolSize;
 
     /**
-     * rpc body体是否使用Gzip压缩
-     */
-    private final boolean useGzip;
-
-    /**
      * 服务端空闲检测频率, 单位ms
      */
     private final long serverIdleCheckMilliseconds;
@@ -122,7 +117,6 @@ public class RpcConfig {
         private String nameServiceURI;
         private int port = 9090;
         private int businessThreadPoolSize = 1;
-        private boolean useGzip = false;
         private long serverIdleCheckMilliseconds = 600000;
         private long clientKeepAliveMilliseconds = serverIdleCheckMilliseconds / 3;
         private long globalClientTimeoutMilliseconds = 50000;
@@ -171,11 +165,6 @@ public class RpcConfig {
             return this;
         }
 
-        public Builder useGzip(boolean useGzip) {
-            this.useGzip = useGzip;
-            return this;
-        }
-
         public Builder serverIdleCheckMilliseconds(long serverIdleCheckMilliseconds) {
             this.serverIdleCheckMilliseconds = serverIdleCheckMilliseconds;
             return this;
@@ -221,7 +210,6 @@ public class RpcConfig {
                     this.nameServiceURI,
                     this.port,
                     this.businessThreadPoolSize,
-                    this.useGzip,
                     this.serverIdleCheckMilliseconds,
                     this.clientKeepAliveMilliseconds,
                     this.globalClientTimeoutMilliseconds,

@@ -16,14 +16,17 @@ package org.tomato.study.rpc.sample.spring.server;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.collections4.CollectionUtils;
 import org.tomato.study.rpc.config.annotation.RpcServerStub;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.sample.api.EchoService;
+import org.tomato.study.rpc.sample.api.SumService;
 import org.tomato.study.rpc.sample.api.data.DemoRequest;
 import org.tomato.study.rpc.sample.api.data.DemoResponse;
 import org.tomato.study.rpc.utils.NetworkUtil;
 
 import java.net.InetAddress;
+import java.util.List;
 
 /**
  * @author Tomato
@@ -32,7 +35,7 @@ import java.net.InetAddress;
 @Slf4j
 @RpcServerStub
 @AllArgsConstructor
-public class EchoServiceImpl implements EchoService {
+public class EchoServiceImpl implements EchoService, SumService {
 
     private final RpcCoreService coreService;
 
@@ -58,5 +61,19 @@ public class EchoServiceImpl implements EchoService {
         }
         response.setData(builder.toString());
         return response;
+    }
+
+    @Override
+    public Integer sum(List<Integer> nums) {
+        if (CollectionUtils.isEmpty(nums)) {
+            return 0;
+        }
+        // 测试超时
+//        try {
+//            Thread.sleep(10000);
+//        } catch (InterruptedException e) {
+//            Thread.currentThread().interrupt();
+//        }
+        return nums.stream().reduce(0, Integer::sum);
     }
 }

@@ -61,7 +61,6 @@ public class TomatoRpcConfiguration {
         rpcConfigBuilder.microServiceId(properties.getMicroServiceId());
         rpcConfigBuilder.subscribedServiceIds(CollectionUtils.isNotEmpty(properties.getSubscribedServices())
                 ? properties.getSubscribedServices() : Collections.emptyList());
-        rpcConfigBuilder.useGzip(properties.isUseGzip());
         if (StringUtils.isNotBlank(properties.getStage())) {
             rpcConfigBuilder.stage(properties.getStage());
         }

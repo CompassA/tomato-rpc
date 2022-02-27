@@ -92,6 +92,22 @@ public final class CommandFactory {
                 .build();
     }
 
+    /**
+     * 为command设置新的body
+     * @param command 协议数据
+     * @param newBody 新的body
+     */
+    public static void changeBody(Command command, byte[] newBody) {
+        byte[] originBody = command.getBody();
+        int originBodyLength = originBody == null ? 0 : originBody.length;
+
+        int newBodyLength = newBody == null ? 0 : newBody.length;
+        command.setBody(newBody);
+
+        Header header = command.getHeader();
+        header.setLength(header.getLength() - originBodyLength + newBodyLength);
+    }
+
     private static Header createHeader(CommandType type,
                                        Serializer serializer,
                                        int bodyLength) {

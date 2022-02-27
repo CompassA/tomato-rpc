@@ -22,9 +22,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
  * Created on 2021.11.20
  */
 @SpringBootApplication
-public class DemoServerApplication {
+public class SpringDemoServerApplication {
 
     public static void main(String[] args) {
-        SpringApplication.run(DemoServerApplication.class);
+        SpringApplication.run(SpringDemoServerApplication.class);
     }
 }
