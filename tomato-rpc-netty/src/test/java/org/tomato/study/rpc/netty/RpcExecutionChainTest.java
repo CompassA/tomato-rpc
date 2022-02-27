@@ -118,7 +118,7 @@ public class RpcExecutionChainTest {
                 TestService.class,
                 mockMicroServiceId,
                 group,
-                false,
+                true,
                 10000L,
                 nodeInfo);
         TestService directStub = clientRpcCoreService.createStub(stubConfig);
@@ -135,7 +135,7 @@ public class RpcExecutionChainTest {
                 TestService.class,
                 mockMicroServiceId,
                 group,
-                false,
+                true,
                 10000L,
                 clientRpcCoreService.getNameServer());
         TestService stub = clientRpcCoreService.createStub(stubConfig);

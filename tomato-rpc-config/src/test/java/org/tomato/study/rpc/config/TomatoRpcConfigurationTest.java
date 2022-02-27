@@ -99,7 +99,6 @@ public class TomatoRpcConfigurationTest {
         Assert.assertTrue(Objects.equals(properties.getGroup(), "main"));
         Assert.assertTrue(Objects.equals(properties.getServerIdleCheckMs(), 600000L));
         Assert.assertTrue(Objects.equals(properties.getClientKeepAliveMs(), 200000L));
-        Assert.assertTrue(properties.isUseGzip());
         Assert.assertTrue(properties.isEnableCircuit());
         Assert.assertEquals(properties.getCircuitOpenRate().intValue(), 74);
         Assert.assertEquals(properties.getCircuitOpenSeconds().longValue(), 59L);

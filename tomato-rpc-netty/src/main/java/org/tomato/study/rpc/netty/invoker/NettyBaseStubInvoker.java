@@ -45,7 +45,7 @@ public abstract class NettyBaseStubInvoker extends BaseStubInvoker {
     protected void putParameter(RpcRequestDTO rpcInvocation) {
         StubConfig<?> stubConfig = getStubConfig();
         rpcInvocation.putContextParameter(RpcParameterKey.TIMEOUT, String.valueOf(stubConfig.getTimeoutMs()));
-        rpcInvocation.putContextParameter(RpcParameterKey.COMPRESS, String.valueOf(stubConfig.getTimeoutMs()));
+        rpcInvocation.putContextParameter(RpcParameterKey.COMPRESS, String.valueOf(stubConfig.isCompressBody()));
     }
 
     protected RpcRequestDTO createRpcInvocation(Method method, Object[] args) {

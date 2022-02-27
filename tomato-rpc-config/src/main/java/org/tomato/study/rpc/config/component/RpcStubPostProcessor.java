@@ -71,18 +71,12 @@ public class RpcStubPostProcessor implements BeanPostProcessor {
         }
 
         // 不断向上遍历类型，直到找到标注了@TomatoApi的接口
-        boolean found = false;
         while (!Object.class.equals(clazz)) {
             for (Class<?> interfaceClazz : clazz.getInterfaces()) {
                 TomatoApi tomatoApi = interfaceClazz.getAnnotation(TomatoApi.class);
                 if (tomatoApi != null) {
                     rpcCoreService.registerProvider(bean, (Class<Object>) interfaceClazz);
-                    found = true;
-                    break;
                 }
-            }
-            if (found) {
-                break;
             }
             clazz = clazz.getSuperclass();
         }

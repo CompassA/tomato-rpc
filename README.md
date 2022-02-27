@@ -38,6 +38,8 @@ public interface EchoService {
 </project>
 ```
 
+注意，Tomato-RPC的接口参数与返回对象必须是包转类型，Tomato-RPC不支持基本类型
+
 ### SpringBoot自动装配方式
 #### 服务端配置
 引入tomato-rpc-spring-boot-starter
@@ -120,8 +122,6 @@ tomato-rpc:
   group: "main"
   # 客户端发送心跳包的时间间隔，单位ms
   client-keep-alive-ms: 20000
-  # 客户端发送数据时是否开启压缩
-  use-gzip: false
   # 开启熔断
   enable-circuit: true
   # 错误率超过多少时开启熔断[1, 100]
@@ -141,7 +141,8 @@ public class EchoApiWrapper {
     // tomato-rpc在Spring启动时会自动将stub注入
     // 使用此注解时，类必须是一个java bean
     // 可配置客户端接口调用的超时时间，单位为毫秒
-    @RpcClientStub(timeout = 2000)
+    // 可配置rpc消息是否进行压缩，若compressBody为true，rpc请求与响应均会被压缩
+    @RpcClientStub(timeout = 2000, compressBody = true)
     private EchoService echoService;
 
     public String echo(String msg) {
@@ -186,7 +187,7 @@ Worker线程池负责连接的读写、协议的解析(也许可以把协议的�
 
 ### 连接管理
 #### 数据结构
-Tomato-RPC的每个[RpcInvoker](https://github.com/CompassA/tomato-rpc/blob/master/tomato-rpc-netty/src/main/java/org/tomato/study/rpc/netty/invoker/NettyRpcInvoker.java)对象维护了与RPC服务端某个实例的TCP连接。  
+Tomato-RPC的每个[RpcInvoker](./tomato-rpc-netty/src/main/java/org/tomato/study/rpc/netty/invoker/NettyRpcInvoker.java)对象维护了与RPC服务端某个实例的TCP连接。  
 客户端会内存中会维护[MicroServiceId -> List\<RpcInvoker\>]这样的映射关系。假设客户端订阅了1个微服务(id="test-service")，该微服务有5个实例，则内存中会有5个与"test-service"相关联的RpcInvoker对象。  
 每个RpcInvoker对象组合了一个[NettyClient](https://github.com/CompassA/tomato-rpc/blob/285948ca36ca7861cb0223331d30e71ad39c3a66/tomato-rpc-netty/src/main/java/org/tomato/study/rpc/netty/transport/client/NettyRpcClient.java)对象，NettyClient对象封装了客户端的连接通信逻辑。  
 #### 心跳机制
@@ -199,8 +200,8 @@ RpcInvoker内部维护了一个计数器，一个标记位。
 标记位标记了当前RpcInvoker是否能被调用。 
 当RpcInvoker要进行关闭时，首先会将标记为置为false，此时新的想要调用RpcInvoker的线程就会被阻挡住，并收到一个异常。  
 设置完标记位后，RpcInvoker会每隔1s检测一次计数器是否为0，只有当计数器为0时，RpcInvoker才会真正关闭连接。  
-当然，RpcInvoker也不是无限等待的，当等待时间超过60s后，RpcInvoker就没法"优雅"了，他会强制关闭连接。
-[具体逻辑](https://github.com/CompassA/tomato-rpc/blob/master/tomato-rpc-core/src/main/java/org/tomato/study/rpc/core/base/BaseRpcInvoker.java)
+当然，RpcInvoker也不是无限等待的，当等待时间超过60s后，RpcInvoker就没法"优雅"了，他会强制关闭连接。  
+[具体逻辑](./tomato-rpc-core/src/main/java/org/tomato/study/rpc/core/base/BaseRpcInvoker.java)
 
 ### 调用模型与超时
 
@@ -218,8 +219,8 @@ Tomato-RPC可配置RPC调用的超时时间，本项目的调用超时是基于N
   
 上文介绍的就是本项目超时的实现方式，可以看到，这个超时仅是客户端的超时，本项目没有做基于服务端的超时处理。
 即使超时，服务端仍然会处理客户端发送的消息，并发送响应，而客户端也会接收到服务端的响应。  
-只是，调用超时后，客户端本地的消息Map已经没有了对应消息的Future对象，所以客户端接收到超时的响应后，只会简单丢弃响应，什么都不做。
-[具体实现](https://github.com/CompassA/tomato-rpc/blob/master/tomato-rpc-netty/src/main/java/org/tomato/study/rpc/netty/invoker/NettyRpcInvoker.java)  
+只是，调用超时后，客户端本地的消息Map已经没有了对应消息的Future对象，所以客户端接收到超时的响应后，只会简单丢弃响应，什么都不做。  
+[具体实现](./tomato-rpc-netty/src/main/java/org/tomato/study/rpc/netty/invoker/NettyRpcInvoker.java)  
 
 ### 熔断
 Tomato-RPC基于断路器模式实现了一个简单的熔断机制。  
@@ -230,7 +231,7 @@ Tomato-RPC以TCP连接为单位进行熔断，当RPC客户端与一个服务的n
 Tomato-RPC基于BitSet与FenwickTree实现了一个环状计数器，具体代码见SuccessFailureRingCounter.java。  
 每次成功或失败时，会使用BitSet中的一位来记录调用的结果(1代表成功, 0代表失败)，并用FenwickTree维护BitSet的区间和。  
 PS: 用FenwickTree当作计算成功次数与失败次数的索引只是为了巩固下这个数据结构，没做过实际的性能测试。。。。  
-[具体逻辑](https://github.com/CompassA/tomato-rpc/blob/master/tomato-rpc-core/src/main/java/org/tomato/study/rpc/core/circuit/SuccessFailureRingCounter.java)
+[具体逻辑](./tomato-rpc-core/src/main/java/org/tomato/study/rpc/core/circuit/SuccessFailureRingCounter.java)
 
 #### 断路器状态切换
 断路器有三种状态: 关闭、半打开、打开。  
@@ -239,8 +240,8 @@ PS: 用FenwickTree当作计算成功次数与失败次数的索引只是为了�
 状态间的切换如下所示:  
 关闭 ========(失败率超过阈值)=======> 打开 ====(打开状态超时)=====> 半打开  
 半打开 =======(调用失败)====> 打开  
-半打开 =======(调用成功且当前失败率小于阈值)===========> 关闭
-[具体逻辑](https://github.com/CompassA/tomato-rpc/blob/master/tomato-rpc-core/src/main/java/org/tomato/study/rpc/core/circuit/DefaultCircuitBreaker.java)
+半打开 =======(调用成功且当前失败率小于阈值)===========> 关闭  
+[具体逻辑](./tomato-rpc-core/src/main/java/org/tomato/study/rpc/core/circuit/DefaultCircuitBreaker.java)
 
 #### 配置方式
 需要配置enable-circuit(是否开启熔断)、circuit-open-rate(错误率阈值)、circuit-open-seconds(断路器打开状态的超时秒数)、circuit-window(采样窗口)四个个参数。

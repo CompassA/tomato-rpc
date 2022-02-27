@@ -25,11 +25,16 @@ import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.transport.RpcInvoker;
 
+import java.util.Map;
+import java.util.Optional;
+
 /**
  * @author Tomato
  * Created on 2022.01.31
  */
 public class DefaultCircuitBreakerTest {
+
+    private final String mockInterfaceName = "testInterfaceName";
 
     @Test
     public void circuitBreakerTest() throws InterruptedException {
@@ -94,26 +99,47 @@ public class DefaultCircuitBreakerTest {
             }
         };
 
+        Map<String, CircuitBreaker> breakerMap = circuitRpcInvoker.getBreakerMap();
         for (int i = 0; i < config.getCircuitWindow() / 2; ++i) {
-            Assert.assertTrue(circuitRpcInvoker.allow());
+            if (i == 0) {
+                Assert.assertNull(breakerMap.get(mockInterfaceName));
+            } else {
+                Assert.assertNotNull(breakerMap.get(mockInterfaceName));
+                Assert.assertTrue(breakerMap.get(mockInterfaceName).allow());
+            }
             invokeError(circuitRpcInvoker);
         }
 
-        Assert.assertFalse(circuitRpcInvoker.allow());
+        CircuitBreaker circuitBreaker = breakerMap.get(mockInterfaceName);
+        Assert.assertNotNull(circuitBreaker);
+        Assert.assertFalse(circuitBreaker.allow());
 
         // 睡眠，进入半开启状态
         Thread.sleep(seconds * 1000 + 1);
-        Assert.assertTrue(circuitRpcInvoker.allow());
+        Assert.assertSame(circuitBreaker, breakerMap.get(mockInterfaceName));
+        Assert.assertTrue(circuitBreaker.allow());
 
         // 半开启后再次调用，仍然报错会被立马熔断
         invokeError(circuitRpcInvoker);
-        Assert.assertFalse(circuitRpcInvoker.allow());
+        Assert.assertSame(circuitBreaker, breakerMap.get(mockInterfaceName));
+        Assert.assertTrue(circuitBreaker.allow());
 
     }
 
     private void invokeError(CircuitRpcInvoker circuitRpcInvoker) {
         try {
-            circuitRpcInvoker.invoke(null);
+            circuitRpcInvoker.invoke(new Invocation() {
+                public String getMicroServiceId() {return null;}
+                public String getInterfaceName() {return mockInterfaceName;}
+                public String getMethodName() {return null;}
+                public String[] getArgsTypes() {return new String[0];}
+                public Object[] getArgs() {return new Object[0];}
+                public String getReturnType() {return null;}
+                public Map<String, String> fetchContextMap() {return null;}
+                public void putContextParameter(String key, String value) {}
+                public Optional<String> fetchContextParameter(String key) {return Optional.empty();}
+                public Invocation cloneInvocationWithoutContext() {return null;}
+            });
         } catch (Throwable e) {
             // do nothing
         }

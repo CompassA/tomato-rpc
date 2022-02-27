@@ -30,12 +30,16 @@ import org.tomato.study.rpc.core.data.CommandType;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorInfo;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.netty.data.NettyInvocationResult;
 import org.tomato.study.rpc.netty.transport.client.NettyRpcClient;
+import org.tomato.study.rpc.netty.utils.GzipUtils;
 
 import java.net.URI;
+import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -61,25 +65,39 @@ public class NettyRpcInvoker extends BaseRpcInvoker {
     @Override
     protected Result doInvoke(Invocation invocation) throws TomatoRpcException {
         // 将方法调用的数据转化为协议对象
+        Map<String, String> contextMap = invocation.fetchContextMap();
         Command rpcRequest = CommandFactory.request(
                 invocation.cloneInvocationWithoutContext(),
                 getSerializer(),
-                invocation.fetchContextMap(),
+                contextMap,
                 CommandType.RPC_REQUEST);
+
+        // 进行一些前置处理
+        rpcRequest = beforeSendRequest(rpcRequest, contextMap);
 
         // 发送数据
         ResponseFuture<Command> responseFuture = rpcClient.send(rpcRequest);
 
         // 设置客户端超时
-        addTimeoutTask(invocation, responseFuture);
+        addTimeoutTask(invocation, rpcRequest, responseFuture);
         return new NettyInvocationResult(responseFuture);
     }
 
-    private void addTimeoutTask(Invocation invocation, ResponseFuture<Command> responseFuture) {
+    protected Command beforeSendRequest(Command request, Map<String, String> contextMap) {
+        if (Objects.equals(Boolean.TRUE.toString(), contextMap.get(RpcParameterKey.COMPRESS))) {
+            CommandFactory.changeBody(request, GzipUtils.gzip(request.getBody()));
+        }
+        return request;
+    }
+
+    private void addTimeoutTask(Invocation invocation,
+                                Command request,
+                                ResponseFuture<Command> responseFuture) {
         Long timeoutMs = invocation.fetchContextParameter(RpcParameterKey.TIMEOUT)
                 .map(Long::valueOf)
                 .orElse(getRpcConfig().getGlobalClientTimeoutMilliseconds());
-        timer.newTimeout(new RpcTimeoutTask(responseFuture, invocation), timeoutMs, TimeUnit.MILLISECONDS);
+        timer.newTimeout(new RpcTimeoutTask(request, responseFuture, invocation),
+                timeoutMs, TimeUnit.MILLISECONDS);
     }
 
     @Override
@@ -96,14 +114,16 @@ public class NettyRpcInvoker extends BaseRpcInvoker {
     @RequiredArgsConstructor
     private static class RpcTimeoutTask implements TimerTask {
 
+        private final Command request;
         private final ResponseFuture<Command> responseFuture;
         private final Invocation invocation;
 
         @Override
         public void run(Timeout timeout) throws Exception {
             responseFuture.destroy().ifPresent(future -> {
-                future.completeExceptionally(
-                        new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.RPC_CLIENT_TIMEOUT.create()));
+                TomatoRpcErrorInfo errorInfo = TomatoRpcCoreErrorEnum.RPC_CLIENT_TIMEOUT
+                        .create(String.format("rpc timeout, invocation: %s, request: %s", invocation, request));
+                future.completeExceptionally(new TomatoRpcRuntimeException(errorInfo));
                 log.warn("rpc timeout, message id: {}, invocation: {}",
                         responseFuture.getMessageId(),
                         invocation);

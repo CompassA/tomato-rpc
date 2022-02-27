@@ -21,8 +21,12 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
 import org.tomato.study.rpc.config.annotation.RpcClientStub;
 import org.tomato.study.rpc.sample.api.EchoService;
+import org.tomato.study.rpc.sample.api.SumService;
 import org.tomato.study.rpc.sample.api.data.DemoRequest;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -35,18 +39,25 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @Component
 @SpringBootApplication
-public class DemoClientApplication {
+public class SpringDemoClientApplication {
 
     @RpcClientStub(compressBody = true, timeout = 1000)
     private EchoService echoService;
+
+    @RpcClientStub(compressBody = true, timeout = 5000)
+    private SumService sumService;
 
     public String echo(String msg) {
         return echoService.echo(new DemoRequest(msg)).getData();
     }
 
+    public Integer sum(List<Integer> nums) {
+        return sumService.sum(nums);
+    }
+
     public static void main(String[] args) throws InterruptedException {
-        ConfigurableApplicationContext context = SpringApplication.run(DemoClientApplication.class);
-        DemoClientApplication bean = context.getBean(DemoClientApplication.class);
+        ConfigurableApplicationContext context = SpringApplication.run(SpringDemoClientApplication.class);
+        SpringDemoClientApplication bean = context.getBean(SpringDemoClientApplication.class);
         int threadNum = 10;
         int messageNum = 1000;
         ThreadPoolExecutor executor = new ThreadPoolExecutor(
@@ -54,12 +65,9 @@ public class DemoClientApplication {
         CountDownLatch countDownLatch = new CountDownLatch(threadNum);
         for (int i = 0; i < threadNum; ++i) {
             executor.execute(() -> {
+                Random random = new Random();
                 for (int j = 0; j < messageNum; ++j) {
-                    try {
-                        log.info(bean.echo("hello world"));
-                    } catch (Exception e) {
-                        log.error("rpc client error", e);
-                    }
+                    process(bean, random, j);
                     try {
                         Thread.sleep(1000);
                     } catch (InterruptedException e) {
@@ -70,16 +78,30 @@ public class DemoClientApplication {
             });
         }
         countDownLatch.await();
+        Random random = new Random();
         for (int i = 0; i < 100000000; ++i) {
-            try {
-                log.info(bean.echo("hello world"));
-            } catch (Exception e) {
-                log.error("rpc client error", e);
-            }
+            process(bean, random, i);
             Thread.sleep(1500);
         }
         context.close();
         System.exit(0);
+    }
+
+    private static void process(SpringDemoClientApplication bean, Random random, int i) {
+        try {
+            if ((i & 1) == 0) {
+                log.info(bean.echo("hello world"));
+            } else {
+                List<Integer> nums = Arrays.asList(
+                        random.nextInt(10000),
+                        random.nextInt(10000),
+                        random.nextInt(20000),
+                        random.nextInt(23232));
+                log.info("sum of {} is {}", nums, bean.sum(nums));
+            }
+        } catch (Exception e) {
+            log.error("rpc client error", e);
+        }
     }
 
 }

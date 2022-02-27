@@ -75,7 +75,7 @@ public class RpcRequestHandler implements ServerHandler {
                     header.getId(),
                     RpcResponse.fail(exception.getErrorInfo()),
                     serializer,
-                    CommandType.RPC_REQUEST
+                    CommandType.RPC_RESPONSE
             );
         }
     }

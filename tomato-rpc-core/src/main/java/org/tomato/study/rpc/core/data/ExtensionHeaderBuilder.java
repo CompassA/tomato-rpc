@@ -30,10 +30,15 @@ import java.util.Map;
 public class ExtensionHeaderBuilder {
 
     private final Command command;
-    private final StringBuilder builder = new StringBuilder();
+    private final StringBuilder builder;
 
     public ExtensionHeaderBuilder(Command command) {
         this.command = command;
+        this.builder = new StringBuilder();
+        byte[] extension = command.getExtension();
+        if (extension != null) {
+            this.builder.append(new String(extension, StandardCharsets.UTF_8));
+        }
     }
 
     public ExtensionHeaderBuilder putParam(String key, String value) {
@@ -53,12 +58,12 @@ public class ExtensionHeaderBuilder {
         if (builder.length() < 1) {
             return command;
         }
-        byte[] extensionHeader = builder.toString().getBytes(StandardCharsets.UTF_8);
-        command.setExtension(extensionHeader);
+        byte[] newExtHeaders = builder.toString().getBytes(StandardCharsets.UTF_8);
+        command.setExtension(newExtHeaders);
 
         Header header = command.getHeader();
-        header.setExtensionLength(extensionHeader.length);
-        header.setLength(header.getLength() + extensionHeader.length);
+        header.setLength(header.getLength() - header.getExtensionLength() + newExtHeaders.length);
+        header.setExtensionLength(newExtHeaders.length);
         return command;
     }
 
@@ -67,9 +72,9 @@ public class ExtensionHeaderBuilder {
      * @param command 帧
      * @return Map形式的头部参数
      */
-    public Map<String, String> getExtensionHeader(@NonNull Command command) {
+    public static Map<String, String> getExtensionHeader(@NonNull Command command) {
         byte[] extension = command.getExtension();
-        if (extension == null || extension.length == 0) {
+        if (extension == null || extension.length < 1) {
             return Collections.emptyMap();
         }
         return RpcJvmConfigKey.parseMultiKeyValue(new String(extension, StandardCharsets.UTF_8));
