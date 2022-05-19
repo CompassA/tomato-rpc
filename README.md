@@ -38,7 +38,7 @@ public interface EchoService {
 </project>
 ```
 
-注意，Tomato-RPC的接口参数与返回对象必须是包转类型，Tomato-RPC不支持基本类型
+注意，Tomato-RPC的接口参数与返回对象必须是包装类型，Tomato-RPC不支持基本类型
 
 ### SpringBoot自动装配方式
 #### 服务端配置
