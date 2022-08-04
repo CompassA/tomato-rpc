@@ -38,7 +38,9 @@ public class MetaDataTest {
         Optional<MetaData> metadataOpt = MetaData.convert(uri.get());
 
         Assert.assertTrue(metadataOpt.isPresent());
-        Assert.assertEquals(metaData, metadataOpt.get());
+        MetaData actual = metadataOpt.get();
+        Assert.assertEquals(metaData, actual);
+        Assert.assertEquals(metaData.getWeight(), actual.getWeight());
     }
 
     @Test
@@ -63,6 +65,8 @@ public class MetaDataTest {
     }
 
     private MetaData mockMetaData() {
+        MetaData.NodeProperty nodeProperty = new MetaData.NodeProperty();
+        nodeProperty.weight = 100;
         return MetaData.builder()
                 .protocol("tomato")
                 .host("127.0.0.1")
@@ -70,11 +74,12 @@ public class MetaDataTest {
                 .microServiceId("org.study.test")
                 .stage("dev")
                 .group("test")
+                .nodeProperty(nodeProperty)
                 .build();
     }
 
     private MetaData mockNull() {
-        return  MetaData.builder()
+        return MetaData.builder()
                 .microServiceId("mock")
                 .build();
     }

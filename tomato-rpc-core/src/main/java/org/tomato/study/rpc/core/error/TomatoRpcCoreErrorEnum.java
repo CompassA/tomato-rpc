@@ -29,6 +29,9 @@ public enum TomatoRpcCoreErrorEnum {
     RPC_CLIENT_TIMEOUT(10002, "rpc timeout"),
     RPC_CIRCUIT_ERROR(10003, "circuit breaker is open"),
     RPC_INVOKER_CLOSED(10004, "rpc invoker and net connection have been closed"),
+
+
+    RPC_ROUND_ROBIN_LOAD_BALANCE_ERROR(20001, "round robin error"),
     ;
 
     private int code;
