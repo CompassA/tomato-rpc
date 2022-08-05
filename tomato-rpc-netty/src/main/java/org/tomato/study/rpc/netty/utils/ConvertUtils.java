@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Invocation对象转化
  * @author Tomato
  * Created on 2021.09.30
  */
@@ -43,6 +44,7 @@ public final class ConvertUtils {
                 .microServiceId(dto.getMicroServiceId())
                 .rpcInterFace(getClass(dto.getInterfaceName()))
                 .methodName(dto.getMethodName())
+                .apiId(dto.getApiId())
                 .returnType(StringUtils.isBlank(dto.getReturnType())
                         ? void.class : getClass(dto.getReturnType()));
 

@@ -61,6 +61,14 @@ public interface Invocation {
     String getReturnType();
 
     /**
+     * 方法级别的api id
+     * @return api id
+     */
+    default String getApiId() {
+        return getMicroServiceId() + "$" + getInterfaceName() + "$" + getMethodName();
+    }
+
+    /**
      * 获取调用的一些参数
      * @return 参数map
      */

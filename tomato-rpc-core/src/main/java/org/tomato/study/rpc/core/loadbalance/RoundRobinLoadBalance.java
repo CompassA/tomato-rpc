@@ -14,6 +14,7 @@
 
 package org.tomato.study.rpc.core.loadbalance;
 
+import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.Invocation;
 import org.tomato.study.rpc.core.base.BaseLoadBalance;
@@ -31,21 +32,20 @@ import java.util.concurrent.atomic.AtomicLong;
  * Created on 2022.08.02
  */
 @Slf4j
+@NoArgsConstructor
 public class RoundRobinLoadBalance extends BaseLoadBalance {
 
     /**
      * 权重数据
-     * service-id -> 节点 -> 节点权重
+     * api id -> 节点 -> 节点权重
      */
     private final ConcurrentMap<String, ConcurrentMap<MetaData, NodeWeight>> weightMap = new ConcurrentHashMap<>(0);
 
     @Override
-    protected RpcInvoker doSelect(String microServiceId,
-                                  Invocation invocation,
-                                  List<RpcInvoker> invokers)
+    protected RpcInvoker doSelect(Invocation invocation, List<RpcInvoker> invokers)
             throws TomatoRpcRuntimeException {
         ConcurrentMap<MetaData, NodeWeight> serviceWeightMap =
-                weightMap.computeIfAbsent(microServiceId, key -> new ConcurrentHashMap<>());
+                weightMap.computeIfAbsent(invocation.getApiId(), key -> new ConcurrentHashMap<>());
         RpcInvoker targetInvoker = null;
         NodeWeight selectedWeightContext = null;
         long currentMaxWeight = Long.MIN_VALUE;

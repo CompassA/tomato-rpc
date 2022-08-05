@@ -67,6 +67,11 @@ public class RpcRequestModel {
     private Object[] parameters;
 
     /**
+     * api id
+     */
+    private String apiId;
+
+    /**
      * context parameter
      */
     private Map<String, String> contextParameterMap;
@@ -77,6 +82,7 @@ public class RpcRequestModel {
                            String methodName,
                            Class<?>[] argsType,
                            Class<?> returnType,
+                           String apiId,
                            Map<String, String> contextParameterMap,
                            Object... parameters) {
         this.microServiceId = microServiceId;
@@ -84,6 +90,7 @@ public class RpcRequestModel {
         this.methodName = methodName;
         this.argsType = argsType;
         this.returnType = returnType;
+        this.apiId = apiId;
         this.contextParameterMap = contextParameterMap;
         if (parameters == null || parameters.length == 0) {
             this.parameters = new Object[0];

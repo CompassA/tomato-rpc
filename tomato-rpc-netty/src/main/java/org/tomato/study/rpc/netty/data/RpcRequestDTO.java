@@ -78,18 +78,13 @@ public class RpcRequestDTO implements Invocation {
 
     @Override
     public Map<String, String> fetchContextMap() {
+        initContextMap();
         return this.contextParameterMap;
     }
 
     @Override
     public void putContextParameter(String key, String value) {
-        if (contextParameterMap == null) {
-            synchronized (this) {
-                if (contextParameterMap == null) {
-                    contextParameterMap = new HashMap<>(0);
-                }
-            }
-        }
+        initContextMap();
         this.contextParameterMap.put(key, value);
     }
 
@@ -136,5 +131,15 @@ public class RpcRequestDTO implements Invocation {
         result = 31 * result + Arrays.hashCode(argsTypes);
         result = 31 * result + Arrays.hashCode(args);
         return result;
+    }
+
+    private void initContextMap() {
+        if (contextParameterMap == null) {
+            synchronized (this) {
+                if (contextParameterMap == null) {
+                    contextParameterMap = new HashMap<>(0);
+                }
+            }
+        }
     }
 }

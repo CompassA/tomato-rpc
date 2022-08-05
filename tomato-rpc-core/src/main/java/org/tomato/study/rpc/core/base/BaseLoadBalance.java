@@ -15,7 +15,6 @@
 package org.tomato.study.rpc.core.base;
 
 import org.apache.commons.collections4.CollectionUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.Invocation;
 import org.tomato.study.rpc.core.LoadBalance;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
@@ -30,21 +29,18 @@ import java.util.List;
 public abstract class BaseLoadBalance implements LoadBalance {
 
     @Override
-    public RpcInvoker select(String microServiceId,
-                             Invocation invocation,
-                             List<RpcInvoker> invokers) throws TomatoRpcRuntimeException {
-        if (CollectionUtils.isEmpty(invokers) || StringUtils.isBlank(microServiceId)) {
+    public RpcInvoker select(Invocation invocation, List<RpcInvoker> invokers)
+            throws TomatoRpcRuntimeException {
+        if (CollectionUtils.isEmpty(invokers)) {
             return null;
         }
         // 如果只有一个invoker, 直接返回
         if (invokers.size() == 1) {
             return invokers.get(0);
         }
-        return doSelect(microServiceId, invocation, invokers);
+        return doSelect(invocation, invokers);
     }
 
-    protected abstract RpcInvoker doSelect(
-            String microServiceId,
-            Invocation invocation,
-            List<RpcInvoker> invokers) throws TomatoRpcRuntimeException;
+    protected abstract RpcInvoker doSelect(Invocation invocation, List<RpcInvoker> invokers)
+            throws TomatoRpcRuntimeException;
 }

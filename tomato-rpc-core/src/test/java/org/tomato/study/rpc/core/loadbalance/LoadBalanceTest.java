@@ -16,16 +16,19 @@ package org.tomato.study.rpc.core.loadbalance;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.powermock.api.mockito.PowerMockito;
 import org.tomato.study.rpc.core.Invocation;
 import org.tomato.study.rpc.core.LoadBalance;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.core.transport.RpcInvoker;
 
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static org.powermock.api.mockito.PowerMockito.mock;
+import static org.powermock.api.mockito.PowerMockito.when;
 
 /**
  * @author Tomato
@@ -35,16 +38,15 @@ public class LoadBalanceTest {
 
     @Test
     public void wrrLoadBalanceTest() {
-        LoadBalance loadBalance = new RoundRobinLoadBalance();
-        String mockIdA = "mockIdA";
-        String mockIdB = "mockIdB";
-        Invocation invocation = PowerMockito.mock(Invocation.class);
-        RpcInvoker invoker1 = PowerMockito.mock(RpcInvoker.class);
-        RpcInvoker invoker2 = PowerMockito.mock(RpcInvoker.class);
-        RpcInvoker invoker3 = PowerMockito.mock(RpcInvoker.class);
-        RpcInvoker invoker4 = PowerMockito.mock(RpcInvoker.class);
-        RpcInvoker invoker5 = PowerMockito.mock(RpcInvoker.class);
-        RpcInvoker invoker6 = PowerMockito.mock(RpcInvoker.class);
+        LoadBalance loadBalance = SpiLoader.getLoader(LoadBalance.class).load();
+        Invocation invocationA = mock(Invocation.class);
+        Invocation invocationB = mock(Invocation.class);
+        RpcInvoker invoker1 = mock(RpcInvoker.class);
+        RpcInvoker invoker2 = mock(RpcInvoker.class);
+        RpcInvoker invoker3 = mock(RpcInvoker.class);
+        RpcInvoker invoker4 = mock(RpcInvoker.class);
+        RpcInvoker invoker5 = mock(RpcInvoker.class);
+        RpcInvoker invoker6 = mock(RpcInvoker.class);
 
         URI nodeUrl1 = URI.create("tomato://127.0.0.1:1/?micro-service-id=mockIdA&stage=dev&group=test&property=weight:1");
         URI nodeUrl2 = URI.create("tomato://127.0.0.1:2/?micro-service-id=mockIdA&stage=dev&group=test&property=weight:1");
@@ -63,19 +65,21 @@ public class LoadBalanceTest {
         List<RpcInvoker> invokerGroupB = Arrays.asList(invoker4, invoker5, invoker6);
 
 
-        PowerMockito.when(invoker1.getMetadata()).thenReturn(nodeInfo1);
-        PowerMockito.when(invoker2.getMetadata()).thenReturn(nodeInfo2);
-        PowerMockito.when(invoker3.getMetadata()).thenReturn(nodeInfo3);
-        PowerMockito.when(invoker4.getMetadata()).thenReturn(nodeInfo4);
-        PowerMockito.when(invoker5.getMetadata()).thenReturn(nodeInfo5);
-        PowerMockito.when(invoker6.getMetadata()).thenReturn(nodeInfo6);
+        when(invoker1.getMetadata()).thenReturn(nodeInfo1);
+        when(invoker2.getMetadata()).thenReturn(nodeInfo2);
+        when(invoker3.getMetadata()).thenReturn(nodeInfo3);
+        when(invoker4.getMetadata()).thenReturn(nodeInfo4);
+        when(invoker5.getMetadata()).thenReturn(nodeInfo5);
+        when(invoker6.getMetadata()).thenReturn(nodeInfo6);
+        when(invocationA.getApiId()).thenReturn("mockIdA");
+        when(invocationB.getApiId()).thenReturn("mockIdB");
 
 
         List<MetaData> invokerGroupASelectResult = new ArrayList<>(0);
         List<MetaData> invokerGroupBSelectResult = new ArrayList<>(0);
         for (int i = 0; i < 100; ++i) {
-            RpcInvoker targetA = loadBalance.select(mockIdA, invocation, invokerGroupA);
-            RpcInvoker targetB = loadBalance.select(mockIdB, invocation, invokerGroupB);
+            RpcInvoker targetA = loadBalance.select(invocationA, invokerGroupA);
+            RpcInvoker targetB = loadBalance.select(invocationB, invokerGroupB);
             Assert.assertNotNull(targetA);
             Assert.assertNotNull(targetB);
             invokerGroupASelectResult.add(targetA.getMetadata());

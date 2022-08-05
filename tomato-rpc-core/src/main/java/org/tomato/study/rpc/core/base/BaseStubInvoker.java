@@ -58,8 +58,13 @@ public abstract class BaseStubInvoker implements StubInvoker {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) {
+        // 将方法参数转化为可序列化的DTO对象
         Invocation invocation = createInvocation(method, args);
+
+        // 调用Invoker
         Response response = doInvoke(invocation);
+
+        // 转化为接口返回对象
         return response.getData();
     }
 

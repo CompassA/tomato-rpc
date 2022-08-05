@@ -28,9 +28,8 @@ import java.util.List;
 public class RandomLoadBalance extends BaseLoadBalance {
 
     @Override
-    protected RpcInvoker doSelect(String microServiceId,
-                                  Invocation invocation,
-                                  List<RpcInvoker> invokers) throws TomatoRpcRuntimeException {
+    protected RpcInvoker doSelect(Invocation invocation, List<RpcInvoker> invokers)
+            throws TomatoRpcRuntimeException {
         // 选择合法节点的第n个invoker, n为随机数
         int randomTarget = (int) (Math.random() * invokers.size()) + 1;
         int curValidCnt = 0;

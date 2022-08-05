@@ -29,12 +29,11 @@ public interface LoadBalance {
 
     /**
      * 挑选一个invoker进行调用
-     * @param microServiceId 微服务id
      * @param invocation rpc请求
      * @param invokers 候选invoker
      * @throws TomatoRpcRuntimeException 均衡负责异常
      * @return 选中的invoker
      */
-    RpcInvoker select(String microServiceId, Invocation invocation, List<RpcInvoker> invokers)
+    RpcInvoker select(Invocation invocation, List<RpcInvoker> invokers)
             throws TomatoRpcRuntimeException;
 }
