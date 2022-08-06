@@ -16,11 +16,12 @@ package org.tomato.study.rpc.registry.zookeeper.impl;
 
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.tomato.study.rpc.core.NameServer;
+import org.tomato.study.rpc.core.data.Invocation;
+import org.tomato.study.rpc.core.registry.NameServer;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
-import org.tomato.study.rpc.core.transport.RpcInvoker;
+import org.tomato.study.rpc.core.invoker.RpcInvoker;
 import org.tomato.study.rpc.registry.zookeeper.ChildrenListener;
 import org.tomato.study.rpc.registry.zookeeper.CuratorClient;
 import org.tomato.study.rpc.registry.zookeeper.data.ZookeeperConfig;
@@ -206,12 +207,12 @@ public class ZookeeperRegistry {
         }
     }
 
-    public Optional<RpcInvoker> lookup(String microServiceId, String group) {
+    public Optional<RpcInvoker> lookup(String microServiceId, String group, Invocation invocation) {
         if (StringUtils.isBlank(microServiceId) || StringUtils.isBlank(group)) {
             return Optional.empty();
         }
         return Optional.ofNullable(microServiceMap.get(microServiceId))
-                .flatMap(provider -> provider.lookUp(group));
+                .flatMap(provider -> provider.lookUp(group, invocation));
     }
 
     public List<RpcInvoker> listInvokers(String microServiceId) {

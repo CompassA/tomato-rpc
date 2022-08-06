@@ -16,7 +16,7 @@ package org.tomato.study.rpc.core.data;
 
 import org.apache.commons.collections4.MapUtils;
 import org.apache.commons.lang3.StringUtils;
-import org.tomato.study.rpc.core.Serializer;
+import org.tomato.study.rpc.core.serializer.Serializer;
 
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicLong;

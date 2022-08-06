@@ -21,13 +21,13 @@ import lombok.Setter;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.tomato.study.rpc.core.Serializer;
+import org.tomato.study.rpc.core.serializer.Serializer;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
-import org.tomato.study.rpc.netty.invoker.RpcParameterKey;
-import org.tomato.study.rpc.netty.serializer.JsonSerializer;
-import org.tomato.study.rpc.netty.utils.GzipUtils;
+import org.tomato.study.rpc.core.RpcParameterKey;
+import org.tomato.study.rpc.core.serializer.JsonSerializer;
+import org.tomato.study.rpc.core.utils.GzipUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;

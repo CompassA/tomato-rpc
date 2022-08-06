@@ -14,9 +14,10 @@
 
 package org.tomato.study.rpc.core.router;
 
+import org.tomato.study.rpc.core.data.Invocation;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
-import org.tomato.study.rpc.core.transport.RpcInvoker;
+import org.tomato.study.rpc.core.invoker.RpcInvoker;
 
 import java.util.List;
 import java.util.Optional;
@@ -45,9 +46,10 @@ public interface MicroServiceSpace {
     /**
      * 根据微服务分组找到匹配的一个微服务调用实例
      * @param group service group
+     * @param invocation rpc request data
      * @return invoker
      */
-    Optional<RpcInvoker> lookUp(String group);
+    Optional<RpcInvoker> lookUp(String group, Invocation invocation);
 
     /**
      * 刷新节点信息

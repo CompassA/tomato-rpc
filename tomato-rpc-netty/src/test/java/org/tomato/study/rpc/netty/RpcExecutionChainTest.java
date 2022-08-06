@@ -33,6 +33,7 @@ import java.io.IOException;
 import java.util.List;
 
 /**
+ * 集成测试
  * @author Tomato
  * Created on 2021.11.26
  */
@@ -106,6 +107,8 @@ public class RpcExecutionChainTest {
      */
     @Test
     public void directRpcTest() {
+        MetaData.NodeProperty p = new MetaData.NodeProperty();
+        p.weight = 1;
         MetaData nodeInfo = MetaData.builder()
                 .microServiceId(mockMicroServiceId)
                 .protocol("tomato")
@@ -113,6 +116,7 @@ public class RpcExecutionChainTest {
                 .port(serverPort)
                 .stage(stage)
                 .group(group)
+                .nodeProperty(p)
                 .build();
         StubConfig<TestService> stubConfig = new StubConfig<>(
                 TestService.class,
@@ -147,6 +151,8 @@ public class RpcExecutionChainTest {
      */
     @Test
     public void directRpcTimeoutTest() throws InterruptedException {
+        MetaData.NodeProperty p = new MetaData.NodeProperty();
+        p.weight = 1;
         MetaData nodeInfo = MetaData.builder()
                 .microServiceId(mockMicroServiceId)
                 .protocol("tomato")
@@ -154,6 +160,7 @@ public class RpcExecutionChainTest {
                 .port(serverPort)
                 .stage(stage)
                 .group(group)
+                .nodeProperty(p)
                 .build();
         StubConfig<TimeoutTest> stubConfig = new StubConfig<>(
                 TimeoutTest.class,

@@ -16,8 +16,8 @@ package org.tomato.study.rpc.netty.utils;
 
 import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
-import org.tomato.study.rpc.netty.data.RpcRequestDTO;
-import org.tomato.study.rpc.netty.data.RpcRequestModel;
+import org.tomato.study.rpc.core.data.RpcRequestDTO;
+import org.tomato.study.rpc.core.data.RpcRequestModel;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 
 import java.util.HashMap;

@@ -14,15 +14,16 @@
 
 package org.tomato.study.rpc.config.controller;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.tomato.study.rpc.config.controller.vo.InvokerMetaVO;
 import org.tomato.study.rpc.config.controller.vo.InvokerStatusVO;
-import org.tomato.study.rpc.core.NameServer;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.registry.NameServer;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -35,6 +36,7 @@ import java.util.stream.Collectors;
  * @author Tomato
  * Created on 2022.02.01
  */
+@Slf4j
 @RestController
 public class MonitorController {
 
@@ -60,6 +62,7 @@ public class MonitorController {
                     metaVO.setStage(metadata.getStage());
                     metaVO.setProtocol(metadata.getProtocol());
                     metaVO.setMicroServiceId(metadata.getMicroServiceId());
+                    metaVO.setProperty(metadata.getNodeProperty());
                     return metaVO;
                 }).collect(Collectors.toList());
 

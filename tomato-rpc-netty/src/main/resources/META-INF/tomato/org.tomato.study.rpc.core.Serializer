@@ -1,2 +1,0 @@
-json : org.tomato.study.rpc.netty.serializer.JsonSerializer
-protostuff : org.tomato.study.rpc.netty.serializer.ProtostuffSerializer

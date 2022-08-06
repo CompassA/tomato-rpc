@@ -16,11 +16,10 @@ package org.tomato.study.rpc.core.loadbalance;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.tomato.study.rpc.core.Invocation;
-import org.tomato.study.rpc.core.LoadBalance;
+import org.tomato.study.rpc.core.data.Invocation;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.spi.SpiLoader;
-import org.tomato.study.rpc.core.transport.RpcInvoker;
+import org.tomato.study.rpc.core.invoker.RpcInvoker;
 
 import java.net.URI;
 import java.util.ArrayList;

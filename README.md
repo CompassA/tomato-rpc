@@ -224,7 +224,7 @@ Tomato-RPC可配置RPC调用的超时时间，本项目的调用超时是基于N
 
 ### 熔断
 Tomato-RPC基于断路器模式实现了一个简单的熔断机制。  
-Tomato-RPC以接口为单位进行熔断。  
+该熔断机制以接口为单位进行配置; 以接口方法为单位，进行时间窗口错误率统计。  
 
 #### 断路器计数器
 断路器内部维护一个计数器，计数器记录了断路器所包裹的方法的调用成功次数与失败次数，计数器仅会记录被包裹方法最近n次的调用情况(通过配置采样窗口参数进行控制)。  
@@ -259,6 +259,8 @@ public class DirectRpcTest {
     
     public void test() {
         // 微服务节点信息
+        MetaData.NodeProperty p = MetaData.NodeProperty();
+        p.weight = 1;
         MetaData nodeMeta = MetaData.builder()
                 .microServiceId("test")
                 .protocol("tomato")
@@ -266,6 +268,7 @@ public class DirectRpcTest {
                 .port("5555")
                 .stage("dev")
                 .group("main")
+                .nodeProperty(p)
                 .build();
         // 目标接口信息
         StubConfig<EchoService> stubConfig = new StubConfig<>(
@@ -360,10 +363,10 @@ public interface StubFactory {
 ```
 
 在项目的资源路径下添加"META-INF/tomato"目录, SPI会读取这个目录下的SPI配置  
-添加一个文件，名字为SPI接口类全名: org.tomato.study.rpc.core.StubFactory  
+添加一个文件，名字为SPI接口类全名: org.tomato.study.rpc.core.stub.StubFactory  
 每行添加SPI配置参数，形式为"参数名:具体实现类的类全名"
 ```text
-jdk : org.tomato.study.rpc.netty.proxy.JdkStubFactory
+jdk : org.tomato.study.rpc.core.stub.JdkStubFactory
 ```
 
 配置完毕后通过SpiLoader加载接口实现类
@@ -460,7 +463,10 @@ Param
           "port": 4567,
           "microServiceId": "demo-rpc-service",
           "stage": "dev",
-          "group": "main"
+          "group": "main",
+          "property": {
+            "weight": 1
+          }
         }
       ],
       "local-test": [
@@ -470,7 +476,10 @@ Param
           "port": 4568,
           "microServiceId": "demo-rpc-service",
           "stage": "dev",
-          "group": "local-test"
+          "group": "local-test",
+          "property": {
+            "weight": 1
+          }
         }
       ]
     }
@@ -485,7 +494,10 @@ Param
           "port": 4567,
           "microServiceId": "demo-rpc-service",
           "stage": "dev",
-          "group": "main"
+          "group": "main",
+          "property": {
+            "weight": 1
+          }
         }
       ]
     }
@@ -496,8 +508,8 @@ Param
 todo
 
 ## 均衡负载
-目前基于随机策略，从一个微服务的多个实例节点中随机选取一个发起调用。  
-todo 后续增加多种方式
+目前基于Nginx的平滑加权轮询算法实现均衡负载，具体实现见"RoundRobinLoadBalance.java"  
+Tomato-RPC的均衡负载的单位为接口方法
 
 # k8s部署样例
 

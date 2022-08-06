@@ -1,1 +1,0 @@
-default : org.tomato.study.rpc.core.circuit.DefaultCircuitBreaker

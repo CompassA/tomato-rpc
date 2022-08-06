@@ -32,6 +32,9 @@ public enum TomatoRpcCoreErrorEnum {
 
 
     RPC_ROUND_ROBIN_LOAD_BALANCE_ERROR(20001, "round robin error"),
+
+    STUB_INVOKER_SEARCH_ERROR(30001, "invoker not found"),
+    STUB_INVOKER_RPC_ERROR(30002, "client rpc failed"),
     ;
 
     private int code;

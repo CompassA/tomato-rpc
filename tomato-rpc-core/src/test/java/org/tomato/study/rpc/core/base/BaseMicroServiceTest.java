@@ -24,15 +24,17 @@ import org.mockito.Mockito;
 import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
-import org.tomato.study.rpc.core.Invocation;
-import org.tomato.study.rpc.core.Result;
-import org.tomato.study.rpc.core.Serializer;
+import org.tomato.study.rpc.core.data.Invocation;
+import org.tomato.study.rpc.core.data.Result;
+import org.tomato.study.rpc.core.serializer.Serializer;
 import org.tomato.study.rpc.core.circuit.CircuitRpcInvoker;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.loadbalance.RoundRobinLoadBalance;
+import org.tomato.study.rpc.core.router.BaseMicroServiceSpace;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
-import org.tomato.study.rpc.core.transport.RpcInvoker;
+import org.tomato.study.rpc.core.invoker.RpcInvoker;
 
 import java.util.Collections;
 import java.util.Iterator;
@@ -114,17 +116,16 @@ public class BaseMicroServiceTest extends BaseTest {
 
     @Test
     public void lockUpTest() throws Exception {
-        RpcInvoker mockInvoker = PowerMockito.mock(RpcInvoker.class);
-        PowerMockito.when(mockInvoker.isUsable()).thenReturn(true);
-        PowerMockito.when(provider, "createInvoker", ArgumentMatchers.any()).thenReturn(mockInvoker);
+        Invocation invocation = Mockito.mock(Invocation.class);
+        PowerMockito.when(invocation.getApiId()).thenReturn("mockApiId$api");
         provider.refresh(originMataDataSet);
-        Assert.assertTrue(provider.lookUp("default").isPresent());
+        Assert.assertTrue(provider.lookUp("default", invocation).isPresent());
     }
 
     public static class TestServiceProvider extends BaseMicroServiceSpace {
 
         public TestServiceProvider(String mockServiceId) {
-            super(mockServiceId, RpcConfig.builder().build());
+            super(mockServiceId, RpcConfig.builder().build(), new RoundRobinLoadBalance());
         }
 
         @Override

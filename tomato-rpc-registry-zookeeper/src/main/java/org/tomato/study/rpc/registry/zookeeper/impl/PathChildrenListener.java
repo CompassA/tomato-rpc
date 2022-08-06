@@ -17,7 +17,7 @@ package org.tomato.study.rpc.registry.zookeeper.impl;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.zookeeper.WatchedEvent;
-import org.tomato.study.rpc.core.NameServer;
+import org.tomato.study.rpc.core.registry.NameServer;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RefreshInvokerTask;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;

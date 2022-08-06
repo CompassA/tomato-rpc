@@ -14,14 +14,11 @@
 
 package org.tomato.study.rpc.core.circuit;
 
-import org.tomato.study.rpc.core.spi.SpiInterface;
-
 /**
  * 熔断器
  * @author Tomato
  * Created on 2021.12.03
  */
-@SpiInterface(value = "default", singleton = false)
 public interface CircuitBreaker {
 
     /**

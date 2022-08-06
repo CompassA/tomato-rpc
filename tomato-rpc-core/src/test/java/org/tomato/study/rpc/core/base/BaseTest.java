@@ -16,7 +16,8 @@ package org.tomato.study.rpc.core.base;
 
 import org.junit.Assert;
 import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.transport.RpcInvoker;
+import org.tomato.study.rpc.core.router.BaseMicroServiceSpace;
+import org.tomato.study.rpc.core.invoker.RpcInvoker;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.utils.ReflectUtils;
 
@@ -59,6 +60,13 @@ public class BaseTest {
     }
 
     protected Set<MetaData> mockMetadataSet(String microServiceId) {
+        MetaData.NodeProperty p1 = new MetaData.NodeProperty();
+        p1.weight = 1;
+        MetaData.NodeProperty p2 = new MetaData.NodeProperty();
+        p2.weight = 1;
+        MetaData.NodeProperty p3 = new MetaData.NodeProperty();
+        p3.weight = 1;
+
         return new HashSet<>(Set.of(
                 MetaData.builder()
                         .protocol("tomato")
@@ -67,6 +75,7 @@ public class BaseTest {
                         .microServiceId(microServiceId)
                         .group("default")
                         .stage("default")
+                        .nodeProperty(p1)
                         .build(),
                 MetaData.builder()
                         .protocol("tomato")
@@ -75,6 +84,7 @@ public class BaseTest {
                         .microServiceId(microServiceId)
                         .group("version1")
                         .stage("default")
+                        .nodeProperty(p2)
                         .build(),
                 MetaData.builder()
                         .protocol("tomato")
@@ -83,6 +93,7 @@ public class BaseTest {
                         .microServiceId(microServiceId)
                         .group("default")
                         .stage("default")
+                        .nodeProperty(p3)
                         .build()
         ));
     }

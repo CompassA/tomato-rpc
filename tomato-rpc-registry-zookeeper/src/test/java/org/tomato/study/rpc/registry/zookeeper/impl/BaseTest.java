@@ -14,20 +14,10 @@
 
 package org.tomato.study.rpc.registry.zookeeper.impl;
 
-import org.junit.Assert;
 import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.base.BaseMicroServiceSpace;
-import org.tomato.study.rpc.core.transport.RpcInvoker;
-import org.tomato.study.rpc.core.router.MicroServiceSpace;
-import org.tomato.study.rpc.utils.ReflectUtils;
 
-import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * @author Tomato
@@ -37,31 +27,13 @@ public class BaseTest {
 
     public static final String stage = "dev";
 
-    protected void checkInvokerMap(MicroServiceSpace serviceProvider, Collection<MetaData> mataDataSet) {
-        ConcurrentMap<MetaData, RpcInvoker> invokerRegistry = ReflectUtils.reflectGet(
-                serviceProvider, BaseMicroServiceSpace.class, "invokerRegistry");
-        ConcurrentMap<String, List<RpcInvoker>> invokerMap = ReflectUtils.reflectGet(
-                serviceProvider, BaseMicroServiceSpace.class, "sameGroupFInvokerMap");
-
-        Assert.assertEquals(invokerRegistry.values().size(), mataDataSet.size());
-
-        for (MetaData metaData : mataDataSet) {
-            Assert.assertNotNull(invokerRegistry.get(metaData));
-        }
-
-        Map<String, Set<MetaData>> metadataMap = new HashMap<>(0);
-        for (MetaData metaData : mataDataSet) {
-            metadataMap.computeIfAbsent(metaData.getGroup(), version -> new HashSet<>(0))
-                    .add(metaData);
-        }
-        for (Map.Entry<String, Set<MetaData>> entry : metadataMap.entrySet()) {
-            List<RpcInvoker> invokers = invokerMap.get(entry.getKey());
-            Assert.assertNotNull(invokers);
-            Assert.assertEquals(invokers.size(), entry.getValue().size());
-        }
-    }
-
     protected Set<MetaData> mockMetadataSet(String serviceId) {
+        MetaData.NodeProperty p1 = new MetaData.NodeProperty();
+        p1.weight = 1;
+        MetaData.NodeProperty p2 = new MetaData.NodeProperty();
+        p2.weight = 1;
+        MetaData.NodeProperty p3 = new MetaData.NodeProperty();
+        p3.weight = 1;
         return new HashSet<>(Set.of(
                 MetaData.builder()
                         .protocol("tomato")
@@ -70,6 +42,7 @@ public class BaseTest {
                         .microServiceId(serviceId)
                         .group("default")
                         .stage(stage)
+                        .nodeProperty(p1)
                         .build(),
                 MetaData.builder()
                         .protocol("tomato")
@@ -78,6 +51,7 @@ public class BaseTest {
                         .microServiceId(serviceId)
                         .group("version1")
                         .stage(stage)
+                        .nodeProperty(p2)
                         .build(),
                 MetaData.builder()
                         .protocol("tomato")
@@ -86,6 +60,7 @@ public class BaseTest {
                         .microServiceId(serviceId)
                         .group("default")
                         .stage(stage)
+                        .nodeProperty(p3)
                         .build()
         ));
     }

@@ -18,7 +18,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
-import org.tomato.study.rpc.core.NameServer;
+import org.tomato.study.rpc.core.registry.NameServer;
 
 /**
  * necessary data for creating stub
@@ -66,6 +66,9 @@ public class StubConfig<T> {
     @Setter
     private NameServer nameServer;
 
+    /**
+     * 基于服务发现的Stub
+     */
     public StubConfig(
             Class<T> serviceInterface,
             String microServiceId,
@@ -81,6 +84,9 @@ public class StubConfig<T> {
         this.nameServer = nameServer;
     }
 
+    /**
+     * 基于ip直连的stub
+     */
     public StubConfig(
             Class<T> serviceInterface,
             String microServiceId,
