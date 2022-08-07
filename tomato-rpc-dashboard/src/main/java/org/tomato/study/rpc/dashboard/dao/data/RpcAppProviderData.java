@@ -12,35 +12,35 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core.invoker;
+package org.tomato.study.rpc.dashboard.dao.data;
 
-import org.tomato.study.rpc.core.stub.StubInvoker;
+import lombok.Getter;
+import lombok.Setter;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RpcConfig;
-import org.tomato.study.rpc.core.data.StubConfig;
-import org.tomato.study.rpc.core.spi.SpiInterface;
-
-import java.util.Optional;
 
 /**
- * 创建Invoker
+ * 一个rpc节点的数据
  * @author Tomato
- * Created on 2021.07.11
+ * Created on 2022.08.07
  */
-@SpiInterface("netty")
-public interface RpcInvokerFactory {
+@Getter
+@Setter
+public class RpcAppProviderData {
 
     /**
-     * create rpc invoker by service provider metadata
-     * keep-alive and wait-timeout are default
-     * @param nodeInfo necessary data for create rpc invoker
-     * @return RPC invoker
+     * 应用名称
      */
-    Optional<RpcInvoker> create(MetaData nodeInfo, RpcConfig rpcConfig);
+    private String appName;
 
     /**
-     * 创建stub invoker
-     * @return stub invoker
+     * 应用配置
      */
-    Optional<StubInvoker> createStubInvoker(StubConfig<?> stubConfig, RpcConfig rpcConfig);
+    private RpcConfig rpcConfig;
+
+    /**
+     * 应用属性
+     */
+    private MetaData nodeProperties;
+
 }

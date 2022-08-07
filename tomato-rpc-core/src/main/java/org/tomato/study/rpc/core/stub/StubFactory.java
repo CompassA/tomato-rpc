@@ -21,9 +21,6 @@ import org.tomato.study.rpc.core.invoker.RpcInvokerFactory;
 
 /**
  * create rpc client proxy
- * Constructor Args:
- * @see org.tomato.study.rpc.core.data.RpcConfig
- * @see RpcInvokerFactory
  * @author Tomato
  * Created on 2021.03.31
  */
