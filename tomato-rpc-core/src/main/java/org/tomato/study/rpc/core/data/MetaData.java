@@ -31,6 +31,7 @@ package org.tomato.study.rpc.core.data;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NonNull;
+import lombok.Setter;
 import lombok.ToString;
 
 import java.net.URI;
@@ -49,6 +50,8 @@ import java.util.Optional;
 @ToString
 public class MetaData {
 
+    public static final String URL_FORMAT = "%s://%s:%d/?%s=%s&%s=%s&%s=%s&%s=%s";
+
     /**
      * micro-service-id parameter key name in the uri
      */
@@ -63,6 +66,11 @@ public class MetaData {
      * group parameter key name in the uri
      */
     private static final String GROUP_PARAM_NAME = "group";
+
+    /**
+     * other dynamic property
+     */
+    private static final String PROPERTY_KEY = "property";
 
     /**
      * rpc protocol
@@ -95,6 +103,12 @@ public class MetaData {
     private final String group;
 
     /**
+     * provider property
+     */
+    @Setter
+    private NodeProperty nodeProperty;
+
+    /**
      * is metadata valid
      * @return true valid
      */
@@ -115,14 +129,15 @@ public class MetaData {
         if (!metaData.isValid()) {
             return Optional.empty();
         }
-        return Optional.of(URI.create(String.format("%s://%s:%d/?%s=%s&%s=%s&%s=%s",
+        String url = String.format(URL_FORMAT,
                 metaData.getProtocol(),
                 metaData.getHost(),
                 metaData.getPort(),
                 ID_PARAM_NAME, metaData.getMicroServiceId(),
                 STAGE_PARAM_NAME, metaData.getStage(),
-                GROUP_PARAM_NAME, metaData.getGroup()))
-        );
+                GROUP_PARAM_NAME, metaData.getGroup(),
+                PROPERTY_KEY, metaData.getNodeProperty().toUrl());
+        return Optional.of(URI.create(url));
     }
 
     public static Optional<MetaData> convert(URI uri) {
@@ -145,6 +160,7 @@ public class MetaData {
         String microServiceId = paramMap.get(ID_PARAM_NAME);
         String stage = paramMap.get(STAGE_PARAM_NAME);
         String group = paramMap.get(GROUP_PARAM_NAME);
+        NodeProperty property = toNodeProperty(paramMap.get(PROPERTY_KEY));
         MetaData metaData = MetaData.builder()
                 .protocol(scheme)
                 .host(host)
@@ -152,6 +168,7 @@ public class MetaData {
                 .microServiceId(microServiceId)
                 .stage(stage)
                 .group(group)
+                .nodeProperty(property)
                 .build();
         if (!metaData.isValid()) {
             return Optional.empty();
@@ -186,5 +203,43 @@ public class MetaData {
         hash = hash * 31 + Objects.hashCode(this.getStage());
         hash = hash * 31 + Objects.hashCode(this.getGroup());
         return hash;
+    }
+
+    public int getWeight() {
+        return nodeProperty.weight;
+    }
+
+    public static class NodeProperty {
+        public static final String DELIMITER = ":";
+        public static final String PROPERTY_DELIMITER = "#";
+        public static final String WEIGHT_KEY = "weight";
+
+        /**
+         * 均衡负载权重
+         */
+        public int weight;
+
+        public String toUrl() {
+            return String.format("%s%s%s", WEIGHT_KEY, DELIMITER, weight);
+        }
+    }
+
+    /**
+     * 解析属性键值对
+     * @param propertyStr "weight:123#key2:abc"
+     * @return 实体对象
+     */
+    private static NodeProperty toNodeProperty(String propertyStr) {
+        String[] split = propertyStr.split(NodeProperty.PROPERTY_DELIMITER);
+        NodeProperty nodeProperty = new NodeProperty();
+        for (String part : split) {
+            String[] kv = part.split(NodeProperty.DELIMITER);
+            if (NodeProperty.WEIGHT_KEY.equals(kv[0])) {
+                nodeProperty.weight = Integer.parseInt(kv[1]);
+            } else {
+
+            }
+        }
+        return nodeProperty;
     }
 }

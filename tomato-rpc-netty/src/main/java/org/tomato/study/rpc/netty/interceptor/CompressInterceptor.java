@@ -19,8 +19,8 @@ import org.tomato.study.rpc.core.CommandInterceptor;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.ExtensionHeaderBuilder;
-import org.tomato.study.rpc.netty.invoker.RpcParameterKey;
-import org.tomato.study.rpc.netty.utils.GzipUtils;
+import org.tomato.study.rpc.core.RpcParameterKey;
+import org.tomato.study.rpc.core.utils.GzipUtils;
 
 import java.util.Map;
 

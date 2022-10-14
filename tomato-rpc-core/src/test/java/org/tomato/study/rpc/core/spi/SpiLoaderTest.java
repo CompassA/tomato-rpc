@@ -75,16 +75,4 @@ public class SpiLoaderTest {
         SpiInterfaceA component = SpiLoader.getLoader(SpiInterfaceA.class).load();
         Assert.assertTrue(component instanceof SpiInterfaceAOtherImpl);
     }
-
-    @Test
-    public void loadWithArgsTest() {
-        int a = 10;
-        String b = "hello";
-        long c = 143L;
-        SpiInterfaceD value = SpiLoader.getLoader(SpiInterfaceD.class).load(a, b, c);
-        Assert.assertNotNull(value);
-        Assert.assertEquals(value.getInt(), a);
-        Assert.assertEquals(value.getString(), b);
-        Assert.assertEquals(value.getLong(), c);
-    }
 }

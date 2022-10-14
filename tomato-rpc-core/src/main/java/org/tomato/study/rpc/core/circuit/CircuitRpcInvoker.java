@@ -15,16 +15,16 @@
 package org.tomato.study.rpc.core.circuit;
 
 import lombok.Getter;
-import org.tomato.study.rpc.core.Invocation;
-import org.tomato.study.rpc.core.Response;
-import org.tomato.study.rpc.core.Result;
-import org.tomato.study.rpc.core.Serializer;
+import org.tomato.study.rpc.core.data.Invocation;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.data.Response;
+import org.tomato.study.rpc.core.data.Result;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.invoker.RpcInvoker;
+import org.tomato.study.rpc.core.serializer.Serializer;
 import org.tomato.study.rpc.core.spi.SpiLoader;
-import org.tomato.study.rpc.core.transport.RpcInvoker;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,9 +38,10 @@ public abstract class CircuitRpcInvoker implements RpcInvoker {
 
     private final RpcInvoker rpcInvoker;
     private final RpcConfig rpcConfig;
+    private final CircuitBreakerFactory factory;
 
     /**
-     * interfaceName -> breaker;
+     * api-id -> breaker;
      */
     @Getter
     private final Map<String, CircuitBreaker> breakerMap = new ConcurrentHashMap<>(0);
@@ -48,10 +49,7 @@ public abstract class CircuitRpcInvoker implements RpcInvoker {
     public CircuitRpcInvoker(RpcInvoker rpcInvoker, RpcConfig rpcConfig) {
         this.rpcInvoker = rpcInvoker;
         this.rpcConfig = rpcConfig;
-        SpiLoader.getLoader(CircuitBreaker.class).load(
-                rpcConfig.getCircuitOpenRate(),
-                rpcConfig.getCircuitOpenSeconds() * 1000_000_000L,
-                rpcConfig.getCircuitWindow());
+        this.factory = SpiLoader.getLoader(CircuitBreakerFactory.class).load();
     }
 
     @Override
@@ -71,10 +69,9 @@ public abstract class CircuitRpcInvoker implements RpcInvoker {
 
     @Override
     public Result invoke(Invocation invocation) throws TomatoRpcException {
-        CircuitBreaker breaker = breakerMap.computeIfAbsent(invocation.getInterfaceName(), (key) -> SpiLoader.getLoader(CircuitBreaker.class).load(
-                rpcConfig.getCircuitOpenRate(),
-                rpcConfig.getCircuitOpenSeconds() * 1000_000_000L,
-                rpcConfig.getCircuitWindow()));
+        CircuitBreaker breaker = breakerMap.computeIfAbsent(
+                invocation.getApiId(),
+                (key) -> factory.createBreaker(rpcConfig));
         if (!breaker.allow()) {
             throw new TomatoRpcException(TomatoRpcCoreErrorEnum.RPC_CIRCUIT_ERROR.create());
         }

@@ -16,8 +16,8 @@ package org.tomato.study.rpc.netty.invoker;
 
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RpcConfig;
-import org.tomato.study.rpc.core.transport.RpcInvoker;
-import org.tomato.study.rpc.core.transport.RpcInvokerFactory;
+import org.tomato.study.rpc.core.invoker.BaseRpcInvokerFactory;
+import org.tomato.study.rpc.core.invoker.RpcInvoker;
 
 import java.util.Optional;
 
@@ -26,11 +26,11 @@ import java.util.Optional;
  * @author Tomato
  * Created on 2021.07.11
  */
-public class NettyRpcInvokerFactory implements RpcInvokerFactory {
+public class NettyRpcInvokerFactory extends BaseRpcInvokerFactory {
 
     @Override
     public Optional<RpcInvoker> create(MetaData nodeInfo, RpcConfig rpcConfig) {
-        if (nodeInfo == null ) {
+        if (nodeInfo == null) {
             return Optional.empty();
         }
         return Optional.of(new NettyRpcInvoker(nodeInfo, rpcConfig));

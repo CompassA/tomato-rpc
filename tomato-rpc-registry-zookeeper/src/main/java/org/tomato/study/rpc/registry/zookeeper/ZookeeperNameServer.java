@@ -14,12 +14,13 @@
 
 package org.tomato.study.rpc.registry.zookeeper;
 
-import org.tomato.study.rpc.core.base.BaseNameServer;
+import org.tomato.study.rpc.core.data.Invocation;
+import org.tomato.study.rpc.core.registry.BaseNameServer;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.NameServerConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
-import org.tomato.study.rpc.core.transport.RpcInvoker;
+import org.tomato.study.rpc.core.invoker.RpcInvoker;
 import org.tomato.study.rpc.registry.zookeeper.data.ZookeeperConfig;
 import org.tomato.study.rpc.registry.zookeeper.error.TomatoRegistryErrorEnum;
 import org.tomato.study.rpc.registry.zookeeper.impl.ZookeeperRegistry;
@@ -72,10 +73,10 @@ public class ZookeeperNameServer extends BaseNameServer {
     }
 
     @Override
-    public Optional<RpcInvoker> lookupInvoker(String microServiceId, String group) {
+    public Optional<RpcInvoker> lookupInvoker(String microServiceId, String group, Invocation invocation) {
         // 如果用户在jvm配置了对应服务的group，优先使用用户配置的group
         String finalGroup = getJvmConfigGroup(microServiceId).orElse(group);
-        return registry.lookup(microServiceId, finalGroup);
+        return registry.lookup(microServiceId, finalGroup, invocation);
     }
 
     @Override

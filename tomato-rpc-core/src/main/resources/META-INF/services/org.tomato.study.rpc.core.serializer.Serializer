@@ -1,0 +1,2 @@
+org.tomato.study.rpc.core.serializer.ProtostuffSerializer
+org.tomato.study.rpc.core.serializer.JsonSerializer

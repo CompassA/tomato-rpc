@@ -30,6 +30,7 @@
         <module>tomato-rpc-spring-boot-starter</module>
         <module>tomato-rpc-registry-zookeeper</module>
         <module>tomato-rpc-config</module>
+        <module>tomato-rpc-dashboard</module>
 
         <!-- sample module -->
         <module>tomato-rpc-sample-server</module>
@@ -107,6 +108,13 @@
                 <artifactId>tomato-rpc-spring-boot-starter</artifactId>
                 <version>${project.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.tomato.study.rpc</groupId>
+                <artifactId>tomato-rpc-dashboard</artifactId>
+                <version>${project.version}</version>
+            </dependency>
+
 
             <dependency>
                 <groupId>org.projectlombok</groupId>

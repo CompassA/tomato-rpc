@@ -29,18 +29,6 @@ public class DefaultCircuitBreaker implements CircuitBreaker {
             AtomicIntegerFieldUpdater.newUpdater(DefaultCircuitBreaker.class, "state");
 
     /**
-     * 默认启动熔断比例
-     */
-    public static final double DEFAULT_THRESHOLD = 0.5;
-
-    /**
-     * 默认熔断间隔
-     */
-    public static final long DEFAULT_PERIOD_NANO = 60_000_000_000L;
-
-    public static final int DEFAULT_RING_LENGTH = 10000;
-
-    /**
      * 熔断阈值
      */
     @Getter
@@ -73,14 +61,6 @@ public class DefaultCircuitBreaker implements CircuitBreaker {
      */
     @Getter
     private long endCircuitTimestamp;
-
-    public DefaultCircuitBreaker() {
-        this(DEFAULT_THRESHOLD, DEFAULT_PERIOD_NANO, DEFAULT_RING_LENGTH);
-    }
-
-    public DefaultCircuitBreaker(double threshold, long periodNano) {
-        this(threshold, periodNano, 10000);
-    }
 
     public DefaultCircuitBreaker(Double threshold, Long periodNano, Integer ringLength) {
         this.threshold = threshold;

@@ -19,7 +19,7 @@ import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
 import org.tomato.study.rpc.core.data.Header;
-import org.tomato.study.rpc.netty.serializer.SerializerHolder;
+import org.tomato.study.rpc.core.serializer.SerializerHolder;
 
 /**
  * 服务端回应KeepAlive

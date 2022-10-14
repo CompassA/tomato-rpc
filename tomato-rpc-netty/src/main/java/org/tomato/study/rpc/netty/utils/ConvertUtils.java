@@ -16,14 +16,15 @@ package org.tomato.study.rpc.netty.utils;
 
 import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
-import org.tomato.study.rpc.netty.data.RpcRequestDTO;
-import org.tomato.study.rpc.netty.data.RpcRequestModel;
+import org.tomato.study.rpc.core.data.RpcRequestDTO;
+import org.tomato.study.rpc.core.data.RpcRequestModel;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 
 import java.util.HashMap;
 import java.util.Map;
 
 /**
+ * Invocation对象转化
  * @author Tomato
  * Created on 2021.09.30
  */
@@ -43,6 +44,7 @@ public final class ConvertUtils {
                 .microServiceId(dto.getMicroServiceId())
                 .rpcInterFace(getClass(dto.getInterfaceName()))
                 .methodName(dto.getMethodName())
+                .apiId(dto.getApiId())
                 .returnType(StringUtils.isBlank(dto.getReturnType())
                         ? void.class : getClass(dto.getReturnType()));
 

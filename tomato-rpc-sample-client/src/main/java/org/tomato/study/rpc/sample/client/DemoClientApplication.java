@@ -65,15 +65,14 @@ public class DemoClientApplication {
     }
 
     private static RpcCoreService createCoreService(String zkURL) throws TomatoRpcException {
-        RpcCoreService rpcCoreService = SpiLoader.getLoader(RpcCoreServiceFactory.class)
-                .load()
-                .create(RpcConfig.builder()
-                        .microServiceId("demo-rpc-client")
-                        .subscribedServiceIds(Collections.singletonList(Constant.serviceId))
-                        .nameServiceURI(zkURL)
-                        .port(7890)
-                        .build()
-                );
+        RpcConfig config = RpcConfig.builder()
+                .microServiceId("demo-rpc-client")
+                .subscribedServiceIds(Collections.singletonList(Constant.serviceId))
+                .nameServiceURI(zkURL)
+                .port(7890)
+                .build();
+        RpcCoreService rpcCoreService = SpiLoader.getLoader(RpcCoreServiceFactory.class).load()
+                .create(config);
         rpcCoreService.init();
         rpcCoreService.start();
         return rpcCoreService;
@@ -82,7 +81,7 @@ public class DemoClientApplication {
     private static EchoService createStub(RpcCoreService rpcCoreService) {
         StubConfig<EchoService> stubConfig = new StubConfig<>(
                 EchoService.class,
-                rpcCoreService.getMicroServiceId(),
+                Constant.serviceId,
                 rpcCoreService.getGroup(),
                 false,
                 5000L,
@@ -92,7 +91,7 @@ public class DemoClientApplication {
 
     private static void invokerRpc(EchoService stub) throws InterruptedException {
         int threadNum = 10;
-        int messageNum = 100;
+        int messageNum = 1000;
         CountDownLatch mainThreadWait = new CountDownLatch(threadNum);
         CountDownLatch subThreadWait = new CountDownLatch(1);
         Runnable runnable = () -> {
@@ -101,7 +100,7 @@ public class DemoClientApplication {
                 for (int i = 0; i < messageNum; ++i) {
                     DemoResponse response = stub.echo(new DemoRequest("hello world"));
                     LOGGER.info(response.getData());
-                    Thread.sleep(500);
+                    Thread.sleep(1500);
                 }
                 mainThreadWait.countDown();
             } catch (TomatoRpcRuntimeException e) {

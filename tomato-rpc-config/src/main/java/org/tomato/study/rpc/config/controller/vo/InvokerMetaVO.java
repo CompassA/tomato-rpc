@@ -21,6 +21,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.ToString;
+import org.tomato.study.rpc.core.data.MetaData;
 
 /**
  * @author Tomato
@@ -40,4 +41,5 @@ public class InvokerMetaVO {
     private String microServiceId;
     private String stage;
     private String group;
+    private MetaData.NodeProperty property;
 }

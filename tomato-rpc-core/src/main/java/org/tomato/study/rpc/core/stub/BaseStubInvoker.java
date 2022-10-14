@@ -1,0 +1,110 @@
+/*
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *       http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+
+package org.tomato.study.rpc.core.stub;
+
+import lombok.Getter;
+import org.tomato.study.rpc.core.data.Invocation;
+import org.tomato.study.rpc.core.data.Response;
+import org.tomato.study.rpc.core.RpcParameterKey;
+import org.tomato.study.rpc.core.data.RpcRequestDTO;
+import org.tomato.study.rpc.core.data.StubConfig;
+
+import java.lang.reflect.Method;
+
+/**
+ * @author Tomato
+ * Created on 2021.11.27
+ */
+public abstract class BaseStubInvoker implements StubInvoker {
+
+    @Getter
+    private final StubConfig<?> stubConfig;
+
+    /**
+     * 目标服务的唯一标识
+     */
+    @Getter
+    private final String microServiceId;
+
+    /**
+     * 服务分组
+     */
+    @Getter
+    private final String group;
+
+    /**
+     * 服务接口
+     */
+    @Getter
+    private final Class<?> serviceInterface;
+
+    public BaseStubInvoker(StubConfig<?> stubConfig) {
+        this.stubConfig = stubConfig;
+        this.microServiceId = stubConfig.getMicroServiceId();
+        this.group = stubConfig.getGroup();
+        this.serviceInterface = stubConfig.getServiceInterface();
+    }
+
+    @Override
+    public Object invoke(Object proxy, Method method, Object[] args) {
+        // 将方法参数转化为可序列化的DTO对象
+        Invocation invocation = createInvocation(method, args);
+
+        // 塞参数
+        putParameter(invocation);
+
+        // 调用
+        Response response = doInvoke(invocation);
+
+        // 转化为接口返回对象
+        return response.getData();
+    }
+
+    /**
+     * 塞一些通用的参数
+     * @param rpcInvocation rpc请求
+     */
+    private void putParameter(Invocation rpcInvocation) {
+        rpcInvocation.putContextParameter(RpcParameterKey.TIMEOUT, String.valueOf(stubConfig.getTimeoutMs()));
+        rpcInvocation.putContextParameter(RpcParameterKey.COMPRESS, String.valueOf(stubConfig.isCompressBody()));
+    }
+
+    protected Invocation createInvocation(Method method, Object[] args) {
+        RpcRequestDTO.RpcRequestDTOBuilder builder = RpcRequestDTO.builder()
+                .microServiceId(getMicroServiceId())
+                .interfaceName(getServiceInterface().getName())
+                .methodName(method.getName())
+                .returnType(method.getReturnType().getName())
+                .args(args == null ? new Object[0] : args);
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        if (parameterTypes.length == 0) {
+            builder.argsTypes(new String[0]);
+        } else {
+            String[] parameterTypeNames = new String[parameterTypes.length];
+            for (int i = 0; i < parameterTypeNames.length; i++) {
+                parameterTypeNames[i] = parameterTypes[i].getName();
+            }
+            builder.argsTypes(parameterTypeNames);
+        }
+        return builder.build();
+    }
+
+    /**
+     * do rpc invoke
+     * @param invocation rpc invocation
+     * @return rpc response
+     */
+    protected abstract Response doInvoke(Invocation invocation);
+}

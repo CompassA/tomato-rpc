@@ -14,9 +14,11 @@
 
 package org.tomato.study.rpc.core;
 
+import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.observer.LifeCycle;
-import org.tomato.study.rpc.core.transport.RpcInvokerFactory;
+import org.tomato.study.rpc.core.registry.NameServer;
+import org.tomato.study.rpc.core.invoker.RpcInvokerFactory;
 
 import java.net.URI;
 import java.util.List;
@@ -98,4 +100,11 @@ public interface RpcCoreService extends LifeCycle {
      * @return rpc server port
      */
     int getPort();
+
+    /**
+     * 更新服务端属性
+     * @param property 要更新的属性
+     * @throws Exception 异常
+     */
+    void updateServerProperty(MetaData.NodeProperty property) throws Exception;
 }

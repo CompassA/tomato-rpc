@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: "tomato-rpc-dashboard-application"
+
+tomato-rpc-dashboard:
+  name-server-url: "127.0.0.1:2181"
+
+server:
+  port: 4353

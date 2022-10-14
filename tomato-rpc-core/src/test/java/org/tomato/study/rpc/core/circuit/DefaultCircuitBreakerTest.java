@@ -16,14 +16,15 @@ package org.tomato.study.rpc.core.circuit;
 
 import org.junit.Assert;
 import org.junit.Test;
-import org.tomato.study.rpc.core.Invocation;
-import org.tomato.study.rpc.core.Response;
-import org.tomato.study.rpc.core.Result;
-import org.tomato.study.rpc.core.Serializer;
+import org.tomato.study.rpc.core.data.Invocation;
+import org.tomato.study.rpc.core.data.Response;
+import org.tomato.study.rpc.core.data.Result;
+import org.tomato.study.rpc.core.serializer.Serializer;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
-import org.tomato.study.rpc.core.transport.RpcInvoker;
+import org.tomato.study.rpc.core.invoker.RpcInvoker;
+import org.tomato.study.rpc.core.spi.SpiLoader;
 
 import java.util.Map;
 import java.util.Optional;
@@ -39,14 +40,21 @@ public class DefaultCircuitBreakerTest {
     @Test
     public void circuitBreakerTest() throws InterruptedException {
         long intervalNano = 1_000_000_000L;
-        DefaultCircuitBreaker breaker = new DefaultCircuitBreaker(0.4, intervalNano, 10);
+        RpcConfig config = RpcConfig.builder()
+                .enableCircuit(true)
+                .circuitOpenRate(0.4)
+                .circuitOpenSeconds(1)
+                .circuitWindow(10)
+                .build();
+        CircuitBreaker breaker = SpiLoader.getLoader(CircuitBreakerFactory.class).load()
+                .createBreaker(config);
         for (int i = 0; i < 3; ++i) {
             breaker.addFailure();
             Assert.assertTrue(breaker.allow());
         }
         breaker.addFailure();
         Assert.assertFalse(breaker.allow());
-        Assert.assertEquals(breaker.getStatus().failureRate(), 4.0 / breaker.getRingLength(), 0.0001);
+        Assert.assertEquals(breaker.getStatus().failureRate(), 4.0 / config.getCircuitWindow(), 0.0001);
 
         Thread.sleep(intervalNano / 1000_000 + 1);
 
@@ -65,22 +73,31 @@ public class DefaultCircuitBreakerTest {
 
     @Test
     public void invokerTest() throws TomatoRpcException, InterruptedException {
+        // 构造一个一直报错的invoker
         RpcInvoker mockInvoker = new RpcInvoker() {
-            @Override
             public String getGroup() {return null;}
-            @Override
             public MetaData getMetadata() {return null;}
-            @Override
             public Serializer getSerializer() {return null;}
-            @Override
             public Result invoke(Invocation invocation) throws TomatoRpcException {
                 if (true) { throw new RuntimeException("error"); }
                 return null;
             }
-            @Override
             public boolean isUsable() {return true;}
-            @Override
             public void destroy() throws TomatoRpcException {}
+        };
+
+        // mock调用
+        Invocation invocation = new Invocation() {
+            public String getMicroServiceId() { return "mockId"; }
+            public String getInterfaceName() { return mockInterfaceName; }
+            public String getMethodName() { return "mockMethod"; }
+            public String[] getArgsTypes() { return new String[0]; }
+            public Object[] getArgs() { return new Object[0]; }
+            public String getReturnType() { return "mockType"; }
+            public Map<String, String> fetchContextMap() { return null; }
+            public void putContextParameter(String key, String value) {}
+            public Optional<String> fetchContextParameter(String key) {return Optional.empty();}
+            public Invocation cloneInvocationWithoutContext() {return null;}
         };
 
         long seconds = 3;
@@ -99,47 +116,40 @@ public class DefaultCircuitBreakerTest {
             }
         };
 
+        String apiId = invocation.getApiId();
         Map<String, CircuitBreaker> breakerMap = circuitRpcInvoker.getBreakerMap();
+        // 没达到熔断阈值, 即使保存也未熔断
         for (int i = 0; i < config.getCircuitWindow() / 2; ++i) {
+            CircuitBreaker breaker = breakerMap.get(apiId);
             if (i == 0) {
-                Assert.assertNull(breakerMap.get(mockInterfaceName));
+                Assert.assertNull(breaker);
             } else {
-                Assert.assertNotNull(breakerMap.get(mockInterfaceName));
-                Assert.assertTrue(breakerMap.get(mockInterfaceName).allow());
+                Assert.assertNotNull(breaker);
+                Assert.assertTrue(breaker.allow());
             }
-            invokeError(circuitRpcInvoker);
+            invokeError(invocation, circuitRpcInvoker);
         }
 
-        CircuitBreaker circuitBreaker = breakerMap.get(mockInterfaceName);
+        // 打到了阈值，开启熔断
+        CircuitBreaker circuitBreaker = breakerMap.get(apiId);
         Assert.assertNotNull(circuitBreaker);
         Assert.assertFalse(circuitBreaker.allow());
 
         // 睡眠，进入半开启状态
         Thread.sleep(seconds * 1000 + 1);
-        Assert.assertSame(circuitBreaker, breakerMap.get(mockInterfaceName));
+        Assert.assertSame(circuitBreaker, breakerMap.get(apiId));
         Assert.assertTrue(circuitBreaker.allow());
 
         // 半开启后再次调用，仍然报错会被立马熔断
-        invokeError(circuitRpcInvoker);
-        Assert.assertSame(circuitBreaker, breakerMap.get(mockInterfaceName));
-        Assert.assertTrue(circuitBreaker.allow());
+        invokeError(invocation, circuitRpcInvoker);
+        Assert.assertSame(circuitBreaker, breakerMap.get(apiId));
+        Assert.assertFalse(circuitBreaker.allow());
 
     }
 
-    private void invokeError(CircuitRpcInvoker circuitRpcInvoker) {
+    private void invokeError(Invocation invocation, CircuitRpcInvoker circuitRpcInvoker) {
         try {
-            circuitRpcInvoker.invoke(new Invocation() {
-                public String getMicroServiceId() {return null;}
-                public String getInterfaceName() {return mockInterfaceName;}
-                public String getMethodName() {return null;}
-                public String[] getArgsTypes() {return new String[0];}
-                public Object[] getArgs() {return new Object[0];}
-                public String getReturnType() {return null;}
-                public Map<String, String> fetchContextMap() {return null;}
-                public void putContextParameter(String key, String value) {}
-                public Optional<String> fetchContextParameter(String key) {return Optional.empty();}
-                public Invocation cloneInvocationWithoutContext() {return null;}
-            });
+            circuitRpcInvoker.invoke(invocation);
         } catch (Throwable e) {
             // do nothing
         }
