@@ -97,7 +97,15 @@ public class ClientStubMetadata<T> {
         if (rpcClientStub == null) {
             return Optional.empty();
         }
-        Class<?> api = stubFiled.getType();
+        return create(rpcClientStub, stubFiled.getType());
+    }
+
+    /**
+     * 将一个成员字段配置的RpcClientStub信息提取出来
+     * @param rpcClientStub 类字段
+     * @return 配置的Stub信息
+     */
+    public static Optional<ClientStubMetadata<?>> create(RpcClientStub rpcClientStub, Class<?> api) {
         if (!api.isInterface()) {
             return Optional.empty();
         }
@@ -113,5 +121,19 @@ public class ClientStubMetadata<T> {
                 rpcClientStub.compressBody()
         );
         return Optional.of(value);
+    }
+
+    public String uniqueKey() {
+        return new StringBuilder()
+                .append(stubClass.getCanonicalName())
+                .append("_")
+                .append(microServiceId)
+                .append("_")
+                .append(timeout)
+                .append("_")
+                .append(group)
+                .append("_")
+                .append(compressBody)
+                .toString();
     }
 }
