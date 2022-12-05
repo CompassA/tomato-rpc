@@ -22,6 +22,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
@@ -47,6 +48,7 @@ import java.util.Optional;
 @Slf4j
 @Configuration
 @AllArgsConstructor
+@Import(RpcFactoryBeanDefinitionPostProcessor.class)
 @EnableConfigurationProperties({TomatoRpcProperties.class})
 public class TomatoRpcConfiguration {
 
@@ -123,9 +125,6 @@ public class TomatoRpcConfiguration {
             throw new TomatoRpcRuntimeException(
                     TomatoRpcConfigurationErrorEnum.RPC_CORE_SERVICE_BEAN_START_ERROR.create());
         }
-
-        // 清除stub缓存
-        context.getBean(RpcStubPostProcessor.class).cleanCache();
     }
 
     @EventListener
