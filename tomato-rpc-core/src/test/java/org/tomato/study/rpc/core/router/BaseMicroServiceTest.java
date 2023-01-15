@@ -3,7 +3,7 @@
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,33 +12,35 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core.base;
+package org.tomato.study.rpc.core.router;
 
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
-import org.mockito.ArgumentMatchers;
 import org.mockito.Mockito;
-import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
-import org.tomato.study.rpc.core.data.Invocation;
-import org.tomato.study.rpc.core.data.Result;
-import org.tomato.study.rpc.core.serializer.Serializer;
+import org.tomato.study.rpc.core.base.BaseTest;
 import org.tomato.study.rpc.core.circuit.CircuitRpcInvoker;
+import org.tomato.study.rpc.core.data.Invocation;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.data.Result;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
-import org.tomato.study.rpc.core.loadbalance.RoundRobinLoadBalance;
-import org.tomato.study.rpc.core.router.BaseMicroServiceSpace;
-import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.core.invoker.RpcInvoker;
+import org.tomato.study.rpc.core.loadbalance.RoundRobinLoadBalance;
+import org.tomato.study.rpc.core.serializer.Serializer;
 
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Set;
+
+import static org.mockito.ArgumentMatchers.any;
+import static org.powermock.api.mockito.PowerMockito.mock;
+import static org.powermock.api.mockito.PowerMockito.spy;
+import static org.powermock.api.mockito.PowerMockito.when;
 
 /**
  * @author Tomato
@@ -52,7 +54,7 @@ public class BaseMicroServiceTest extends BaseTest {
 
     private Set<MetaData> originMataDataSet;
 
-    private final MicroServiceSpace provider = Mockito.spy(new TestServiceProvider(mockServiceId));
+    private final BaseMicroServiceSpace provider = spy(new TestServiceProvider(mockServiceId));
 
     @Before
     public void init() {
@@ -72,9 +74,7 @@ public class BaseMicroServiceTest extends BaseTest {
      */
     @Test
     public void refreshTest() throws Exception {
-        PowerMockito.when(provider, "createInvoker", ArgumentMatchers.any())
-                .thenReturn(PowerMockito.mock(RpcInvoker.class));
-
+        when(provider.doCreateInvoker(any())).thenReturn(mock(RpcInvoker.class));
         provider.refresh(originMataDataSet);
 
         checkInvokerMap(provider, originMataDataSet);
@@ -117,7 +117,7 @@ public class BaseMicroServiceTest extends BaseTest {
     @Test
     public void lockUpTest() throws Exception {
         Invocation invocation = Mockito.mock(Invocation.class);
-        PowerMockito.when(invocation.getApiId()).thenReturn("mockApiId$api");
+        when(invocation.getApiId()).thenReturn("mockApiId$api");
         provider.refresh(originMataDataSet);
         Assert.assertTrue(provider.lookUp("default", invocation).isPresent());
     }

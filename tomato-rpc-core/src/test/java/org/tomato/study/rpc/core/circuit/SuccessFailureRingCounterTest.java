@@ -14,12 +14,17 @@
 
 package org.tomato.study.rpc.core.circuit;
 
+import lombok.SneakyThrows;
 import org.junit.Assert;
 import org.junit.Test;
 import org.tomato.study.rpc.utils.ReflectUtils;
 
+import java.util.ArrayList;
 import java.util.BitSet;
-import java.util.concurrent.CountDownLatch;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * @author Tomato
@@ -50,54 +55,52 @@ public class SuccessFailureRingCounterTest {
 
     @Test
     public void multiThreadTest() throws InterruptedException {
-        int size = 1000;
-        SuccessFailureRingCounter counter = new SuccessFailureRingCounter(size);
-
+        // 定义十个线程, 每个线程记录失败21次，记录成功79次
         int threadNum = 10;
-        CountDownLatch startWait = new CountDownLatch(1);
-        CountDownLatch mainWait = new CountDownLatch(threadNum);
+        int fixedSuccessNum = 79;
         int fixedFailureNum = 21;
-        for (int i = 0; i < threadNum; ++i) {
-            new Thread(() -> {
-                try {
-                    startWait.await();
-                    int times = size / threadNum;
-                    for (int j = 0; j < fixedFailureNum; ++j) {
-                        counter.addFailure();
-                    }
-                    for (int j = 0; j < times - fixedFailureNum; ++j) {
-                        counter.addSuccess();
-                    }
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-                mainWait.countDown();
-            }).start();
-        }
-        startWait.countDown();
-        mainWait.await();
+        int size = (fixedFailureNum + fixedSuccessNum) * threadNum;
+        ExecutorService executor = Executors.newFixedThreadPool(threadNum * 2);
 
+        SuccessFailureRingCounter counter = new SuccessFailureRingCounter(size);
+        List<CompletableFuture<Void>> futures = new ArrayList<>(0);
+        for (int i = 0; i < threadNum; i++) {
+            futures.add(CompletableFuture.runAsync(
+                    new Runnable() {
+                        @Override
+                        @SneakyThrows
+                        public void run() {
+                            Thread.sleep(300);
+                            for (int j = 0; j < fixedFailureNum; ++j) {
+                                counter.addFailure();
+                            }
+                            for (int j = 0; j < fixedSuccessNum; ++j) {
+                                counter.addSuccess();
+                            }
+                        }
+                    }, executor)
+            );
+        }
+        CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
         Assert.assertEquals(fixedFailureNum * threadNum, counter.failureSum());
-        Assert.assertEquals(size - fixedFailureNum * threadNum, counter.successSum());
+        Assert.assertEquals(fixedSuccessNum * threadNum, counter.successSum());
 
 
-        // 测试多线程遇到循环临界点下标时的情况
-        int tNum = 4;
-        CountDownLatch a = new CountDownLatch(1);
-        CountDownLatch b = new CountDownLatch(tNum);
+        // 测试多线程更新时下标重置的情况
+        int tNum = 10;
+        futures = new ArrayList<>(0);
         for (int i = 0; i < tNum; ++i) {
-            new Thread(() -> {
-                try {
-                    a.await();
+            CompletableFuture<Void> future = CompletableFuture.runAsync(new Runnable() {
+                @Override
+                @SneakyThrows
+                public void run() {
+                    Thread.sleep(300);
                     counter.addFailure();
-                    b.countDown();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
                 }
-            }).start();
+            }, executor);
+            futures.add(future);
         }
-        a.countDown();
-        b.await();
+        CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
 
         BitSet innerSet = ReflectUtils.reflectGet(counter, SuccessFailureRingCounter.class, "bitSet");
         for (int i = 0; i < tNum; ++i) {
@@ -106,26 +109,23 @@ public class SuccessFailureRingCounterTest {
 
         // 全部清空
         int t = 10;
-        CountDownLatch c = new CountDownLatch(1);
-        CountDownLatch d = new CountDownLatch(t);
+        futures = new ArrayList<>(0);
         for (int i = 0; i < t; ++i) {
-            new Thread(() -> {
-                try {
-                    c.await();
+            CompletableFuture<Void> future = CompletableFuture.runAsync(new Runnable() {
+                @Override
+                @SneakyThrows
+                public void run() {
+                    Thread.sleep(300);
                     for (int j = 0; j < size / 2; ++j) {
                         counter.addSuccess();
                     }
-                    d.countDown();
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
                 }
-                d.countDown();
-            }).start();
+            }, executor);
+            futures.add(future);
         }
-        c.countDown();
-        d.await();
+        CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).join();
 
         Assert.assertEquals(0, counter.failureSum());
-        Assert.assertEquals(size, counter.successSum());
+        Assert.assertEquals(threadNum * (fixedSuccessNum + fixedFailureNum), counter.successSum());
     }
 }

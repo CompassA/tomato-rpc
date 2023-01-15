@@ -118,7 +118,7 @@ public class DefaultCircuitBreakerTest {
 
         String apiId = invocation.getApiId();
         Map<String, CircuitBreaker> breakerMap = circuitRpcInvoker.getBreakerMap();
-        // 没达到熔断阈值, 即使保存也未熔断
+        // 没达到熔断阈值, 即使报错也未熔断
         for (int i = 0; i < config.getCircuitWindow() / 2; ++i) {
             CircuitBreaker breaker = breakerMap.get(apiId);
             if (i == 0) {
@@ -130,7 +130,7 @@ public class DefaultCircuitBreakerTest {
             invokeError(invocation, circuitRpcInvoker);
         }
 
-        // 打到了阈值，开启熔断
+        // 达到了阈值，开启熔断
         CircuitBreaker circuitBreaker = breakerMap.get(apiId);
         Assert.assertNotNull(circuitBreaker);
         Assert.assertFalse(circuitBreaker.allow());
