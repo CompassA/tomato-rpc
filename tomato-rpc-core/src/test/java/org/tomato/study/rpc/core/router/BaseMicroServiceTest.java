@@ -20,6 +20,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.mockito.Mockito;
+import org.mockito.Spy;
 import org.powermock.core.classloader.annotations.PowerMockIgnore;
 import org.powermock.modules.junit4.PowerMockRunner;
 import org.tomato.study.rpc.core.base.BaseTest;
@@ -39,7 +40,6 @@ import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.powermock.api.mockito.PowerMockito.mock;
-import static org.powermock.api.mockito.PowerMockito.spy;
 import static org.powermock.api.mockito.PowerMockito.when;
 
 /**
@@ -54,7 +54,8 @@ public class BaseMicroServiceTest extends BaseTest {
 
     private Set<MetaData> originMataDataSet;
 
-    private final BaseMicroServiceSpace provider = spy(new TestServiceProvider(mockServiceId));
+    @Spy
+    private final BaseMicroServiceSpace provider = new TestServiceProvider(mockServiceId);
 
     @Before
     public void init() {
