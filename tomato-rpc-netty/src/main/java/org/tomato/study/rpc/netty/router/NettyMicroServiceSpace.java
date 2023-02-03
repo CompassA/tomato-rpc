@@ -14,10 +14,16 @@
 
 package org.tomato.study.rpc.netty.router;
 
-import org.tomato.study.rpc.core.base.BaseMicroServiceSpace;
+import org.tomato.study.rpc.core.data.Response;
+import org.tomato.study.rpc.core.loadbalance.LoadBalance;
+import org.tomato.study.rpc.core.router.BaseMicroServiceSpace;
+import org.tomato.study.rpc.core.circuit.CircuitBreaker;
+import org.tomato.study.rpc.core.circuit.CircuitRpcInvoker;
 import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.transport.RpcInvoker;
-import org.tomato.study.rpc.core.transport.RpcInvokerFactory;
+import org.tomato.study.rpc.core.data.RpcConfig;
+import org.tomato.study.rpc.core.invoker.RpcInvoker;
+import org.tomato.study.rpc.core.invoker.RpcInvokerFactory;
+import org.tomato.study.rpc.core.data.Code;
 
 /**
  * 提供基于Netty创建Invoker的方法
@@ -31,20 +37,30 @@ public class NettyMicroServiceSpace extends BaseMicroServiceSpace {
      */
     private final RpcInvokerFactory invokerFactory;
 
-    private final long keepAliveMs;
-
     public NettyMicroServiceSpace(String microServiceId,
                                   RpcInvokerFactory invokerFactory,
-                                  long keepAliveMs,
-                                  long timeoutMs) {
-        super(microServiceId);
+                                  RpcConfig rpcConfig,
+                                  LoadBalance loadBalance) {
+        super(microServiceId, rpcConfig, loadBalance);
         this.invokerFactory = invokerFactory;
-        this.keepAliveMs = keepAliveMs;
-        resetInvokerTimeout(timeoutMs);
     }
 
     @Override
-    protected RpcInvoker createInvoker(MetaData metaData) {
-        return invokerFactory.create(metaData, keepAliveMs, getTimeoutMs()).orElse(null);
+    protected CircuitRpcInvoker doCreateCircuitBreaker(RpcInvoker invoker) {
+        return new CircuitRpcInvoker(invoker, getRpcConfig()) {
+            @Override
+            protected void doHandle(Response response, Throwable exception, CircuitBreaker breaker) {
+                if (!Code.SUCCESS.equals(response.getCode()) || exception != null) {
+                    breaker.addFailure();
+                    return;
+                }
+                breaker.addSuccess();
+            }
+        };
+    }
+
+    @Override
+    protected RpcInvoker doCreateInvoker(MetaData metaData) {
+        return invokerFactory.create(metaData, getRpcConfig()).orElse(null);
     }
 }

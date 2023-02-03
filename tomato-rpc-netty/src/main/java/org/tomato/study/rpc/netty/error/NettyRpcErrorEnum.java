@@ -33,13 +33,11 @@ public enum NettyRpcErrorEnum {
     NETTY_REQUEST_HANDLE_ERROR(20001, "rpc server handler request error"),
     NETTY_HANDLER_PROVIDER_NOT_FOUND(20002, "provider interface not found"),
     NETTY_HANDLER_RPC_INVOKER_ERROR(20003, "rpc invoke error"),
+    NETTY_CLIENT_RPC_ERROR(20004, "netty network client error"),
 
-    STUB_INVOKER_SEARCH_ERROR(30001, "invoker not found"),
-    STUB_INVOKER_RPC_ERROR(30002, "client rpc failed"),
-
-    MODEL_DTO_CONVERT_ERROR(40001, "rpc request convert error"),
-    CODEC_DECODE_ERROR(40002, "rpc frame decode error"),
-    CODEC_ENCODE_ERROR(40003, "rpc frame encode error"),
+    MODEL_DTO_CONVERT_ERROR(30001, "rpc request convert error"),
+    CODEC_DECODE_ERROR(30002, "rpc frame decode error"),
+    CODEC_ENCODE_ERROR(30003, "rpc frame encode error"),
     ;
 
     private int code;

@@ -27,10 +27,8 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
-import io.netty.util.concurrent.EventExecutorGroup;
-import io.netty.util.concurrent.UnorderedThreadPoolEventExecutor;
 import lombok.extern.slf4j.Slf4j;
-import org.tomato.study.rpc.core.base.BaseRpcServer;
+import org.tomato.study.rpc.core.server.BaseRpcServer;
 import org.tomato.study.rpc.core.data.RpcServerConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.observer.LifeCycle;
@@ -38,11 +36,14 @@ import org.tomato.study.rpc.netty.codec.NettyFrameDecoder;
 import org.tomato.study.rpc.netty.codec.NettyFrameEncoder;
 import org.tomato.study.rpc.netty.codec.NettyProtoDecoder;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
-import org.tomato.study.rpc.netty.transport.handler.MetricHandler;
 import org.tomato.study.rpc.netty.transport.handler.DispatcherHandler;
+import org.tomato.study.rpc.netty.transport.handler.MetricHandler;
 import org.tomato.study.rpc.netty.transport.handler.ServerIdleCheckHandler;
 import org.tomato.study.rpc.utils.MetricHolder;
 
+import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -80,15 +81,15 @@ public class NettyRpcServer extends BaseRpcServer {
     /**
      * 业务线程池
      */
-    private EventExecutorGroup businessGroup;
+    private ExecutorService businessThreadPool;
 
     /**
-     * IO线程池
+     * Selector线程池
      */
     private EventLoopGroup bossGroup;
 
     /**
-     * accept线程池
+     * IO线程池
      */
     private EventLoopGroup workerGroup;
 
@@ -98,6 +99,9 @@ public class NettyRpcServer extends BaseRpcServer {
 
     @Override
     protected synchronized void doInit() throws TomatoRpcException {
+        this.metricHolder = new MetricHolder();
+        this.metricHandler = new MetricHandler(this.metricHolder);
+        this.dispatcherHandler = new DispatcherHandler();
         if (Epoll.isAvailable()) {
             this.bossGroup = new EpollEventLoopGroup(1, new DefaultThreadFactory(BOSS_GROUP_THREAD_NAME));
             this.workerGroup = new EpollEventLoopGroup(new DefaultThreadFactory(WORKER_GROUP_THREAD_NAME));
@@ -106,14 +110,21 @@ public class NettyRpcServer extends BaseRpcServer {
             this.workerGroup = new NioEventLoopGroup(new DefaultThreadFactory(WORKER_GROUP_THREAD_NAME));
         }
         if (isUseBusinessPool()) {
-            this.businessGroup = new UnorderedThreadPoolEventExecutor(
-                    getBusinessPoolSize(),
-                    new DefaultThreadFactory(BUSINESS_GROUP_THREAD_NAME)
+            int businessPoolSize = getBusinessPoolSize();
+            ThreadPoolExecutor.AbortPolicy abortPolicy = new ThreadPoolExecutor.AbortPolicy();
+            this.businessThreadPool = new ThreadPoolExecutor(
+                    businessPoolSize,
+                    businessPoolSize,
+                    0, TimeUnit.SECONDS,
+                    new ArrayBlockingQueue<>(5000),
+                    new DefaultThreadFactory(BUSINESS_GROUP_THREAD_NAME),
+                    (r, executor) -> {
+                        log.error("business thread pool is overload");
+                        abortPolicy.rejectedExecution(r, executor);
+                    }
             );
+            dispatcherHandler.setBusinessExecutor(businessThreadPool);
         }
-        this.metricHolder = new MetricHolder();
-        this.metricHandler = new MetricHandler(this.metricHolder);
-        this.dispatcherHandler = new DispatcherHandler();
         this.serverBootstrap = new ServerBootstrap()
                 .group(this.bossGroup, this.workerGroup)
                 .channel(Epoll.isAvailable() ? EpollServerSocketChannel.class : NioServerSocketChannel.class)
@@ -129,15 +140,7 @@ public class NettyRpcServer extends BaseRpcServer {
                         pipeline.addLast("proto-decoder", new NettyProtoDecoder());
                         pipeline.addLast("frame-encoder", new NettyFrameEncoder());
                         pipeline.addLast("metric-handler", NettyRpcServer.this.metricHandler);
-                        if (NettyRpcServer.this.isUseBusinessPool()) {
-                            pipeline.addLast(
-                                    NettyRpcServer.this.businessGroup,
-                                    "dispatcher-handler",
-                                    NettyRpcServer.this.dispatcherHandler
-                            );
-                        } else {
-                            pipeline.addLast("dispatcher-handler", NettyRpcServer.this.dispatcherHandler);
-                        }
+                        pipeline.addLast("dispatcher-handler", NettyRpcServer.this.dispatcherHandler);
                     }
                 });
     }
@@ -161,8 +164,8 @@ public class NettyRpcServer extends BaseRpcServer {
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
         metricHolder.stop();
-        if (businessGroup != null) {
-            businessGroup.shutdownGracefully();
+        if (businessThreadPool != null) {
+            businessThreadPool.shutdown();
         }
     }
 

@@ -14,10 +14,11 @@
 
 package org.tomato.study.rpc.core.data;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.Setter;
+import lombok.ToString;
 import org.apache.commons.lang3.StringUtils;
-import org.tomato.study.rpc.core.NameServer;
+import org.tomato.study.rpc.core.registry.NameServer;
 
 /**
  * necessary data for creating stub
@@ -25,13 +26,8 @@ import org.tomato.study.rpc.core.NameServer;
  * Created on 2021.07.13
  */
 @Getter
-@AllArgsConstructor
+@ToString
 public class StubConfig<T> {
-
-    /**
-     * name service
-     */
-    private final NameServer nameServer;
 
     /**
      * interface of service provider
@@ -44,14 +40,75 @@ public class StubConfig<T> {
     private final String microServiceId;
 
     /**
-     * service group
+     * 分组
      */
     private final String group;
 
+    /**
+     * 是否压缩
+     */
+    private final boolean compressBody;
+
+    /**
+     * 调用超时等待时间
+     */
+    private final Long timeoutMs;
+
+    /**
+     * rpc-service节点数据，非必传，客户端直连时传这个参数
+     */
+    @Setter
+    private MetaData nodeInfo;
+
+    /**
+     * 基于服务发现的rpc需要NameServer
+     */
+    @Setter
+    private NameServer nameServer;
+
+    /**
+     * 基于服务发现的Stub
+     */
+    public StubConfig(
+            Class<T> serviceInterface,
+            String microServiceId,
+            String group,
+            boolean compressBody,
+            Long timeoutMs,
+            NameServer nameServer) {
+        this.serviceInterface = serviceInterface;
+        this.microServiceId = microServiceId;
+        this.group = group;
+        this.compressBody = compressBody;
+        this.timeoutMs = timeoutMs;
+        this.nameServer = nameServer;
+    }
+
+    /**
+     * 基于ip直连的stub
+     */
+    public StubConfig(
+            Class<T> serviceInterface,
+            String microServiceId,
+            String group,
+            boolean compressBody,
+            Long timeoutMs,
+            MetaData nodeInfo) {
+        this.serviceInterface = serviceInterface;
+        this.microServiceId = microServiceId;
+        this.group = group;
+        this.compressBody = compressBody;
+        this.timeoutMs = timeoutMs;
+        this.nodeInfo = nodeInfo;
+    }
+
     public boolean isValid() {
-        return nameServer != null && serviceInterface != null
+        return serviceInterface != null
                 && StringUtils.isNotBlank(microServiceId)
                 && StringUtils.isNotBlank(group)
-                && serviceInterface.isInterface();
+                && timeoutMs != null
+                && serviceInterface.isInterface()
+                // RPC直连 或者 服务发现，二选一
+                && (nodeInfo != null || nameServer != null);
     }
 }

@@ -27,6 +27,14 @@ public enum TomatoRpcCoreErrorEnum {
 
     RPC_CONFIG_INITIALIZING_ERROR(10000, "rpc config is null"),
     RPC_CLIENT_TIMEOUT(10002, "rpc timeout"),
+    RPC_CIRCUIT_ERROR(10003, "circuit breaker is open"),
+    RPC_INVOKER_CLOSED(10004, "rpc invoker and net connection have been closed"),
+
+
+    RPC_ROUND_ROBIN_LOAD_BALANCE_ERROR(20001, "round robin error"),
+
+    STUB_INVOKER_SEARCH_ERROR(30001, "invoker not found"),
+    STUB_INVOKER_RPC_ERROR(30002, "client rpc failed"),
     ;
 
     private int code;

@@ -14,6 +14,9 @@
 
 package org.tomato.study.rpc.core;
 
+import org.tomato.study.rpc.core.data.Command;
+
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -38,5 +41,5 @@ public interface ResponseFuture<T> {
     /**
      * 销毁响应数据
      */
-    void destroy();
+    Optional<CompletableFuture<Command>> destroy();
 }

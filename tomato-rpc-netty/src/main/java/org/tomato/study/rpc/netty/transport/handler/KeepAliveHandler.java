@@ -19,10 +19,12 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleStateEvent;
 import lombok.extern.slf4j.Slf4j;
-import org.tomato.study.rpc.core.Serializer;
+import org.tomato.study.rpc.core.serializer.Serializer;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
 import org.tomato.study.rpc.core.spi.SpiLoader;
+
+import java.util.Collections;
 
 /**
  * 客户端心跳
@@ -41,6 +43,7 @@ public class KeepAliveHandler extends ChannelDuplexHandler {
                     CommandFactory.request(
                             null,
                             SpiLoader.getLoader(Serializer.class).load(),
+                            Collections.emptyMap(),
                             CommandType.KEEP_ALIVE_REQUEST)
             );
             log.info("sent keep alive packet");

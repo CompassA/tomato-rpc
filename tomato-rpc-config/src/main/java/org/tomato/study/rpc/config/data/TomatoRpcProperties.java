@@ -76,7 +76,22 @@ public class TomatoRpcProperties {
     private Long clientKeepAliveMs;
 
     /**
-     * 客户端发送数据是否开启GZIP压缩
+     * 是否开启熔断
      */
-    private boolean useGzip;
+    private boolean enableCircuit;
+
+    /**
+     * 错误率超过多少时开启熔断
+     */
+    private Integer circuitOpenRate;
+
+    /**
+     * 断路器开启多久后进入半开模式
+     */
+    private Long circuitOpenSeconds;
+
+    /**
+     * 采样窗口
+     */
+    private Integer circuitWindow;
 }

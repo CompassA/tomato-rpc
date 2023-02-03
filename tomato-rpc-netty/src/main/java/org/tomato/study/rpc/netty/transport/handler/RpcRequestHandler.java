@@ -17,7 +17,7 @@ package org.tomato.study.rpc.netty.transport.handler;
 import io.netty.channel.ChannelHandler;
 import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.ProviderRegistry;
-import org.tomato.study.rpc.core.Serializer;
+import org.tomato.study.rpc.core.serializer.Serializer;
 import org.tomato.study.rpc.core.ServerHandler;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
@@ -25,11 +25,11 @@ import org.tomato.study.rpc.core.data.CommandType;
 import org.tomato.study.rpc.core.data.Header;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
-import org.tomato.study.rpc.netty.data.RpcRequestDTO;
-import org.tomato.study.rpc.netty.data.RpcRequestModel;
-import org.tomato.study.rpc.netty.data.RpcResponse;
+import org.tomato.study.rpc.core.data.RpcRequestDTO;
+import org.tomato.study.rpc.core.data.RpcRequestModel;
+import org.tomato.study.rpc.core.data.RpcResponse;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
-import org.tomato.study.rpc.netty.serializer.SerializerHolder;
+import org.tomato.study.rpc.core.serializer.SerializerHolder;
 import org.tomato.study.rpc.netty.utils.ConvertUtils;
 
 import java.lang.reflect.InvocationTargetException;
@@ -75,7 +75,7 @@ public class RpcRequestHandler implements ServerHandler {
                     header.getId(),
                     RpcResponse.fail(exception.getErrorInfo()),
                     serializer,
-                    CommandType.RPC_REQUEST
+                    CommandType.RPC_RESPONSE
             );
         }
     }

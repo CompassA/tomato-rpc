@@ -16,7 +16,6 @@ package org.tomato.study.rpc.core.spi;
 
 import lombok.Getter;
 import lombok.SneakyThrows;
-import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.RpcJvmConfigKey;
 import org.tomato.study.rpc.core.io.FileStreamResource;
@@ -25,7 +24,6 @@ import org.tomato.study.rpc.core.utils.ClassUtil;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
-import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.net.URL;
@@ -33,9 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -67,11 +63,6 @@ public class SpiLoader<T> {
      * SPI接口 -> SPI接口对应的类
      */
     private static final ConcurrentMap<Class<?>, SpiLoader<?>> LOADER_MAP = new ConcurrentHashMap<>(0);
-
-    /**
-     * SPI接口 -> 接口包装器
-     */
-    private static final ConcurrentMap<Class<?>, Set<Constructor<?>>> WRAPPER_MAP = new ConcurrentHashMap<>();
 
     /**
      * 用户通过jvm参数指定的SPI组件
@@ -123,21 +114,6 @@ public class SpiLoader<T> {
     public static void resetPriorityMap() {
         JVM_PRIORITY_CONFIG = RpcJvmConfigKey.parseMultiKeyValue(
                 System.getProperty(RpcJvmConfigKey.SPI_CUSTOM_CONFIG));
-    }
-
-    /**
-     * 注册装饰器
-     * @param interfaceClass 接口类型
-     * @param wrapper 装饰器类型
-     * @param <T> 接口类型
-     */
-    public static <T> void registerWrapper(Class<T> interfaceClass, Class<? extends T> wrapper) {
-        try {
-            WRAPPER_MAP.computeIfAbsent(interfaceClass, key -> new HashSet<>())
-                    .add(wrapper.getConstructor(interfaceClass));
-        } catch (NoSuchMethodException e) {
-            // do nothing
-        }
     }
 
     /**
@@ -198,19 +174,9 @@ public class SpiLoader<T> {
     }
 
     @SneakyThrows
-    @SuppressWarnings("unchecked")
     private T createSpiInstance(Class<? extends T> spiImplClass) {
         // 创建实现类实例(实现类需要有无参构造函数)
-        Object spiInstance = spiImplClass.getConstructor().newInstance();
-
-        // 如果该类对象有包装器，构建包装器
-        Set<Constructor<?>> constructors = WRAPPER_MAP.get(spiInterface);
-        if (CollectionUtils.isNotEmpty(constructors)) {
-            for (Constructor<?> constructor : constructors) {
-                spiInstance = constructor.newInstance(spiInstance);
-            }
-        }
-        return (T) spiInstance;
+        return spiImplClass.getConstructor().newInstance();
     }
 
     @SneakyThrows

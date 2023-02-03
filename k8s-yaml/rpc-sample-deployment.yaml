@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: tomato
+  labels:
+    app: rpc-sample-deployment
+  name: rpc-sample-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: rpc-sample-server-pod
+  strategy: {}
+  template:
+    metadata:
+      namespace: tomato
+      labels:
+        app: rpc-sample-server-pod
+    spec:
+      containers:
+      - image: compassa/rpc-sample-server:1.0.0
+        env:
+          - name: "JAVA_OPTIONS"
+            value: "-Dtomato-rpc.name-service-uri=zookeeper-set-0.zookeeper.tomato.svc.cluster.local:2181"
+        imagePullPolicy: IfNotPresent
+        name: rpc-sample-server
+        stdin: true
+        tty: true
+        ports:
+          - name: rpc-port
+            containerPort: 1535
+            protocol: TCP

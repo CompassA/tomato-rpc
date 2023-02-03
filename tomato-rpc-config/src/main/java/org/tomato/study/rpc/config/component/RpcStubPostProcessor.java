@@ -16,16 +16,15 @@ package org.tomato.study.rpc.config.component;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
+import org.springframework.beans.factory.BeanFactory;
+import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.tomato.study.rpc.config.annotation.RpcServerStub;
 import org.tomato.study.rpc.config.data.ClientStubMetadata;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.api.TomatoApi;
-import org.tomato.study.rpc.core.data.ApiConfig;
 
 import java.lang.reflect.Field;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * TomatoRpc后置处理器，创建所有stub
@@ -33,10 +32,10 @@ import java.util.concurrent.ConcurrentHashMap;
  * Created on 2021.11.20
  */
 @Slf4j
-public class RpcStubPostProcessor implements BeanPostProcessor {
+public class RpcStubPostProcessor implements BeanPostProcessor, BeanFactoryAware {
 
     private final RpcCoreService rpcCoreService;
-    private Map<ClientStubMetadata<?>, Object> stubCache = new ConcurrentHashMap<>(0);
+    private BeanFactory beanFactory;
 
     public RpcStubPostProcessor(RpcCoreService rpcCoreService) {
         this.rpcCoreService = rpcCoreService;
@@ -53,14 +52,6 @@ public class RpcStubPostProcessor implements BeanPostProcessor {
         return bean;
     }
 
-    public synchronized void cleanCache() {
-        log.info("clean stub cache, created stub size: {}", stubCache.size());
-        for (ClientStubMetadata<?> clientStubMetadata : stubCache.keySet()) {
-            log.info("stub info: {}", clientStubMetadata);
-        }
-        this.stubCache = null;
-    }
-
     @SuppressWarnings("all")
     private void registerServerStub(Object bean) {
         Class<?> clazz = bean.getClass();
@@ -70,49 +61,43 @@ public class RpcStubPostProcessor implements BeanPostProcessor {
         }
 
         // 不断向上遍历类型，直到找到标注了@TomatoApi的接口
-        boolean found = false;
         while (!Object.class.equals(clazz)) {
             for (Class<?> interfaceClazz : clazz.getInterfaces()) {
                 TomatoApi tomatoApi = interfaceClazz.getAnnotation(TomatoApi.class);
                 if (tomatoApi != null) {
                     rpcCoreService.registerProvider(bean, (Class<Object>) interfaceClazz);
-                    found = true;
-                    break;
                 }
-            }
-            if (found) {
-                break;
             }
             clazz = clazz.getSuperclass();
         }
 
     }
 
-    @SuppressWarnings("all")
     private void injectClientStub(Object bean) {
         Class<?> clazz = bean.getClass();
         while (!Object.class.equals(clazz)) {
             // 扫描所有类型，找到标注了@RpcClientStub的成员变量
             for (Field field : clazz.getDeclaredFields()) {
-                ClientStubMetadata.create(field).ifPresent(metaData -> {
-                    field.setAccessible(true);
-                    Object stub = stubCache.computeIfAbsent(metaData,
-                            metaDataKey -> rpcCoreService.createStub(
-                                    ApiConfig.builder()
-                                            .api((Class<Object>) metaDataKey.getStubClass())
-                                            .microServiceId(metaDataKey.getMicroServiceId())
-                                            .timeoutMs(metaDataKey.getTimeout())
-                                            .group(metaDataKey.getGroup())
-                                            .build()));
-                    try {
-                        field.set(bean, stub);
-                    } catch (IllegalAccessException e) {
-                        log.error("create stub error", e);
-                    }
-                });
+                ClientStubMetadata.create(field)
+                        .ifPresent(metaData -> injectStubField(bean, field, metaData));
             }
             clazz = clazz.getSuperclass();
         }
     }
 
+    private void injectStubField(Object bean, Field field, ClientStubMetadata<?> metaData) {
+        String uniqueKey = metaData.uniqueKey();
+        Object stub = beanFactory.getBean(uniqueKey);
+        try {
+            field.setAccessible(true);
+            field.set(bean, stub);
+        } catch (IllegalAccessException e) {
+            log.error("create stub error", e);
+        }
+    }
+
+    @Override
+    public void setBeanFactory(BeanFactory beanFactory) throws BeansException {
+        this.beanFactory = beanFactory;
+    }
 }

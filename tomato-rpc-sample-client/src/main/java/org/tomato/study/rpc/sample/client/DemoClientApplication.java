@@ -19,8 +19,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.RpcCoreServiceFactory;
-import org.tomato.study.rpc.core.data.ApiConfig;
+import org.tomato.study.rpc.core.RpcJvmConfigKey;
 import org.tomato.study.rpc.core.data.RpcConfig;
+import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
@@ -30,7 +31,6 @@ import org.tomato.study.rpc.sample.api.data.DemoRequest;
 import org.tomato.study.rpc.sample.api.data.DemoResponse;
 
 import java.util.Collections;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 
@@ -43,7 +43,7 @@ public class DemoClientApplication {
     private static final Logger LOGGER = LoggerFactory.getLogger(DemoClientApplication.class);
 
     public static void main(String[] args) throws Exception {
-        String zkURL = System.getenv("ZK_IP_PORT");
+        String zkURL = System.getProperty(RpcJvmConfigKey.NAME_SERVICE_URI);
         if (StringUtils.isBlank(zkURL)) {
             zkURL = "127.0.0.1:2181";
         }
@@ -65,30 +65,33 @@ public class DemoClientApplication {
     }
 
     private static RpcCoreService createCoreService(String zkURL) throws TomatoRpcException {
-        RpcCoreService rpcCoreService = SpiLoader.getLoader(RpcCoreServiceFactory.class)
-                .load()
-                .create(RpcConfig.builder()
-                        .microServiceId("demo-rpc-client")
-                        .subscribedServiceIds(Collections.singletonList(Constant.serviceId))
-                        .nameServiceURI(zkURL)
-                        .port(7890)
-                        .useGzip(true)
-                        .build()
-                );
+        RpcConfig config = RpcConfig.builder()
+                .microServiceId("demo-rpc-client")
+                .subscribedServiceIds(Collections.singletonList(Constant.serviceId))
+                .nameServiceURI(zkURL)
+                .port(7890)
+                .build();
+        RpcCoreService rpcCoreService = SpiLoader.getLoader(RpcCoreServiceFactory.class).load()
+                .create(config);
         rpcCoreService.init();
         rpcCoreService.start();
         return rpcCoreService;
     }
 
     private static EchoService createStub(RpcCoreService rpcCoreService) {
-        Optional<ApiConfig<EchoService>> apiConfig = ApiConfig.create(EchoService.class);
-        assert apiConfig.isPresent();
-        return rpcCoreService.createStub(apiConfig.get());
+        StubConfig<EchoService> stubConfig = new StubConfig<>(
+                EchoService.class,
+                Constant.serviceId,
+                rpcCoreService.getGroup(),
+                false,
+                5000L,
+                rpcCoreService.getNameServer());
+        return rpcCoreService.createStub(stubConfig);
     }
 
     private static void invokerRpc(EchoService stub) throws InterruptedException {
         int threadNum = 10;
-        int messageNum = 100;
+        int messageNum = 1000;
         CountDownLatch mainThreadWait = new CountDownLatch(threadNum);
         CountDownLatch subThreadWait = new CountDownLatch(1);
         Runnable runnable = () -> {
@@ -97,7 +100,7 @@ public class DemoClientApplication {
                 for (int i = 0; i < messageNum; ++i) {
                     DemoResponse response = stub.echo(new DemoRequest("hello world"));
                     LOGGER.info(response.getData());
-                    Thread.sleep(500);
+                    Thread.sleep(1500);
                 }
                 mainThreadWait.countDown();
             } catch (TomatoRpcRuntimeException e) {

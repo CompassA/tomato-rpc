@@ -14,20 +14,23 @@
 
 package org.tomato.study.rpc.registry.zookeeper;
 
-import org.tomato.study.rpc.core.base.BaseNameServer;
+import org.tomato.study.rpc.core.data.Invocation;
+import org.tomato.study.rpc.core.registry.BaseNameServer;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.NameServerConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
-import org.tomato.study.rpc.core.transport.RpcInvoker;
+import org.tomato.study.rpc.core.invoker.RpcInvoker;
 import org.tomato.study.rpc.registry.zookeeper.data.ZookeeperConfig;
 import org.tomato.study.rpc.registry.zookeeper.error.TomatoRegistryErrorEnum;
 import org.tomato.study.rpc.registry.zookeeper.impl.ZookeeperRegistry;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Optional;
 
 /**
+ * 基于zookeeper实现的注册中心
  * @author Tomato
  * Created on 2021.06.19
  */
@@ -35,10 +38,18 @@ public class ZookeeperNameServer extends BaseNameServer {
 
     private static final String ZK_NAME_SPACE = "tomato";
 
+    /**
+     * 注册中心
+     */
     private ZookeeperRegistry registry;
 
     public ZookeeperNameServer(NameServerConfig nameServerConfig) {
         super(nameServerConfig);
+    }
+
+    @Override
+    public Optional<MicroServiceSpace> getMicroService(String serviceId) {
+        return registry.getMicroService(serviceId);
     }
 
     @Override
@@ -62,27 +73,37 @@ public class ZookeeperNameServer extends BaseNameServer {
     }
 
     @Override
-    public Optional<RpcInvoker> lookupInvoker(String microServiceId, String group) {
-        return registry.lookup(microServiceId, group);
+    public Optional<RpcInvoker> lookupInvoker(String microServiceId, String group, Invocation invocation) {
+        // 如果用户在jvm配置了对应服务的group，优先使用用户配置的group
+        String finalGroup = getJvmConfigGroup(microServiceId).orElse(group);
+        return registry.lookup(microServiceId, finalGroup, invocation);
+    }
+
+    @Override
+    public List<RpcInvoker> listInvokers(String microServiceId) {
+        return registry.listInvokers(microServiceId);
     }
 
     @Override
     protected synchronized void doInit() throws TomatoRpcException {
-        registry = new ZookeeperRegistry(
-                ZookeeperConfig.builder()
-                        .namespace(ZK_NAME_SPACE)
-                        .connString(getConnString())
-                        .charset(getCharset())
-                        .build());
+        super.doInit();
+        ZookeeperConfig zookeeperConfig = ZookeeperConfig.builder()
+                .namespace(ZK_NAME_SPACE)
+                .connString(getConnString())
+                .charset(getCharset())
+                .build();
+        this.registry = new ZookeeperRegistry(zookeeperConfig, this);
     }
 
     @Override
     protected synchronized void doStart() throws TomatoRpcException {
+        super.doStart();
         registry.start();
     }
 
     @Override
     protected synchronized void doStop() throws TomatoRpcException {
+        super.doStop();
         try {
             registry.close();
         } catch (IOException e) {

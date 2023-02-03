@@ -22,12 +22,17 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.tomato.study.rpc.config.component.TomatoRpcConfiguration;
+import org.tomato.study.rpc.config.data.ClientStubMetadata;
 import org.tomato.study.rpc.config.data.TomatoRpcProperties;
+import org.tomato.study.rpc.config.test.TestApi;
 import org.tomato.study.rpc.config.test.TestClientBean;
+import org.tomato.study.rpc.config.test.TestClientBean2;
+import org.tomato.study.rpc.config.test.TestTimeoutApi;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
@@ -37,6 +42,7 @@ import org.tomato.study.rpc.utils.ReflectUtils;
 import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * @author Tomato
@@ -64,6 +70,9 @@ public class TomatoRpcConfigurationTest {
     @Autowired
     private RpcCoreService rpcCoreService;
 
+    @Autowired
+    private ApplicationContext context;
+
     @PostConstruct
     public void postConstruct() {
         RPC_CORE_SERVICE = rpcCoreService;
@@ -83,10 +92,26 @@ public class TomatoRpcConfigurationTest {
     }
 
     @Test
-    public void configurationTest() {
+    public void configurationTest() throws NoSuchFieldException {
         TomatoRpcProperties properties = ReflectUtils.reflectGet(
                 configuration, TomatoRpcConfiguration.class, "properties");
         Assert.assertNotNull(properties);
+        // client stub num + server stub num
+        Assert.assertEquals(context.getBeansOfType(TestApi.class).size(), 1 + 1);
+        Assert.assertEquals(context.getBeansOfType(TestTimeoutApi.class).size(), 2 + 1);
+
+        Optional<ClientStubMetadata<?>> api = ClientStubMetadata.create(TestClientBean.class.getDeclaredField("testApi"));
+        Assert.assertTrue(api.isPresent());
+        Assert.assertNotNull(context.getBean(api.get().uniqueKey()));
+
+        Optional<ClientStubMetadata<?>> timeoutApi = ClientStubMetadata.create(TestClientBean.class.getDeclaredField("timeoutApi"));
+        Assert.assertTrue(timeoutApi.isPresent());
+        Assert.assertNotNull(context.getBean(timeoutApi.get().uniqueKey()));
+
+        Optional<ClientStubMetadata<?>> timeoutApi2 = ClientStubMetadata.create(TestClientBean2.class.getDeclaredField("timeoutApi"));
+        Assert.assertTrue(timeoutApi2.isPresent());
+        Assert.assertNotNull(context.getBean(timeoutApi2.get().uniqueKey()));
+
         Assert.assertEquals(properties.getMicroServiceId(), "rpc-test-service");
         Assert.assertEquals(properties.getSubscribedServices().size(), 3);
         Assert.assertEquals(properties.getSubscribedServices().get(0), "mock-service-a");
@@ -99,7 +124,10 @@ public class TomatoRpcConfigurationTest {
         Assert.assertTrue(Objects.equals(properties.getGroup(), "main"));
         Assert.assertTrue(Objects.equals(properties.getServerIdleCheckMs(), 600000L));
         Assert.assertTrue(Objects.equals(properties.getClientKeepAliveMs(), 200000L));
-        Assert.assertTrue(properties.isUseGzip());
+        Assert.assertTrue(properties.isEnableCircuit());
+        Assert.assertEquals(properties.getCircuitOpenRate().intValue(), 74);
+        Assert.assertEquals(properties.getCircuitOpenSeconds().longValue(), 59L);
+        Assert.assertEquals(properties.getCircuitWindow().intValue(), 98);
     }
 
     @Test

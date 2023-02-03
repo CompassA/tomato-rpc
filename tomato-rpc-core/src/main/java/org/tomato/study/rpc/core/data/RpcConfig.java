@@ -70,11 +70,6 @@ public class RpcConfig {
     private final int businessThreadPoolSize;
 
     /**
-     * rpc body体是否使用Gzip压缩
-     */
-    private final boolean useGzip;
-
-    /**
      * 服务端空闲检测频率, 单位ms
      */
     private final long serverIdleCheckMilliseconds;
@@ -89,6 +84,26 @@ public class RpcConfig {
      */
     private final long globalClientTimeoutMilliseconds;
 
+    /**
+     * 是否开启熔断
+     */
+    private final boolean enableCircuit;
+
+    /**
+     * 错误率超过多少时开启熔断
+     */
+    private final double circuitOpenRate;
+
+    /**
+     * 断路器开启多久后进入半开模式
+     */
+    private final long circuitOpenSeconds;
+
+    /**
+     * 采样窗口
+     */
+    private final int circuitWindow;
+
     public static Builder builder() {
         return new Builder();
     }
@@ -102,10 +117,13 @@ public class RpcConfig {
         private String nameServiceURI;
         private int port = 9090;
         private int businessThreadPoolSize = 1;
-        private boolean useGzip = false;
         private long serverIdleCheckMilliseconds = 600000;
         private long clientKeepAliveMilliseconds = serverIdleCheckMilliseconds / 3;
         private long globalClientTimeoutMilliseconds = 50000;
+        private boolean enableCircuit = false;
+        private double circuitOpenRate = 0.75;
+        private long circuitOpenSeconds = 60;
+        private int circuitWindow = 10000;
 
         public Builder protocol(String protocol) {
             this.protocol = protocol;
@@ -147,11 +165,6 @@ public class RpcConfig {
             return this;
         }
 
-        public Builder useGzip(boolean useGzip) {
-            this.useGzip = useGzip;
-            return this;
-        }
-
         public Builder serverIdleCheckMilliseconds(long serverIdleCheckMilliseconds) {
             this.serverIdleCheckMilliseconds = serverIdleCheckMilliseconds;
             return this;
@@ -167,6 +180,26 @@ public class RpcConfig {
             return this;
         }
 
+        public Builder enableCircuit(boolean enableCircuit) {
+            this.enableCircuit = enableCircuit;
+            return this;
+        }
+
+        public Builder circuitOpenRate(double circuitOpenRate) {
+            this.circuitOpenRate = circuitOpenRate;
+            return this;
+        }
+
+        public Builder circuitOpenSeconds(long circuitOpenSeconds) {
+            this.circuitOpenSeconds = circuitOpenSeconds;
+            return this;
+        }
+
+        public Builder circuitWindow(int circuitWindow) {
+            this.circuitWindow = circuitWindow;
+            return this;
+        }
+
         public RpcConfig build() {
             return new RpcConfig(
                     this.protocol,
@@ -177,10 +210,13 @@ public class RpcConfig {
                     this.nameServiceURI,
                     this.port,
                     this.businessThreadPoolSize,
-                    this.useGzip,
                     this.serverIdleCheckMilliseconds,
                     this.clientKeepAliveMilliseconds,
-                    this.globalClientTimeoutMilliseconds
+                    this.globalClientTimeoutMilliseconds,
+                    this.enableCircuit,
+                    this.circuitOpenRate,
+                    this.circuitOpenSeconds,
+                    this.circuitWindow
             );
         }
     }

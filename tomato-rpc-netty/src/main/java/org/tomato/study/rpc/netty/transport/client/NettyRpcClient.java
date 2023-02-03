@@ -30,8 +30,9 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.ResponseFuture;
-import org.tomato.study.rpc.core.base.BaseRpcClient;
+import org.tomato.study.rpc.core.transport.BaseRpcClient;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
@@ -44,6 +45,7 @@ import org.tomato.study.rpc.netty.transport.handler.KeepAliveHandler;
 import org.tomato.study.rpc.netty.transport.handler.ResponseHandler;
 
 import java.net.URI;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -52,6 +54,7 @@ import java.util.concurrent.TimeoutException;
  * @author Tomato
  * Created on 2021.11.27
  */
+@Slf4j
 public class NettyRpcClient extends BaseRpcClient<Command> {
 
     private static final String RPC_CLIENT_THREAD_NAME = "rpc-client-worker-thread";
@@ -77,14 +80,21 @@ public class NettyRpcClient extends BaseRpcClient<Command> {
      */
     private final long keepAliveMs;
 
+    /**
+     * 与服务端的连接
+     */
     private ChannelWrapper channelWrapper;
 
     public NettyRpcClient(URI uri, long keepAliveMs) {
         super(uri);
         this.keepAliveMs = keepAliveMs;
         this.responseHolder = new NettyResponseHolder();
-        doInit();
-        doStart();
+        try {
+            init();
+            start();
+        } catch (TomatoRpcException e) {
+            log.error("start netty rpc client error", e);
+        }
     }
 
     @Override
@@ -92,22 +102,31 @@ public class NettyRpcClient extends BaseRpcClient<Command> {
         try {
             long id = msg.getHeader().getId();
             CompletableFuture<Command> future = new CompletableFuture<>();
-            createOrReconnect().getChannel().writeAndFlush(msg)
+            // get connection
+            Channel connection = createOrReconnect().getChannel();
+
+            // write message
+            connection.writeAndFlush(msg)
                     .addListener((ChannelFutureListener) futureChannel -> {
                         if (futureChannel.isSuccess()) {
                             responseHolder.putFeatureResponse(id, future);
                         } else {
                             future.completeExceptionally(
                                     new TomatoRpcRuntimeException(
-                                            NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create(),
+                                            NettyRpcErrorEnum.NETTY_CLIENT_RPC_ERROR.create(),
                                             futureChannel.cause()));
                         }
                     });
             return new ClientResponseFuture(id, future, responseHolder);
         } catch (Exception e) {
             throw new TomatoRpcException(
-                    NettyRpcErrorEnum.STUB_INVOKER_RPC_ERROR.create("channel fetch error"), e);
+                    NettyRpcErrorEnum.NETTY_CLIENT_RPC_ERROR.create("channel fetch error"), e);
         }
+    }
+
+    @Override
+    public boolean isUsable() {
+        return START == getState();
     }
 
     @Override
@@ -196,8 +215,9 @@ public class NettyRpcClient extends BaseRpcClient<Command> {
         }
 
         @Override
-        public void destroy() {
-            responseHolder.getAndRemove(id);
+        public Optional<CompletableFuture<Command>> destroy() {
+            return responseHolder.getAndRemove(id)
+                    .map(responseFuture -> responseFuture.getFuture());
         }
     }
 }

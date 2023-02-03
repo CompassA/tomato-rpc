@@ -55,6 +55,11 @@ public class ClientStubMetadata<T> {
      */
     private String group;
 
+    /**
+     * 消息体是否开启压缩
+     */
+    private boolean compressBody;
+
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -67,7 +72,8 @@ public class ClientStubMetadata<T> {
         return Objects.equals(stubClass, that.stubClass)
                 && Objects.equals(microServiceId, that.microServiceId)
                 && Objects.equals(timeout, that.timeout)
-                && Objects.equals(group, that.group);
+                && Objects.equals(group, that.group)
+                && Objects.equals(compressBody, that.compressBody);
     }
 
     @Override
@@ -77,6 +83,7 @@ public class ClientStubMetadata<T> {
         hashCode = hashCode * 31 + Objects.hashCode(microServiceId);
         hashCode = hashCode * 31 + Objects.hashCode(timeout);
         hashCode = hashCode * 31 + Objects.hashCode(group);
+        hashCode = hashCode * 31 + Objects.hashCode(compressBody);
         return hashCode;
     }
 
@@ -90,7 +97,15 @@ public class ClientStubMetadata<T> {
         if (rpcClientStub == null) {
             return Optional.empty();
         }
-        Class<?> api = stubFiled.getType();
+        return create(rpcClientStub, stubFiled.getType());
+    }
+
+    /**
+     * 将一个成员字段配置的RpcClientStub信息提取出来
+     * @param rpcClientStub 类字段
+     * @return 配置的Stub信息
+     */
+    public static Optional<ClientStubMetadata<?>> create(RpcClientStub rpcClientStub, Class<?> api) {
         if (!api.isInterface()) {
             return Optional.empty();
         }
@@ -98,12 +113,27 @@ public class ClientStubMetadata<T> {
         if (tomatoApi == null || StringUtils.isBlank(tomatoApi.microServiceId())) {
             return Optional.empty();
         }
-        return Optional.of(
-                new ClientStubMetadata<>(
-                        api,
-                        tomatoApi.microServiceId(),
-                        rpcClientStub.timeout(),
-                        rpcClientStub.group()
-                ));
+        ClientStubMetadata<?> value = new ClientStubMetadata<>(
+                api,
+                tomatoApi.microServiceId(),
+                rpcClientStub.timeout(),
+                rpcClientStub.group(),
+                rpcClientStub.compressBody()
+        );
+        return Optional.of(value);
+    }
+
+    public String uniqueKey() {
+        return new StringBuilder()
+                .append(stubClass.getCanonicalName())
+                .append("_")
+                .append(microServiceId)
+                .append("_")
+                .append(timeout)
+                .append("_")
+                .append(group)
+                .append("_")
+                .append(compressBody)
+                .toString();
     }
 }

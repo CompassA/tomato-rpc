@@ -22,6 +22,7 @@ import org.tomato.study.rpc.core.spi.spitest.SpiInterfaceAImpl;
 import org.tomato.study.rpc.core.spi.spitest.SpiInterfaceAOtherImpl;
 import org.tomato.study.rpc.core.spi.spitest.SpiInterfaceBImpl;
 import org.tomato.study.rpc.core.spi.spitest.SpiInterfaceCImpl;
+import org.tomato.study.rpc.core.spi.spitest.SpiInterfaceD;
 
 import java.util.Map;
 

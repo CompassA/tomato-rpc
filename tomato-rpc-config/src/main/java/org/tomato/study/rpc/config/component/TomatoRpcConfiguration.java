@@ -22,9 +22,11 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Import;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
+import org.tomato.study.rpc.config.controller.MonitorController;
 import org.tomato.study.rpc.config.data.TomatoRpcProperties;
 import org.tomato.study.rpc.config.error.TomatoRpcConfigurationErrorEnum;
 import org.tomato.study.rpc.core.RpcCoreService;
@@ -46,6 +48,7 @@ import java.util.Optional;
 @Slf4j
 @Configuration
 @AllArgsConstructor
+@Import(RpcFactoryBeanDefinitionPostProcessor.class)
 @EnableConfigurationProperties({TomatoRpcProperties.class})
 public class TomatoRpcConfiguration {
 
@@ -60,7 +63,6 @@ public class TomatoRpcConfiguration {
         rpcConfigBuilder.microServiceId(properties.getMicroServiceId());
         rpcConfigBuilder.subscribedServiceIds(CollectionUtils.isNotEmpty(properties.getSubscribedServices())
                 ? properties.getSubscribedServices() : Collections.emptyList());
-        rpcConfigBuilder.useGzip(properties.isUseGzip());
         if (StringUtils.isNotBlank(properties.getStage())) {
             rpcConfigBuilder.stage(properties.getStage());
         }
@@ -75,6 +77,18 @@ public class TomatoRpcConfiguration {
         }
         if (properties.getClientKeepAliveMs() != null) {
             rpcConfigBuilder.clientKeepAliveMilliseconds(properties.getClientKeepAliveMs());
+        }
+        if (properties.isEnableCircuit()) {
+            rpcConfigBuilder.enableCircuit(properties.isEnableCircuit());
+            if (properties.getCircuitOpenRate() != null) {
+                rpcConfigBuilder.circuitOpenRate(properties.getCircuitOpenRate() / 100.0);
+            }
+            if (properties.getCircuitOpenSeconds() != null) {
+                rpcConfigBuilder.circuitOpenSeconds(properties.getCircuitOpenSeconds());
+            }
+            if (properties.getCircuitWindow() != null) {
+                rpcConfigBuilder.circuitWindow(properties.getCircuitWindow());
+            }
         }
         rpcConfigBuilder.group(
                 Optional.ofNullable(System.getProperty(RpcJvmConfigKey.MICRO_SERVICE_GROUP))
@@ -92,6 +106,11 @@ public class TomatoRpcConfiguration {
         return new RpcStubPostProcessor(rpcCoreService);
     }
 
+    @Bean
+    public MonitorController monitorController(RpcCoreService rpcCoreService) {
+        return new MonitorController(rpcCoreService);
+    }
+
     @EventListener
     public void onApplicationEvent(ContextRefreshedEvent event) {
         ApplicationContext context = event.getApplicationContext();
@@ -106,9 +125,6 @@ public class TomatoRpcConfiguration {
             throw new TomatoRpcRuntimeException(
                     TomatoRpcConfigurationErrorEnum.RPC_CORE_SERVICE_BEAN_START_ERROR.create());
         }
-
-        // 清除stub缓存
-        context.getBean(RpcStubPostProcessor.class).cleanCache();
     }
 
     @EventListener

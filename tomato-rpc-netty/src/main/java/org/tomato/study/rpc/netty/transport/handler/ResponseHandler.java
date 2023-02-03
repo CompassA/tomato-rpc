@@ -17,12 +17,17 @@ package org.tomato.study.rpc.netty.transport.handler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.tomato.study.rpc.core.CommandInterceptor;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandType;
+import org.tomato.study.rpc.core.data.ExtensionHeaderBuilder;
 import org.tomato.study.rpc.core.data.Header;
+import org.tomato.study.rpc.netty.interceptor.CompressInterceptor;
 import org.tomato.study.rpc.netty.transport.client.NettyResponseHolder;
+
+import java.util.Map;
 
 /**
  * 处理RPC服务端的响应数据
@@ -30,29 +35,42 @@ import org.tomato.study.rpc.netty.transport.client.NettyResponseHolder;
  * Created on 2021.04.17
  */
 @Slf4j
-@AllArgsConstructor
+@RequiredArgsConstructor
 @ChannelHandler.Sharable
 public class ResponseHandler extends SimpleChannelInboundHandler<Command> {
 
     private final NettyResponseHolder responseHolder;
+    private final CommandInterceptor[] interceptors = new CommandInterceptor[] {
+            new CompressInterceptor(),
+    };
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Command msg) throws Exception {
-        Header header = msg.getHeader();
-        if (header == null) {
-            throw new IllegalStateException("no header data");
-        }
+    protected void channelRead0(ChannelHandlerContext ctx, Command request) throws Exception {
+        Map<String, String> extensionHeaders = ExtensionHeaderBuilder.getExtensionHeader(request);
+        request = beforeProcess(request, extensionHeaders);
+        Header header = request.getHeader();
         CommandType type = CommandType.value(header.getMessageType());
         switch (type) {
             case RPC_RESPONSE:
-                handleRpcResponse(msg, header);
+                handleRpcResponse(request, header);
                 break;
             case KEEP_ALIVE_RESPONSE:
-                handleKeepAliveResponse(msg, header);
+                handleKeepAliveResponse(request, header);
                 break;
             default:
                 log.warn("received unknown command type: {}", type);
         }
+    }
+
+    protected Command beforeProcess(Command request, Map<String, String> extensionHeaders) {
+        for (CommandInterceptor interceptor : interceptors) {
+            try {
+                request = interceptor.interceptRequest(request, extensionHeaders);
+            } catch (Exception e) {
+                log.error("intercept request error", e);
+            }
+        }
+        return request;
     }
 
     private void handleRpcResponse(Command msg, Header header) {

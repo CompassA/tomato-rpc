@@ -14,32 +14,57 @@
 
 package org.tomato.study.rpc.netty.data;
 
-import lombok.AllArgsConstructor;
-import org.tomato.study.rpc.core.Response;
-import org.tomato.study.rpc.core.Result;
+import lombok.RequiredArgsConstructor;
+import org.tomato.study.rpc.core.data.Response;
+import org.tomato.study.rpc.core.ResponseFuture;
+import org.tomato.study.rpc.core.data.Result;
+import org.tomato.study.rpc.core.data.Code;
 import org.tomato.study.rpc.core.data.Command;
-import org.tomato.study.rpc.netty.serializer.SerializerHolder;
+import org.tomato.study.rpc.core.data.RpcResponse;
+import org.tomato.study.rpc.core.serializer.SerializerHolder;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * @author Tomato
  * Created on 2021.07.17
  */
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class NettyInvocationResult implements Result {
 
-    private final CompletableFuture<Command> future;
+    private final ResponseFuture<Command> future;
 
     @Override
     public Response getResultSync() throws ExecutionException, InterruptedException {
-        return getResultAsync().get();
+        try {
+            // 抄写dubbo，貌似这样性能能好一点
+            return getResultAsync().get(Integer.MAX_VALUE, TimeUnit.SECONDS);
+        } catch (TimeoutException e) {
+            return new Response() {
+                @Override
+                public int getCode() {
+                    return Code.FAIL.getCode();
+                }
+
+                @Override
+                public Object getData() {
+                    return new Object();
+                }
+
+                @Override
+                public String getMessage() {
+                    return "wait sync timeout";
+                }
+            };
+        }
     }
 
     @Override
     public CompletableFuture<Response> getResultAsync() {
-        return future.thenApply(response ->
+        return future.getFuture().thenApply(response ->
                 (Response) SerializerHolder.getSerializer(response.getHeader().getSerializeType())
                         .deserialize(response.getBody(), RpcResponse.class)
         ).exceptionally(exception ->

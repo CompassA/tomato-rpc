@@ -32,6 +32,7 @@ import org.tomato.study.rpc.core.data.Header;
 import org.tomato.study.rpc.netty.TestCommonUtil;
 
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 
 /**
  * @author Tomato
@@ -93,7 +94,7 @@ public class NettyCodecTest {
                     }
                 });
 
-        handlerCDL.await();
+        handlerCDL.await(500L, TimeUnit.MILLISECONDS);
 
         Command client = clientHandler.msg;
         Command server = serverHandler.msg;
