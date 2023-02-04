@@ -12,28 +12,25 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.expression;
+package org.tomato.study.rpc.expression.ast;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import lombok.NoArgsConstructor;
+import org.tomato.study.rpc.expression.token.Token;
 
 /**
- * 表达式词法分析元素
- * ex: val1 == "abc" && val2 != 2 -> b == 3
+ * 终结符节点
  * @author Tomato
- * Created on 2021.12.30
+ * Created on 2023.02.03
  */
-@Getter
-@AllArgsConstructor
-public class Token {
+@NoArgsConstructor
+public class PrimaryNode extends AbstractASTNode {
 
-    /**
-     * 词法分析提取出的文本
-     */
-    private final String value;
+    public PrimaryNode(Token token, ASTNode[] children) {
+        super(token, children);
+    }
 
-    /**
-     * 文本类型
-     */
-    private final TokenType type;
+    @Override
+    public String calc(ExpressionCalcContext context) {
+        return getToken().getValue();
+    }
 }

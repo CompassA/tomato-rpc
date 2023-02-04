@@ -12,7 +12,7 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.expression;
+package org.tomato.study.rpc.expression.token;
 
 import org.apache.commons.lang3.StringUtils;
 

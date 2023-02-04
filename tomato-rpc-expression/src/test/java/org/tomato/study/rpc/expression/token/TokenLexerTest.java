@@ -12,11 +12,12 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.expression;
+package org.tomato.study.rpc.expression.token;
 
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Assert;
 import org.junit.Test;
+import org.tomato.study.rpc.expression.TestCode;
 
 /**
  * @author Tomato
@@ -27,19 +28,7 @@ public class TokenLexerTest {
     private final TokenLexer lexer = new TokenLexer();
 
     @Test
-    public void tokenizeTest() {
-        test0();
-
-        test1();
-
-        test2();
-
-        test3();
-
-        test4();
-    }
-
-    private void test0() {
+    public void tokenizeTest0() {
         Token[] tokensRes = lexer.tokenize(TestCode.CODES.get(0)).getTokens();
         Assert.assertTrue(tokensRes != null && tokensRes.length == 11);
 
@@ -77,7 +66,8 @@ public class TokenLexerTest {
         Assert.assertSame(tokensRes[10].getType(), TokenType.STR_LITERAL);
     }
 
-    private void test1() {
+    @Test
+    public void tokenizeTest1() {
         TokenStream tokenStream = lexer.tokenize(TestCode.CODES.get(1));
         Token[] tokensRes = tokenStream.getTokens();
 
@@ -122,7 +112,8 @@ public class TokenLexerTest {
         Assert.assertEquals(tokensRes.length, tokenStream.getNext());
     }
 
-    private void test2() {
+    @Test
+    public void tokenizeTest2() {
         Token[] tokensRes = lexer.tokenize(TestCode.CODES.get(2)).getTokens();
         Assert.assertTrue(tokensRes != null && tokensRes.length == 25);
 
@@ -202,7 +193,8 @@ public class TokenLexerTest {
         Assert.assertSame(tokensRes[24].getType(), TokenType.STR_LITERAL);
     }
 
-    private void test3() {
+    @Test
+    public void tokenizeTest3() {
         Token[] tokensRes = lexer.tokenize(TestCode.CODES.get(3)).getTokens();
         Assert.assertTrue(tokensRes != null && tokensRes.length == 17);
 
@@ -258,7 +250,8 @@ public class TokenLexerTest {
         Assert.assertSame(tokensRes[16].getType(), TokenType.RIGHT_PAREN);
     }
 
-    private void test4() {
+    @Test
+    public void tokenizeTest4() {
         boolean hasError = false;
         try {
             lexer.tokenize(TestCode.CODES.get(4));
