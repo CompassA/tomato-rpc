@@ -30,6 +30,7 @@
         <module>tomato-rpc-spring-boot-starter</module>
         <module>tomato-rpc-registry-zookeeper</module>
         <module>tomato-rpc-config</module>
+        <module>tomato-rpc-expression</module>
         <module>tomato-rpc-dashboard</module>
 
         <!-- sample module -->
