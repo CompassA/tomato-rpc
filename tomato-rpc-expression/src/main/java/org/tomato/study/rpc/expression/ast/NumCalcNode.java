@@ -43,19 +43,27 @@ public class NumCalcNode extends AbstractASTNode {
         Token token = getToken();
         BigDecimal leftNum = new BigDecimal(left);
         BigDecimal rightNum = new BigDecimal(right);
+
+        BigDecimal res;
         switch (token.getType()) {
             case PLUS:
-                return  leftNum.add(rightNum).toPlainString();
+                res = leftNum.add(rightNum);
+                break;
             case MINUS:
-                return leftNum.subtract(rightNum).toPlainString();
+                res = leftNum.subtract(rightNum);
+                break;
             case MUL:
-                return leftNum.multiply(rightNum).toPlainString();
+                res = leftNum.multiply(rightNum);
+                break;
             case DIV:
-                return leftNum.divideAndRemainder(rightNum)[0].toPlainString();
+                res = leftNum.divideAndRemainder(rightNum)[0];
+                break;
             case MOD:
-                return leftNum.divideAndRemainder(rightNum)[1].toPlainString();
+                res = leftNum.divideAndRemainder(rightNum)[1];
+                break;
             default:
                 throw new IllegalStateException("illegal operation type: " + token.getType());
         }
+        return (BigDecimal.ZERO.compareTo(res) == 0) ? ExpressionConstant.FALSE : res.toPlainString();
     }
 }

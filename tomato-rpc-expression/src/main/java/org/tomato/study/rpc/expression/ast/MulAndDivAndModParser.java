@@ -46,7 +46,7 @@ public class MulAndDivAndModParser implements ExpressionParser {
             Token opToken = tokenStream.pop();
             ASTNode right = lowerParser.parse(tokenStream);
             if (right == null) {
-                throw new IllegalStateException("illegal [MUL_DIV_MOD] expression, missing right node after \"+\"");
+                throw new IllegalStateException("illegal [MUL_DIV_MOD] expression, missing right node after " + opToken.getType());
             }
             node = new NumCalcNode(opToken, new ASTNode[]{node, right});
         }

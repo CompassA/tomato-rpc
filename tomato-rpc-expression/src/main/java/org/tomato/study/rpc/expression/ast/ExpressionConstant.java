@@ -14,27 +14,19 @@
 
 package org.tomato.study.rpc.expression.ast;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
-import org.tomato.study.rpc.expression.token.TokenStream;
-
 /**
- * 解析token流为表达式
  * @author Tomato
- * Created on 2023.02.03
+ * Created on 2023.02.11
  */
-@Getter
-@Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class RootExpressionParser {
+public class ExpressionConstant {
 
-    private LogicParser lowerParser;
+    /**
+     * 逻辑运算或关系运算结果为真
+     */
+    public static final String TRUE = "1";
 
-    public ASTNode parse(TokenStream tokenStream) {
-        return lowerParser.parse(tokenStream);
-    }
-
+    /**
+     * 逻辑运算或关系运算结果为假
+     */
+    public static final String FALSE = "0";
 }

@@ -20,7 +20,10 @@ import org.tomato.study.rpc.expression.token.TokenStream;
  * PRIMARY ::= INT_LITERAL | STR_LITERAL | IDENTIFIER | (EXPR)
  * MUL_DIV_MOD ::= PRIMARY | MUL_DIV_MOD * PRIMARY | MUL_DIV_MOD / PRIMARY | MUL_DIV_MOD % PRIMARY
  * ADD_SUB ::= MUL_DIV_MOD | ADD_SUB + MUL_DIV_MOD | ADD_SUB - MUL_DIV_MOD
- * EXPR ::= ADD_SUB
+ * CMP ::= ADD_SUB | CMP > ADD_SUB | CMP >= ADD_SUB | CMP < ADD_SUB | CMP <= ADD_SUB | CMP == ADD_SUB
+ * LOGIC ::= CMP | LOGIC && CMP | LOGIC || CMP
+ * EXPR ::= LOGIC
+ * ROUTER_EXPR ::= EXPR -> EXPR
  * @author Tomato
  * Created on 2023.02.03
  */

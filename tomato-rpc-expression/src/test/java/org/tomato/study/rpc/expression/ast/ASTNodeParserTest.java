@@ -24,6 +24,13 @@ import org.tomato.study.rpc.expression.token.TokenType;
 import java.util.Arrays;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 /**
  * @author Tomato
  * Created on 2023.02.03
@@ -37,8 +44,12 @@ public class ASTNodeParserTest {
         PrimaryTokenParser primaryTokenParser = new PrimaryTokenParser();
         expressionParser =
                 new RootExpressionParser(
-                        new AddAndSubParser(
-                                new MulAndDivAndModParser(primaryTokenParser)
+                        new LogicParser(
+                             new CmpParser(
+                                     new AddAndSubParser(
+                                             new MulAndDivAndModParser(primaryTokenParser)
+                                     )
+                             )
                         )
                 );
         primaryTokenParser.setTopExpressionParser(expressionParser);
@@ -115,6 +126,162 @@ public class ASTNodeParserTest {
         Assert.assertEquals(leftLeftSubNodes[1].getToken(), tokens.get(2));
 
         Assert.assertEquals(2, Integer.parseInt(root.calc(new ExpressionCalcContext())));
+    }
+
+    @Test
+    public void cmpTest1() {
+        List<Token> tokens = Arrays.asList(
+                /* 0 */ new Token("2", TokenType.INT_LITERAL),
+                /* 1 */ new Token("*", TokenType.MUL),
+                /* 2 */ new Token("30", TokenType.INT_LITERAL),
+                /* 3 */ new Token("<", TokenType.LT),
+                /* 4 */ new Token("2", TokenType.INT_LITERAL),
+                /* 5 */ new Token("+", TokenType.PLUS),
+                /* 6 */ new Token("4", TokenType.INT_LITERAL)
+        );
+        TokenStream tokenStream = new TokenStream(tokens);
+
+        ASTNode root = expressionParser.parse(tokenStream);
+        String res = root.calc(new ExpressionCalcContext());
+
+        Assert.assertEquals(ExpressionConstant.FALSE, res);
+        Assert.assertEquals(root.getToken(), tokens.get(3));
+        Assert.assertEquals(root.getChildren()[0].getToken(), tokens.get(1));
+        Assert.assertEquals(root.getChildren()[1].getToken(), tokens.get(5));
+    }
+
+    @Test
+    public void cmpTest2() {
+        List<Token> tokens = Arrays.asList(
+                /* 0 */ new Token("2", TokenType.INT_LITERAL),
+                /* 1 */ new Token("*", TokenType.MUL),
+                /* 2 */ new Token("30", TokenType.INT_LITERAL),
+                /* 3 */ new Token("==", TokenType.EQ),
+                /* 4 */ new Token("29", TokenType.INT_LITERAL),
+                /* 5 */ new Token("+", TokenType.PLUS),
+                /* 6 */ new Token("31", TokenType.INT_LITERAL)
+        );
+        TokenStream tokenStream = new TokenStream(tokens);
+
+        ASTNode root = expressionParser.parse(tokenStream);
+        String res = root.calc(new ExpressionCalcContext());
+
+        Assert.assertEquals(ExpressionConstant.TRUE, res);
+        Assert.assertEquals(root.getToken(), tokens.get(3));
+        Assert.assertEquals(root.getChildren()[0].getToken(), tokens.get(1));
+        Assert.assertEquals(root.getChildren()[1].getToken(), tokens.get(5));
+    }
+
+    @Test
+    public void logicTest1() {
+        List<Token> tokens = Arrays.asList(
+                /* 0 */ new Token("2", TokenType.INT_LITERAL),
+                /* 1 */ new Token("*", TokenType.MUL),
+                /* 2 */ new Token("30", TokenType.INT_LITERAL),
+                /* 3 */ new Token("<", TokenType.LT),
+                /* 4 */ new Token("2", TokenType.INT_LITERAL),
+                /* 5 */ new Token("+", TokenType.PLUS),
+                /* 6 */ new Token("4", TokenType.INT_LITERAL),
+                /* 7 */ new Token("&&", TokenType.AND),
+                /* 8 */ new Token("0", TokenType.INT_LITERAL)
+        );
+        TokenStream tokenStream = new TokenStream(tokens);
+
+        ASTNode root = expressionParser.parse(tokenStream);
+        String res = root.calc(new ExpressionCalcContext());
+
+        Assert.assertEquals(ExpressionConstant.FALSE, res);
+    }
+
+    @Test
+    public void logicTest2() {
+        List<Token> tokens = Arrays.asList(
+                new Token("(", TokenType.LEFT_PAREN),
+                new Token("(", TokenType.LEFT_PAREN),
+                new Token("3", TokenType.INT_LITERAL),
+                new Token("+", TokenType.PLUS),
+                new Token("1", TokenType.INT_LITERAL),
+                new Token(")", TokenType.RIGHT_PAREN),
+                new Token("*", TokenType.MUL),
+                new Token("3", TokenType.INT_LITERAL),
+                new Token(")", TokenType.RIGHT_PAREN),
+                new Token(">=", TokenType.GE),
+                new Token("13", TokenType.INT_LITERAL),
+                new Token("&&", TokenType.AND),
+                new Token("2", TokenType.INT_LITERAL),
+                new Token(">", TokenType.GT),
+                new Token("4", TokenType.INT_LITERAL),
+                new Token("||", TokenType.OR),
+                new Token("2", TokenType.INT_LITERAL),
+                new Token("<=", TokenType.LE),
+                new Token("12", TokenType.INT_LITERAL)
+        );
+        TokenStream tokenStream = new TokenStream(tokens);
+
+        ASTNode root = expressionParser.parse(tokenStream);
+        String res = root.calc(new ExpressionCalcContext());
+
+        Assert.assertEquals(ExpressionConstant.TRUE, res);
+
+
+        tokens = Arrays.asList(
+                new Token("(", TokenType.LEFT_PAREN),
+                new Token("2", TokenType.INT_LITERAL),
+                new Token(">", TokenType.GT),
+                new Token("4", TokenType.INT_LITERAL),
+                new Token("||", TokenType.OR),
+                new Token("2", TokenType.INT_LITERAL),
+                new Token("<", TokenType.LT),
+                new Token("12", TokenType.INT_LITERAL),
+                new Token(")", TokenType.RIGHT_PAREN),
+                new Token("&&", TokenType.AND),
+                new Token("(", TokenType.LEFT_PAREN),
+                new Token("(", TokenType.LEFT_PAREN),
+                new Token("3", TokenType.INT_LITERAL),
+                new Token("+", TokenType.PLUS),
+                new Token("1", TokenType.INT_LITERAL),
+                new Token(")", TokenType.RIGHT_PAREN),
+                new Token("*", TokenType.MUL),
+                new Token("3", TokenType.INT_LITERAL),
+                new Token(")", TokenType.RIGHT_PAREN),
+                new Token(">=", TokenType.GE),
+                new Token("13", TokenType.INT_LITERAL)
+        );
+        tokenStream = new TokenStream(tokens);
+
+        root = expressionParser.parse(tokenStream);
+        res = root.calc(new ExpressionCalcContext());
+
+        Assert.assertEquals(ExpressionConstant.FALSE, res);
+    }
+
+    /** 测试提前结束运算 */
+    @Test
+    public void logicTest3() {
+        ASTNode a = mock(ASTNode.class);
+        ASTNode b = mock(ASTNode.class);
+        when(a.calc(any())).thenReturn(ExpressionConstant.FALSE);
+
+        LogicNode logicNode = new LogicNode(new Token("&&", TokenType.AND), new ASTNode[]{a, b});
+        String res = logicNode.calc(new ExpressionCalcContext());
+
+        Assert.assertEquals(ExpressionConstant.FALSE, res);
+        verify(a, times(1)).calc(any());
+        verify(b, never()).calc(any());
+    }
+
+    @Test
+    public void logicTest4() {
+        ASTNode a = mock(ASTNode.class);
+        ASTNode b = mock(ASTNode.class);
+        when(a.calc(any())).thenReturn(ExpressionConstant.TRUE);
+
+        LogicNode logicNode = new LogicNode(new Token("||", TokenType.OR), new ASTNode[]{a, b});
+        String res = logicNode.calc(new ExpressionCalcContext());
+
+        Assert.assertEquals(ExpressionConstant.TRUE, res);
+        verify(a, times(1)).calc(any());
+        verify(b, never()).calc(any());
     }
 
     @Test

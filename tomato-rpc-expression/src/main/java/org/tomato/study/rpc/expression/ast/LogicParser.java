@@ -23,44 +23,41 @@ import org.tomato.study.rpc.expression.token.TokenStream;
 import org.tomato.study.rpc.expression.token.TokenType;
 
 /**
- * 解析[ADD_SUB]符号
+ * LOGIC ::= CMP | LOGIC && CMP | LOGIC || CMP
  * @author Tomato
- * Created on 2023.02.03
+ * Created on 2023.02.11
  */
-@Setter
 @Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
-public class AddAndSubParser implements ExpressionParser {
+public class LogicParser implements ExpressionParser {
 
-    private MulAndDivAndModParser lowerParser;
+    private CmpParser cmpParser;
 
     @Override
     public ASTNode parse(TokenStream tokenStream) {
-        ASTNode node = lowerParser.parse(tokenStream);
+        ASTNode node = cmpParser.parse(tokenStream);
         if (node == null) {
             return null;
         }
-
-        while (canContinue(tokenStream)) {
+        while (continueParse(tokenStream)) {
             Token opToken = tokenStream.pop();
-            ASTNode right = lowerParser.parse(tokenStream);
+            ASTNode right = cmpParser.parse(tokenStream);
             if (right == null) {
-                throw new IllegalStateException("illegal [ADD_SUB] expression, missing right node after " + opToken.getType());
+                throw new IllegalStateException("illegal [Logic] expression, missing right node after " + opToken.getType());
             }
-            node = new NumCalcNode(opToken, new ASTNode[]{node, right});
+            node = new LogicNode(opToken, new ASTNode[] {node, right});
         }
-
         return node;
     }
 
-    private boolean canContinue(TokenStream tokenStream) {
-        Token topToken = tokenStream.current();
-        if (topToken == null) {
+    private boolean continueParse(TokenStream tokenStream) {
+        Token current = tokenStream.current();
+        if (current == null) {
             return false;
         }
-        TokenType type = topToken.getType();
-        return TokenType.PLUS == type || TokenType.MINUS == type;
+        TokenType type = current.getType();
+        return type == TokenType.AND || type == TokenType.OR;
     }
-
 }
