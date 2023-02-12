@@ -70,12 +70,10 @@ public interface NameServer extends LifeCycle {
 
     /**
      * search service invoker
-     * @param microServiceId target micro-service id
-     * @param group target service group
      * @param invocation rpc invocation request data
      * @return provider invoker
      */
-    Optional<RpcInvoker> lookupInvoker(String microServiceId, String group, Invocation invocation);
+    Optional<RpcInvoker> lookupInvoker(Invocation invocation);
 
     /**
      * list rpc invokers of a service

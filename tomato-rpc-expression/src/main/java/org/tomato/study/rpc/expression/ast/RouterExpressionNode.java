@@ -14,23 +14,20 @@
 
 package org.tomato.study.rpc.expression.ast;
 
-import lombok.Getter;
-import lombok.Setter;
-
-import java.util.Collections;
-import java.util.Map;
+import org.tomato.study.rpc.expression.token.Token;
 
 /**
- * 表达式求值上下文
  * @author Tomato
- * Created on 2023.02.04
+ * Created on 2023.02.11
  */
-@Getter
-@Setter
-public class ExpressionCalcContext {
+public class RouterExpressionNode extends AbstractASTNode {
 
-    /**
-     * 表达式变量
-     */
-    private Map<String, String> valMap = Collections.emptyMap();
+    public RouterExpressionNode(Token token, ASTNode[] children) {
+        super(token, children);
+    }
+
+    @Override
+    public String calc(ExpressionCalcContext context) {
+        return null;
+    }
 }

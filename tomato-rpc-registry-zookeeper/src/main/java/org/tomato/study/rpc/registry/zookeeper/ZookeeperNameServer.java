@@ -73,10 +73,8 @@ public class ZookeeperNameServer extends BaseNameServer {
     }
 
     @Override
-    public Optional<RpcInvoker> lookupInvoker(String microServiceId, String group, Invocation invocation) {
-        // 如果用户在jvm配置了对应服务的group，优先使用用户配置的group
-        String finalGroup = getJvmConfigGroup(microServiceId).orElse(group);
-        return registry.lookup(microServiceId, finalGroup, invocation);
+    public Optional<RpcInvoker> lookupInvoker(Invocation invocation) {
+        return registry.lookup(invocation);
     }
 
     @Override

@@ -28,9 +28,10 @@ public interface StubInvoker {
      * @param proxy proxy instance
      * @param method proxy method
      * @param args method args
+     * @throws Throwable exception
      * @return invoke result
      */
-    Object invoke(Object proxy, Method method, Object[] args);
+    Object invoke(Object proxy, Method method, Object[] args) throws Throwable;
 
     /**
      * target micro-service id

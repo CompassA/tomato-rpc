@@ -3,9 +3,6 @@
 项目基于Netty实现了RPC网络通信，并使用Zookeeper作为注册中心实现了简单的服务治理。  
 项目参考了dubbo、feign的一些rpc实现思路。  
 
-# 核心类图
-![04a28c93a2bb83ee0b0e4f946d8a7f201df85d2b7f075652.png](https://www.imageoss.com/images/2022/02/19/04a28c93a2bb83ee0b0e4f946d8a7f201df85d2b7f075652.png "uml")
-
 # 快速开始
 
 ## 依赖检查
@@ -510,6 +507,10 @@ todo
 ## 均衡负载
 目前基于Nginx的平滑加权轮询算法实现均衡负载，具体实现见"RoundRobinLoadBalance.java"  
 Tomato-RPC的均衡负载的单位为接口方法
+
+# 系统概览
+## 核心类图
+![04a28c93a2bb83ee0b0e4f946d8a7f201df85d2b7f075652.png](https://www.imageoss.com/images/2022/02/19/04a28c93a2bb83ee0b0e4f946d8a7f201df85d2b7f075652.png "uml")
 
 # k8s部署样例
 

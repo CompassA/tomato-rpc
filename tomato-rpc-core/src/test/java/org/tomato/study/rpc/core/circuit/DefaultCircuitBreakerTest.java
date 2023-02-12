@@ -77,6 +77,7 @@ public class DefaultCircuitBreakerTest {
         RpcInvoker mockInvoker = new RpcInvoker() {
             public String getGroup() {return null;}
             public MetaData getMetadata() {return null;}
+            public Map<String, String> getInvokerPropertyMap() {return null;}
             public Serializer getSerializer() {return null;}
             public Result invoke(Invocation invocation) throws TomatoRpcException {
                 if (true) { throw new RuntimeException("error"); }
@@ -108,6 +109,11 @@ public class DefaultCircuitBreakerTest {
                 .circuitWindow(100)
                 .build();
         CircuitRpcInvoker circuitRpcInvoker = new CircuitRpcInvoker(mockInvoker, config) {
+            @Override
+            public Map<String, String> getInvokerPropertyMap() {
+                return mockInvoker.getInvokerPropertyMap();
+            }
+
             @Override
             protected void doHandle(Response response, Throwable exception, CircuitBreaker breaker) {
                 if (exception != null) {
