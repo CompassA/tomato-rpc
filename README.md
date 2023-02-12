@@ -502,16 +502,20 @@ Param
 ]
 ```
 ## 路由
-路由规则样例:
+
+### 路由规则样例
 ```text
 1. user_id % 10 == 0 || user_id % 10 == 1   ->    group == "gray"
 2. group == "test" && user_id == 1   ->    group == "link"
 ```
-"->"符号左边为请求路由表达式, 右边为机器路由表达式。
-当请求满足左边的表达式时, Tomato-RPC会将请求路由到符合右边表达式的机器中。
+"->"符号左边为请求路由表达式, 右边为机器路由表达式。  
+当请求满足左边的表达式时, Tomato-RPC会将请求路由到符合右边表达式的机器中。  
+可基于路由规则实现灰度。  
 
+### 路由规则配置
+todo 规则CRUD
 
-路由表达式语法规则:
+### 路由表达式语法规则
 ```text
 PRIMARY ::= INT_LITERAL | STR_LITERAL | IDENTIFIER | (EXPR)
 MUL_DIV_MOD ::= PRIMARY | MUL_DIV_MOD * PRIMARY | MUL_DIV_MOD / PRIMARY | MUL_DIV_MOD % PRIMARY
@@ -521,9 +525,9 @@ LOGIC ::= CMP | LOGIC && CMP | LOGIC || CMP
 EXPR ::= LOGIC
 ROUTER_EXPR ::= EXPR -> EXPR
 ```
-当Tomato-RPC接受到一串路由规则字符串时, 会对路由规则进行词法分析\语法分析, 将路由表达式解析为AST语法树。
-在计算表达式时，会将RPC请求的所有参数带入左表达式的语法树中进行运算，会将RPC服务端机器的所有参数带入右表达式的语法树中进行计算。
-(表达式解析具体实现在tomato-rpc-expression包中)
+当Tomato-RPC接受到一串路由规则字符串时, 会对路由规则进行词法分析\语法分析, 将路由表达式解析为AST语法树。  
+在计算表达式时，会将RPC请求的所有参数带入左表达式的语法树中进行运算，会将RPC服务端机器的所有参数带入右表达式的语法树中进行计算。  
+(表达式解析具体实现在tomato-rpc-expression包中)  
 
 ## 均衡负载
 目前基于Nginx的平滑加权轮询算法实现均衡负载，具体实现见"RoundRobinLoadBalance.java"  
