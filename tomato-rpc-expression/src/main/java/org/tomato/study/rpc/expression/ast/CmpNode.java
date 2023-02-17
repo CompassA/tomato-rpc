@@ -17,10 +17,12 @@ package org.tomato.study.rpc.expression.ast;
 import lombok.Getter;
 import lombok.Setter;
 import org.tomato.study.rpc.expression.token.Token;
+import org.tomato.study.rpc.expression.token.TokenType;
 
 import java.math.BigDecimal;
 
 import static org.tomato.study.rpc.expression.ast.ExpressionConstant.FALSE;
+import static org.tomato.study.rpc.expression.ast.ExpressionConstant.NULL;
 import static org.tomato.study.rpc.expression.ast.ExpressionConstant.TRUE;
 
 /**
@@ -38,10 +40,24 @@ public class CmpNode extends AbstractASTNode {
     @Override
     public String calc(ExpressionCalcContext context) {
         ASTNode[] children = getChildren();
-        BigDecimal left = new BigDecimal(children[0].calc(context));
-        BigDecimal right = new BigDecimal(children[1].calc(context));
-        Token token = getToken();
-        switch (token.getType()) {
+        String leftStr = children[0].calc(context);
+        if (NULL.equals(leftStr)) {
+            return FALSE;
+        }
+        String rightStr = children[1].calc(context);
+        if (NULL.equals(rightStr)) {
+            return FALSE;
+        }
+        if (TokenType.STR_LITERAL.equals(children[1].getToken().getType()) ||
+                TokenType.STR_LITERAL.equals(children[0].getToken().getType())) {
+            return compare(leftStr, rightStr);
+        }
+        return compare(new BigDecimal(leftStr), new BigDecimal(rightStr));
+    }
+
+    private <T extends Comparable<T>> String compare(T left, T right) {
+        TokenType type = getToken().getType();
+        switch (type) {
             case EQ:
                 return left.compareTo(right) == 0 ? TRUE : FALSE;
             case GT:
@@ -53,7 +69,7 @@ public class CmpNode extends AbstractASTNode {
             case LE:
                 return left.compareTo(right) <= 0 ? TRUE : FALSE;
             default:
-                throw new IllegalStateException("illegal operation type: " + token.getType());
+                throw new IllegalStateException("illegal operation type: " + type);
         }
     }
 }

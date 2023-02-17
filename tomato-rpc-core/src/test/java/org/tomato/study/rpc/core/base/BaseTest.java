@@ -16,18 +16,13 @@ package org.tomato.study.rpc.core.base;
 
 import org.junit.Assert;
 import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.router.BaseMicroServiceSpace;
 import org.tomato.study.rpc.core.invoker.RpcInvoker;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
-import org.tomato.study.rpc.utils.ReflectUtils;
 
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentMap;
 
 /**
  * @author Tomato
@@ -35,27 +30,11 @@ import java.util.concurrent.ConcurrentMap;
  */
 public class BaseTest {
 
-    protected void checkInvokerMap(MicroServiceSpace serviceProvider, Collection<MetaData> mataDataSet) {
-        ConcurrentMap<MetaData, RpcInvoker> invokerRegistry = ReflectUtils.reflectGet(
-                serviceProvider, BaseMicroServiceSpace.class, "invokerRegistry");
-        ConcurrentMap<String, List<RpcInvoker>> invokerMap = ReflectUtils.reflectGet(
-                serviceProvider, BaseMicroServiceSpace.class, "sameGroupInvokerMap");
-
-        Assert.assertEquals(invokerRegistry.values().size(), mataDataSet.size());
-
+    protected void checkInvokerMap(MicroServiceSpace microServiceSpace, Collection<MetaData> mataDataSet) {
+        List<RpcInvoker> allInvokers = microServiceSpace.getAllInvokers();
+        Assert.assertEquals(allInvokers.size(), mataDataSet.size());
         for (MetaData metaData : mataDataSet) {
-            Assert.assertNotNull(invokerRegistry.get(metaData));
-        }
-
-        Map<String, Set<MetaData>> metadataMap = new HashMap<>(0);
-        for (MetaData metaData : mataDataSet) {
-            metadataMap.computeIfAbsent(metaData.getGroup(), group -> new HashSet<>(0))
-                    .add(metaData);
-        }
-        for (Map.Entry<String, Set<MetaData>> entry : metadataMap.entrySet()) {
-            List<RpcInvoker> invokers = invokerMap.get(entry.getKey());
-            Assert.assertNotNull(invokers);
-            Assert.assertEquals(invokers.size(), entry.getValue().size());
+            Assert.assertTrue(allInvokers.stream().anyMatch(invoker -> invoker.getMetadata().equals(metaData)));
         }
     }
 

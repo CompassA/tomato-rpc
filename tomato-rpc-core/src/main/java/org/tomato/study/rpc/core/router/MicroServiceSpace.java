@@ -45,11 +45,10 @@ public interface MicroServiceSpace {
 
     /**
      * 根据微服务分组找到匹配的一个微服务调用实例
-     * @param group service group
      * @param invocation rpc request data
      * @return invoker
      */
-    Optional<RpcInvoker> lookUp(String group, Invocation invocation);
+    Optional<RpcInvoker> lookUp(Invocation invocation);
 
     /**
      * 刷新节点信息
@@ -57,6 +56,13 @@ public interface MicroServiceSpace {
      * @throws TomatoRpcException exception during refresh invoker data
      */
     void refresh(Set<MetaData> metadataSet) throws TomatoRpcException;
+
+    /**
+     * 刷新路由规则
+     * @param routers 路由规则
+     * @throws TomatoRpcException 异常信息
+     */
+    void refreshRouter(List<String> routers) throws TomatoRpcException;
 
     /**
      * close micro-service space

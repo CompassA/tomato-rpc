@@ -20,6 +20,8 @@ import org.tomato.study.rpc.core.serializer.Serializer;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 
+import java.util.Map;
+
 /**
  * divide invoker in the interface dimension
  * @author Tomato
@@ -38,6 +40,12 @@ public interface RpcInvoker {
      * @return invoker metadata
      */
     MetaData getMetadata();
+
+    /**
+     * get invoker property map
+     * @return invoker property map
+     */
+    Map<String, String> getInvokerPropertyMap();
 
     /**
      * get rpc invoker serializer

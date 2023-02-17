@@ -38,7 +38,13 @@ public class NumCalcNode extends AbstractASTNode {
             throw new IllegalStateException("missing children nodes");
         }
         String left = children[0].calc(context);
+        if (ExpressionConstant.NULL.equals(left)) {
+            return ExpressionConstant.NULL;
+        }
         String right = children[1].calc(context);
+        if (ExpressionConstant.NULL.equals(right)) {
+            return ExpressionConstant.NULL;
+        }
 
         Token token = getToken();
         BigDecimal leftNum = new BigDecimal(left);

@@ -12,25 +12,29 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.expression.ast;
+package org.tomato.study.rpc.core.router;
 
-import lombok.Getter;
-import lombok.Setter;
-
-import java.util.Collections;
-import java.util.Map;
+import org.tomato.study.rpc.core.data.Invocation;
+import org.tomato.study.rpc.core.invoker.RpcInvoker;
 
 /**
- * 表达式求值上下文
+ * 路由规则
  * @author Tomato
- * Created on 2023.02.04
+ * Created on 2023.02.12
  */
-@Getter
-@Setter
-public class ExpressionCalcContext {
+public interface Router {
 
     /**
-     * 表达式变量
+     * 判断RPC请求是否命中路由规则
+     * @param invocation RPC请求
+     * @return true 命中规则
      */
-    private Map<String, String> valMap = Collections.emptyMap();
+    boolean matchRequest(Invocation invocation);
+
+    /**
+     * 判断RPC invoker是否满足条件
+     * @param rpcInvoker invoker
+     * @return true 满足条件
+     */
+    boolean matchInvoker(RpcInvoker rpcInvoker);
 }

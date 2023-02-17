@@ -14,15 +14,15 @@
 
 package org.tomato.study.rpc.core.stub;
 
-import org.tomato.study.rpc.core.data.Invocation;
-import org.tomato.study.rpc.core.registry.NameServer;
-import org.tomato.study.rpc.core.data.Response;
 import org.tomato.study.rpc.core.data.Code;
+import org.tomato.study.rpc.core.data.Invocation;
+import org.tomato.study.rpc.core.data.Response;
 import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.invoker.RpcInvoker;
+import org.tomato.study.rpc.core.registry.NameServer;
 
 import java.util.Optional;
 import java.util.concurrent.ExecutionException;
@@ -43,15 +43,13 @@ public class RouterStubInvoker extends BaseStubInvoker {
 
     @Override
     protected Response doInvoke(Invocation invocation) {
-        String microServiceId = getMicroServiceId();
-        String group = getGroup();
         try {
-            Optional<RpcInvoker> invokerOpt = nameServer.lookupInvoker(microServiceId, group, invocation);
+            Optional<RpcInvoker> invokerOpt = nameServer.lookupInvoker(invocation);
             if (invokerOpt.isEmpty()) {
                 throw new TomatoRpcRuntimeException(
                         TomatoRpcCoreErrorEnum.STUB_INVOKER_SEARCH_ERROR.create(
-                                String.format("[invoker not found, micro-service-id=%s, group=%s, interface=%s]",
-                                        microServiceId, group, invocation.getInterfaceName())));
+                                String.format("[invoker not found, micro-service-id=%s, interface=%s]",
+                                        invocation.getMicroServiceId(), invocation.getInterfaceName())));
             }
             Response response = invokerOpt.get().invoke(invocation).getResultSync();
             if (!Code.SUCCESS.equals(response.getCode())) {
@@ -66,8 +64,8 @@ public class RouterStubInvoker extends BaseStubInvoker {
             return response;
         } catch (ExecutionException | InterruptedException | TomatoRpcException e) {
             throw new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.STUB_INVOKER_SEARCH_ERROR.create(
-                    String.format("[rpc invocation failed, micro-service-id=%s, group=%s, interface=%s]",
-                            microServiceId, group, invocation.getInterfaceName())), e);
+                    String.format("[rpc invocation failed, micro-service-id=%s, interface=%s]",
+                            invocation.getMicroServiceId(), invocation.getInterfaceName())), e);
         }
     }
 }

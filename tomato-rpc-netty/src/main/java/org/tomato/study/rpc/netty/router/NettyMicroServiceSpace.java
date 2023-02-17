@@ -25,6 +25,8 @@ import org.tomato.study.rpc.core.invoker.RpcInvoker;
 import org.tomato.study.rpc.core.invoker.RpcInvokerFactory;
 import org.tomato.study.rpc.core.data.Code;
 
+import java.util.Map;
+
 /**
  * 提供基于Netty创建Invoker的方法
  * @author Tomato
@@ -48,6 +50,11 @@ public class NettyMicroServiceSpace extends BaseMicroServiceSpace {
     @Override
     protected CircuitRpcInvoker doCreateCircuitBreaker(RpcInvoker invoker) {
         return new CircuitRpcInvoker(invoker, getRpcConfig()) {
+            @Override
+            public Map<String, String> getInvokerPropertyMap() {
+                return invoker.getInvokerPropertyMap();
+            }
+
             @Override
             protected void doHandle(Response response, Throwable exception, CircuitBreaker breaker) {
                 if (!Code.SUCCESS.equals(response.getCode()) || exception != null) {

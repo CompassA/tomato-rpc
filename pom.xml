@@ -116,6 +116,11 @@
                 <version>${project.version}</version>
             </dependency>
 
+            <dependency>
+                <groupId>org.tomato.study.rpc</groupId>
+                <artifactId>tomato-rpc-expression</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.projectlombok</groupId>
