@@ -15,22 +15,22 @@
 package org.tomato.study.rpc.netty.transport.handler;
 
 import io.netty.channel.ChannelHandler;
-import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.ProviderRegistry;
-import org.tomato.study.rpc.core.serializer.Serializer;
 import org.tomato.study.rpc.core.ServerHandler;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
 import org.tomato.study.rpc.core.data.Header;
-import org.tomato.study.rpc.core.error.TomatoRpcException;
-import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.core.data.RpcRequestDTO;
 import org.tomato.study.rpc.core.data.RpcRequestModel;
 import org.tomato.study.rpc.core.data.RpcResponse;
-import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.serializer.Serializer;
 import org.tomato.study.rpc.core.serializer.SerializerHolder;
+import org.tomato.study.rpc.core.spi.SpiLoader;
+import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.utils.ConvertUtils;
+import org.tomato.study.rpc.utils.Logger;
 
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -40,7 +40,6 @@ import java.lang.reflect.Method;
  * @author Tomato
  * Created on 2021.04.18
  */
-@Slf4j
 @ChannelHandler.Sharable
 public class RpcRequestHandler implements ServerHandler {
 
@@ -69,14 +68,17 @@ public class RpcRequestHandler implements ServerHandler {
             // 反射调用
             return invoke(header, serializer, request, provider, method);
 
-        } catch (TomatoRpcException exception) {
-            log.error(exception.getMessage(), exception);
-            return CommandFactory.response(
-                    header.getId(),
-                    RpcResponse.fail(exception.getErrorInfo()),
-                    serializer,
-                    CommandType.RPC_RESPONSE
-            );
+        } catch (Throwable exception) {
+            Logger.DEFAULT.error("rpc handle failed", exception);
+
+            RpcResponse response;
+            if (exception instanceof TomatoRpcException) {
+                response = RpcResponse.fail(((TomatoRpcException) exception).getErrorInfo());
+            } else {
+                response = RpcResponse.fail("unknown exception");
+            }
+
+            return CommandFactory.response(header.getId(), response, serializer, CommandType.RPC_RESPONSE);
         }
     }
 

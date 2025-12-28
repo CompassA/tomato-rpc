@@ -14,7 +14,6 @@
 
 package org.tomato.study.rpc.config.component;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanDefinition;
@@ -24,6 +23,7 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProce
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
 import org.tomato.study.rpc.config.data.ClientStubMetadata;
+import org.tomato.study.rpc.utils.Logger;
 
 import java.lang.reflect.Field;
 import java.util.HashSet;
@@ -33,7 +33,6 @@ import java.util.Set;
  * @author Tomato
  * Created on 2022.12.04
  */
-@Slf4j
 public class RpcFactoryBeanDefinitionPostProcessor implements BeanDefinitionRegistryPostProcessor {
 
     @Override
@@ -50,7 +49,7 @@ public class RpcFactoryBeanDefinitionPostProcessor implements BeanDefinitionRegi
             try {
                 clazz = ClassUtils.forName(beanClassName, this.getClass().getClassLoader());
             } catch (ClassNotFoundException e) {
-                log.error("bean definition class noe found, class name: {}", beanClassName);
+                Logger.DEFAULT.error("bean definition class noe found, class name: {}", beanClassName);
                 continue;
             }
 

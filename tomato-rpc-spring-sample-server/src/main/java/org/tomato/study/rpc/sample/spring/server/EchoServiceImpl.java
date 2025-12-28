@@ -27,6 +27,7 @@ import org.tomato.study.rpc.utils.NetworkUtil;
 
 import java.net.InetAddress;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * @author Tomato
@@ -38,6 +39,7 @@ import java.util.List;
 public class EchoServiceImpl implements EchoService, SumService {
 
     private final RpcCoreService coreService;
+    private final AtomicLong cnt = new AtomicLong(0);
 
     @Override
     public DemoResponse echo(DemoRequest request) {
@@ -48,12 +50,13 @@ public class EchoServiceImpl implements EchoService, SumService {
             if (localAddress == null) {
                 throw new RuntimeException("local address == null");
             }
-            builder.append("hello client!\n")
-                    .append("request message: ").append(request.toString()).append("\n")
-                    .append("provider host address: ").append(localAddress.getHostAddress()).append("\n")
-                    .append("provider micro-service-id: ").append(coreService.getMicroServiceId()).append("\n")
-                    .append("provider stage: ").append(coreService.getStage()).append("\n")
-                    .append("provider group: ").append(coreService.getGroup()).append("\n");
+            builder.append("host=").append(localAddress.getHostAddress()).append("|")
+                .append("port=").append(coreService.getPort()).append("|")
+                .append("micro-service-id=").append(coreService.getMicroServiceId()).append("|")
+                .append("no.").append(cnt.addAndGet(1)).append("|")
+                .append("stage=").append(coreService.getStage()).append("|")
+                .append("group=").append(coreService.getGroup()).append("|")
+                .append("message=").append(request.toString());
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             response.setData(e.getMessage());

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Properties>
+        <!-- 终端日志输出格式 -->
+        <Property name="TERMINAL_PATTERN">
+            %d{yyyy-MM-dd HH:mm:ss.SSS} %highlight{-%5p} [%15t] %highlight{%-40.40logger{39}} : %m%n
+        </Property>
+
+        <!-- 日志文件输出格式 -->
+        <Property name="FILE_PATTERN">
+            %d{yyyy-MM-dd HH:mm:ss.SSS} -%5p [%15t] %-40.40logger{39} : %m%n
+        </Property>
+
+        <!-- 日志目录 -->
+        <Property name="LOG_HOME">
+            logs
+        </Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="CONSOLE">
+            <PatternLayout pattern="${TERMINAL_PATTERN}"/>
+        </Console>
+
+    </Appenders>
+
+    <Loggers>
+        <AsyncRoot level="INFO">
+            <AppenderRef ref="CONSOLE"/>
+        </AsyncRoot>
+    </Loggers>
+</Configuration>

@@ -28,7 +28,7 @@
 
 package org.tomato.study.rpc.core.utils;
 
-import lombok.extern.slf4j.Slf4j;
+import org.tomato.study.rpc.utils.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -41,7 +41,6 @@ import java.util.zip.GZIPOutputStream;
  * @author Tomato
  * Created on 2021.10.04
  */
-@Slf4j
 public final class GzipUtils {
 
     private GzipUtils() throws IllegalAccessException {
@@ -63,7 +62,7 @@ public final class GzipUtils {
             gzipOutputStream.close();
             return byteArrayOutputStream.toByteArray();
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            Logger.DEFAULT.error(e.getMessage(), e);
             return new byte[0];
         }
     }
@@ -83,7 +82,7 @@ public final class GzipUtils {
             }
             result = byteArrayOutputStream.toByteArray();
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            Logger.DEFAULT.error(e.getMessage(), e);
             return new byte[0];
         }
         return result;

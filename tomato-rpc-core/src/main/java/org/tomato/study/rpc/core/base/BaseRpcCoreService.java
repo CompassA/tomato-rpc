@@ -15,7 +15,6 @@
 package org.tomato.study.rpc.core.base;
 
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.RpcJvmConfigKey;
@@ -34,6 +33,7 @@ import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.core.server.RpcServer;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.core.stub.StubFactory;
+import org.tomato.study.rpc.utils.Logger;
 import org.tomato.study.rpc.utils.NetworkUtil;
 
 import java.util.List;
@@ -46,7 +46,6 @@ import java.util.List;
  * @author Tomato
  * Created on 2021.09.27
  */
-@Slf4j
 public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implements RpcCoreService {
 
     /**
@@ -215,7 +214,7 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
         // 初始化注册中心
         nameServer.init();
 
-        log.info("netty rpc core service initialized");
+        Logger.DEFAULT.info("netty rpc core service initialized");
     }
 
     @Override
@@ -236,12 +235,7 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
             throw new TomatoRpcException(TomatoRpcCoreErrorEnum.RPC_CONFIG_INITIALIZING_ERROR.create(), e);
         }
         ready = true;
-        log.info("netty rpc core service started.\n" +
-                        "micro-service-id: {}\n" +
-                        "stage: {}\n" +
-                        "group: {}\n" +
-                        "host: {}\n" +
-                        "port: {}",
+        Logger.DEFAULT.info("netty rpc core service started. micro-service-id={},stage={},group={},host={},port={}",
                 rpcConfig.getMicroServiceId(),
                 rpcConfig.getStage(),
                 rpcConfig.getGroup(),
@@ -259,11 +253,11 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
                 microService.close();
             }
         } catch (Exception e) {
-            log.error("name server unregister service failed", e);
+            Logger.DEFAULT.error("name server unregister service failed", e);
         }
         rpcServer.stop();
         nameServer.stop();
-        log.info("netty rpc core service stopped");
+        Logger.DEFAULT.info("netty rpc core service stopped");
     }
 
     /**

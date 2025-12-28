@@ -14,7 +14,6 @@
 
 package org.tomato.study.rpc.config.component;
 
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
@@ -23,6 +22,7 @@ import org.tomato.study.rpc.config.annotation.RpcServerStub;
 import org.tomato.study.rpc.config.data.ClientStubMetadata;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.api.TomatoApi;
+import org.tomato.study.rpc.utils.Logger;
 
 import java.lang.reflect.Field;
 
@@ -31,7 +31,6 @@ import java.lang.reflect.Field;
  * @author Tomato
  * Created on 2021.11.20
  */
-@Slf4j
 public class RpcStubPostProcessor implements BeanPostProcessor, BeanFactoryAware {
 
     private final RpcCoreService rpcCoreService;
@@ -92,7 +91,7 @@ public class RpcStubPostProcessor implements BeanPostProcessor, BeanFactoryAware
             field.setAccessible(true);
             field.set(bean, stub);
         } catch (IllegalAccessException e) {
-            log.error("create stub error", e);
+            Logger.DEFAULT.error("create stub error", e);
         }
     }
 

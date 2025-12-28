@@ -14,11 +14,11 @@
 
 package org.tomato.study.rpc.core.registry;
 
-import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.data.NameServerConfig;
 import org.tomato.study.rpc.core.data.RefreshInvokerTask;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.observer.BaseLifeCycleComponent;
+import org.tomato.study.rpc.utils.Logger;
 
 import java.nio.charset.Charset;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -28,7 +28,6 @@ import java.util.concurrent.BlockingQueue;
  * @author Tomato
  * Created on 2021.09.27
  */
-@Slf4j
 public abstract class BaseNameServer extends BaseLifeCycleComponent implements NameServer {
 
     private final NameServerConfig nameServerConfig;
@@ -69,8 +68,8 @@ public abstract class BaseNameServer extends BaseLifeCycleComponent implements N
                     task.getMicroServiceSpace().refresh(task.getInvokerInfoSet());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                } catch (TomatoRpcException e) {
-                    log.error("refresh error", e);
+                } catch (Throwable e) {
+                    Logger.DEFAULT.error("refresh error", e);
                 }
             }
         }, "invoker-refresh-thread");

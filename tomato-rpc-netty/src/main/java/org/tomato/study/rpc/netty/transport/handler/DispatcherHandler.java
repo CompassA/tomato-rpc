@@ -19,7 +19,6 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.CommandInterceptor;
 import org.tomato.study.rpc.core.ServerHandler;
 import org.tomato.study.rpc.core.data.Command;
@@ -28,9 +27,10 @@ import org.tomato.study.rpc.core.data.CommandType;
 import org.tomato.study.rpc.core.data.ExtensionHeaderBuilder;
 import org.tomato.study.rpc.core.data.Header;
 import org.tomato.study.rpc.core.data.RpcResponse;
+import org.tomato.study.rpc.core.serializer.SerializerHolder;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.interceptor.CompressInterceptor;
-import org.tomato.study.rpc.core.serializer.SerializerHolder;
+import org.tomato.study.rpc.utils.Logger;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,7 +43,6 @@ import java.util.concurrent.ExecutorService;
  * @author Tomato
  * Created on 2021.04.18
  */
-@Slf4j
 @ChannelHandler.Sharable
 public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
 
@@ -72,7 +71,7 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
         CommandType type = CommandType.value(msg.getHeader().getMessageType());
         ServerHandler matchHandler = handlerMap.get(type);
         if (matchHandler == null) {
-            log.warn("rpc server handler not found, type: " + type);
+            Logger.DEFAULT.warn("rpc server handler not found, type: {}", type);
             return;
         }
         // 如果是请求信息并且有业务线程池，交由业务线程池处理
@@ -102,7 +101,7 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
                     (ChannelFutureListener) listener -> {
                         if (!listener.isSuccess()) {
                             Throwable cause = listener.cause();
-                            log.error(cause.getMessage(), cause);
+                            Logger.DEFAULT.error(cause.getMessage(), cause);
                             Command errorResponse = CommandFactory.response(
                                     header.getId(),
                                     RpcResponse.fail(NettyRpcErrorEnum.NETTY_REQUEST_HANDLE_ERROR.create()),
@@ -113,7 +112,7 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
                         }
                     });
         } catch (Throwable exception) {
-            log.error(exception.getMessage(), exception);
+            Logger.DEFAULT.error(exception.getMessage(), exception);
             ctx.writeAndFlush(
                     CommandFactory.response(
                             header.getId(),
@@ -131,7 +130,7 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
             try {
                 request = interceptor.interceptRequest(request, extensionHeaders);
             } catch (Exception e) {
-                log.error("intercept request error", e);
+                Logger.DEFAULT.error("intercept request error", e);
             }
         }
         return request;
@@ -147,6 +146,6 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         super.exceptionCaught(ctx, cause);
-        log.error(cause.getMessage(), cause);
+        Logger.DEFAULT.error(cause.getMessage(), cause);
     }
 }

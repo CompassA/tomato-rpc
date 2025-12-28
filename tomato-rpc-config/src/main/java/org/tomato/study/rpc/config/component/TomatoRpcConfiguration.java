@@ -15,7 +15,6 @@
 package org.tomato.study.rpc.config.component;
 
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -36,16 +35,17 @@ import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
+import org.tomato.study.rpc.utils.Logger;
 
 import java.util.Collections;
 import java.util.Optional;
+
 
 /**
  * Spring配置
  * @author Tomato
  * Created on 2021.11.18
  */
-@Slf4j
 @Configuration
 @AllArgsConstructor
 @Import(RpcFactoryBeanDefinitionPostProcessor.class)
@@ -121,7 +121,7 @@ public class TomatoRpcConfiguration {
             rpcCoreService.init();
             rpcCoreService.start();
         } catch (TomatoRpcException e) {
-            log.error(e.getErrorInfo().toString());
+            Logger.DEFAULT.error(e.getErrorInfo().toString(), e);
             throw new TomatoRpcRuntimeException(
                     TomatoRpcConfigurationErrorEnum.RPC_CORE_SERVICE_BEAN_START_ERROR.create());
         }
@@ -133,7 +133,7 @@ public class TomatoRpcConfiguration {
         try {
             rpcCoreService.stop();
         } catch (TomatoRpcException e) {
-            log.error(e.getErrorInfo().toString());
+            Logger.DEFAULT.error(e.getErrorInfo().toString(), e);
             throw new TomatoRpcRuntimeException(
                     TomatoRpcConfigurationErrorEnum.RPC_CORE_SERVICE_STOP_ERROR.create());
         }

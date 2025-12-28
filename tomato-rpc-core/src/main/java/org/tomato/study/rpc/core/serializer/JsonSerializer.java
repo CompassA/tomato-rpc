@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
-import lombok.extern.slf4j.Slf4j;
+import org.tomato.study.rpc.utils.Logger;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -35,7 +35,6 @@ import java.util.List;
  * @author Tomato
  * Created on 2021.10.03
  */
-@Slf4j
 public class JsonSerializer implements Serializer {
 
     private final ObjectMapper objectMapper;
@@ -68,7 +67,7 @@ public class JsonSerializer implements Serializer {
         try {
             return objectMapper.writeValueAsBytes(object);
         } catch (JsonProcessingException e) {
-            log.error(e.getMessage(), e);
+            Logger.DEFAULT.error(e.getMessage(), e);
             return new byte[0];
         }
     }
@@ -78,7 +77,7 @@ public class JsonSerializer implements Serializer {
         try {
             return objectMapper.readValue(data, clazz);
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            Logger.DEFAULT.error(e.getMessage(), e);
             return null;
         }
     }
@@ -93,7 +92,7 @@ public class JsonSerializer implements Serializer {
         try {
             return objectMapper.readValue(listData, new TypeReference<List<T>>() {});
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            Logger.DEFAULT.error(e.getMessage(), e);
             return null;
         }
     }

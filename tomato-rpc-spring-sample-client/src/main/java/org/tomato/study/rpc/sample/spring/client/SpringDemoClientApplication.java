@@ -15,6 +15,7 @@
 package org.tomato.study.rpc.sample.spring.client;
 
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
@@ -26,7 +27,6 @@ import org.tomato.study.rpc.sample.api.data.DemoRequest;
 
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -40,6 +40,10 @@ import java.util.concurrent.TimeUnit;
 @Component
 @SpringBootApplication
 public class SpringDemoClientApplication {
+
+    public static final String CLIENT_MODE_KEY = "tomato-rpc.client-mode";
+    public static final String ECHO_MODE = "echo";
+    public static final String SUM_MODE = "sum";
 
     @RpcClientStub(compressBody = true, timeout = 1000)
     private EchoService echoService;
@@ -58,50 +62,56 @@ public class SpringDemoClientApplication {
     public static void main(String[] args) throws InterruptedException {
         ConfigurableApplicationContext context = SpringApplication.run(SpringDemoClientApplication.class);
         SpringDemoClientApplication bean = context.getBean(SpringDemoClientApplication.class);
+
+        Runnable runnable = createRunnable(bean);
+
         int threadNum = 10;
-        int messageNum = 1000;
+        int messageNum = 10000;
         ThreadPoolExecutor executor = new ThreadPoolExecutor(
                 threadNum, threadNum, 0, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1000));
         CountDownLatch countDownLatch = new CountDownLatch(threadNum);
         for (int i = 0; i < threadNum; ++i) {
             executor.execute(() -> {
-                Random random = new Random();
                 for (int j = 0; j < messageNum; ++j) {
-                    process(bean, random, j);
                     try {
-                        Thread.sleep(1000);
+                        runnable.run();
+                    } catch (Throwable e) {
+                        log.error("rpc client error", e);
+                    }
+
+                    try {
+
+                        Thread.sleep(Math.round(3 + Math.random() * 1000));
                     } catch (InterruptedException e) {
-                        log.error(e.getMessage());
+                        throw new RuntimeException(e);
                     }
                 }
                 countDownLatch.countDown();
             });
         }
         countDownLatch.await();
-        Random random = new Random();
-        for (int i = 0; i < 100000000; ++i) {
-            process(bean, random, i);
-            Thread.sleep(1500);
-        }
-        context.close();
         System.exit(0);
     }
 
-    private static void process(SpringDemoClientApplication bean, Random random, int i) {
-        try {
-            if ((i & 1) == 0) {
-                log.info(bean.echo("hello world"));
-            } else {
-                List<Integer> nums = Arrays.asList(
-                        random.nextInt(10000),
-                        random.nextInt(10000),
-                        random.nextInt(20000),
-                        random.nextInt(23232));
-                log.info("sum of {} is {}", nums, bean.sum(nums));
-            }
-        } catch (Exception e) {
-            log.error("rpc client error", e);
-        }
-    }
+    private static Runnable createRunnable(SpringDemoClientApplication bean) {
+        String clientMode = System.getProperty(CLIENT_MODE_KEY);
 
+        log.info("client run mode: {}", clientMode);
+
+        if (StringUtils.isBlank(clientMode) || ECHO_MODE.equals(clientMode)) {
+            return () -> log.info(bean.echo("hello world"));
+        } else if (SUM_MODE.equals(clientMode)) {
+            return () -> {
+                int base = 10000;
+                List<Integer> nums = Arrays.asList(
+                    (int) Math.round(Math.random() * base),
+                    (int) Math.round(Math.random() * base),
+                    (int) Math.round(Math.random() * base),
+                    (int) Math.round(Math.random() * base));
+                log.info("sum of {} is {}", nums, bean.sum(nums));
+            };
+        }
+
+        return null;
+    }
 }

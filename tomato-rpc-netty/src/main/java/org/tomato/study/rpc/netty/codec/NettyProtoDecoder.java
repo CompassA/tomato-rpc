@@ -17,10 +17,10 @@ package org.tomato.study.rpc.netty.codec;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
-import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.Header;
 import org.tomato.study.rpc.core.data.ProtoConstants;
+import org.tomato.study.rpc.utils.Logger;
 
 import java.util.List;
 
@@ -29,7 +29,6 @@ import java.util.List;
  * @author Tomato
  * Created on 2021.04.16
  */
-@Slf4j
 public class NettyProtoDecoder extends MessageToMessageDecoder<ByteBuf> {
 
     @Override
@@ -52,7 +51,7 @@ public class NettyProtoDecoder extends MessageToMessageDecoder<ByteBuf> {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        log.error("decode command error", cause);
+        Logger.DEFAULT.error("decode command error", cause);
         ctx.close();
     }
 }

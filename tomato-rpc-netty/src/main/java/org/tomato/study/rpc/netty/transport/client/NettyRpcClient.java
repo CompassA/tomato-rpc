@@ -30,12 +30,11 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.ResponseFuture;
-import org.tomato.study.rpc.core.transport.BaseRpcClient;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
+import org.tomato.study.rpc.core.transport.BaseRpcClient;
 import org.tomato.study.rpc.netty.codec.NettyFrameDecoder;
 import org.tomato.study.rpc.netty.codec.NettyFrameEncoder;
 import org.tomato.study.rpc.netty.codec.NettyProtoDecoder;
@@ -43,6 +42,7 @@ import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.transport.handler.ClientIdleCheckHandler;
 import org.tomato.study.rpc.netty.transport.handler.KeepAliveHandler;
 import org.tomato.study.rpc.netty.transport.handler.ResponseHandler;
+import org.tomato.study.rpc.utils.Logger;
 
 import java.net.URI;
 import java.util.Optional;
@@ -54,7 +54,6 @@ import java.util.concurrent.TimeoutException;
  * @author Tomato
  * Created on 2021.11.27
  */
-@Slf4j
 public class NettyRpcClient extends BaseRpcClient<Command> {
 
     private static final String RPC_CLIENT_THREAD_NAME = "rpc-client-worker-thread";
@@ -93,7 +92,7 @@ public class NettyRpcClient extends BaseRpcClient<Command> {
             init();
             start();
         } catch (TomatoRpcException e) {
-            log.error("start netty rpc client error", e);
+            Logger.DEFAULT.error("start netty rpc client error", e);
         }
     }
 

@@ -15,7 +15,6 @@
 package org.tomato.study.rpc.core.router;
 
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.tomato.study.rpc.core.RpcJvmConfigKey;
 import org.tomato.study.rpc.core.circuit.CircuitRpcInvoker;
@@ -51,7 +50,6 @@ import java.util.concurrent.ConcurrentMap;
  * @author Tomato
  * Created on 2021.07.10
  */
-@Slf4j
 @Getter
 public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
 

@@ -14,7 +14,6 @@
 
 package org.tomato.study.rpc.utils;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 
 import java.net.InetAddress;
@@ -28,7 +27,6 @@ import java.util.regex.Pattern;
  * @author Tomato
  * Created on 2021.06.12
  */
-@Slf4j
 public final class NetworkUtil {
 
     private static final Pattern IP_PATTERN = Pattern.compile("\\d{1,3}(\\.\\d{1,3}){3,5}$");
@@ -45,7 +43,7 @@ public final class NetworkUtil {
         try {
             address = getLocalAddress();
         } catch (SocketException e) {
-            log.error(e.getMessage(), e);;
+            Logger.DEFAULT.error(e.getMessage(), e);;
         }
         return address == null ? LOCAL_HOST : address.getHostAddress();
     }

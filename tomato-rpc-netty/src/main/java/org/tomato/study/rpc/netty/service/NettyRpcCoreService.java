@@ -14,21 +14,21 @@
 
 package org.tomato.study.rpc.netty.service;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.tomato.study.rpc.core.ProviderRegistry;
-import org.tomato.study.rpc.core.loadbalance.LoadBalance;
-import org.tomato.study.rpc.core.server.RpcServer;
 import org.tomato.study.rpc.core.base.BaseRpcCoreService;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.data.RpcServerConfig;
 import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
-import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.core.invoker.RpcInvokerFactory;
+import org.tomato.study.rpc.core.loadbalance.LoadBalance;
+import org.tomato.study.rpc.core.router.MicroServiceSpace;
+import org.tomato.study.rpc.core.server.RpcServer;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.router.NettyMicroServiceSpace;
 import org.tomato.study.rpc.netty.transport.server.NettyRpcServer;
+import org.tomato.study.rpc.utils.Logger;
 import org.tomato.study.rpc.utils.NetworkUtil;
 
 import java.net.URI;
@@ -39,7 +39,6 @@ import java.util.List;
  * @author Tomato
  * Created on 2021.04.17
  */
-@Slf4j
 public class NettyRpcCoreService extends BaseRpcCoreService {
 
     public NettyRpcCoreService(RpcConfig rpcConfig) {
@@ -58,14 +57,14 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
 
         RpcServer rpcServer = getRpcServer();
         URI providerURI = NetworkUtil.createURI(getProtocol(), rpcServer.getHost(), rpcServer.getPort());
-        log.info("provider registered, URI[" + providerURI + "]");
+        Logger.DEFAULT.info("provider registered, URI[{}]", providerURI);
         return providerURI;
     }
 
     @Override
     public <T> T createStub(StubConfig<T> stubConfig) {
         T stub = getStubFactory().createStub(getRpcConfig(), stubConfig, getRpcInvokerFactory());
-        log.info("stub " + stubConfig.getServiceInterface().getCanonicalName() + " created");
+        Logger.DEFAULT.info("stub of [{}] created", stubConfig.getServiceInterface().getCanonicalName());
         return stub;
     }
 

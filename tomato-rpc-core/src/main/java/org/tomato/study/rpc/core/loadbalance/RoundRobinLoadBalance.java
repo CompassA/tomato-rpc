@@ -15,11 +15,11 @@
 package org.tomato.study.rpc.core.loadbalance;
 
 import lombok.NoArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.tomato.study.rpc.core.data.Invocation;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.invoker.RpcInvoker;
+import org.tomato.study.rpc.utils.Logger;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
@@ -30,7 +30,6 @@ import java.util.concurrent.atomic.AtomicLong;
  * @author Tomato
  * Created on 2022.08.02
  */
-@Slf4j
 @NoArgsConstructor
 public class RoundRobinLoadBalance extends BaseLoadBalance {
 
@@ -54,7 +53,7 @@ public class RoundRobinLoadBalance extends BaseLoadBalance {
         for (RpcInvoker invoker : invokers) {
             MetaData metadata = invoker.getMetadata();
             if (metadata == null || !metadata.isValid()) {
-                log.warn("Node MetaData[{}] is invalid, remove from load balance context", metadata);
+                Logger.DEFAULT.warn("Node MetaData[{}] is invalid, remove from load balance context", metadata);
                 continue;
             }
             NodeWeight nodeWeight = serviceWeightMap.computeIfAbsent(

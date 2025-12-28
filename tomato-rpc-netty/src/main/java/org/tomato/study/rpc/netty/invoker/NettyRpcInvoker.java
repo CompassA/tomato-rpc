@@ -18,25 +18,25 @@ import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.tomato.study.rpc.core.data.Invocation;
 import org.tomato.study.rpc.core.ResponseFuture;
-import org.tomato.study.rpc.core.data.Result;
-import org.tomato.study.rpc.core.transport.RpcClient;
 import org.tomato.study.rpc.core.RpcParameterKey;
-import org.tomato.study.rpc.core.invoker.BaseRpcInvoker;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
+import org.tomato.study.rpc.core.data.Invocation;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.data.Result;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcErrorInfo;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
+import org.tomato.study.rpc.core.invoker.BaseRpcInvoker;
+import org.tomato.study.rpc.core.transport.RpcClient;
+import org.tomato.study.rpc.core.utils.GzipUtils;
 import org.tomato.study.rpc.netty.data.NettyInvocationResult;
 import org.tomato.study.rpc.netty.transport.client.NettyRpcClient;
-import org.tomato.study.rpc.core.utils.GzipUtils;
+import org.tomato.study.rpc.utils.Logger;
 
 import java.net.URI;
 import java.util.Map;
@@ -111,7 +111,6 @@ public class NettyRpcInvoker extends BaseRpcInvoker {
         rpcClient.stop();
     }
 
-    @Slf4j
     @RequiredArgsConstructor
     private static class RpcTimeoutTask implements TimerTask {
 
@@ -125,7 +124,7 @@ public class NettyRpcInvoker extends BaseRpcInvoker {
                 TomatoRpcErrorInfo errorInfo = TomatoRpcCoreErrorEnum.RPC_CLIENT_TIMEOUT
                         .create(String.format("rpc timeout, invocation: %s, request: %s", invocation, request));
                 future.completeExceptionally(new TomatoRpcRuntimeException(errorInfo));
-                log.warn("rpc timeout, message id: {}, invocation: {}",
+                Logger.DEFAULT.warn("rpc timeout, message id: {}, invocation: {}",
                         responseFuture.getMessageId(),
                         invocation);
             });
