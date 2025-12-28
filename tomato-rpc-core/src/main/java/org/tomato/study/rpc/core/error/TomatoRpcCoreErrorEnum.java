@@ -35,6 +35,7 @@ public enum TomatoRpcCoreErrorEnum {
 
     STUB_INVOKER_SEARCH_ERROR(30001, "invoker not found"),
     STUB_INVOKER_RPC_ERROR(30002, "client rpc failed"),
+    SERVICE_STUB_CREATE_ERROR(30003, "service stub register failed"),
     ;
 
     private int code;

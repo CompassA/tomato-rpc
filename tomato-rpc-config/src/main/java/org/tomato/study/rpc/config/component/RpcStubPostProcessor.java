@@ -21,7 +21,8 @@ import org.springframework.beans.factory.config.BeanPostProcessor;
 import org.tomato.study.rpc.config.annotation.RpcServerStub;
 import org.tomato.study.rpc.config.data.ClientStubMetadata;
 import org.tomato.study.rpc.core.RpcCoreService;
-import org.tomato.study.rpc.core.api.TomatoApi;
+import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.utils.Logger;
 
 import java.lang.reflect.Field;
@@ -59,17 +60,43 @@ public class RpcStubPostProcessor implements BeanPostProcessor, BeanFactoryAware
             return;
         }
 
-        // 不断向上遍历类型，直到找到标注了@TomatoApi的接口
-        while (!Object.class.equals(clazz)) {
-            for (Class<?> interfaceClazz : clazz.getInterfaces()) {
-                TomatoApi tomatoApi = interfaceClazz.getAnnotation(TomatoApi.class);
-                if (tomatoApi != null) {
-                    rpcCoreService.registerProvider(bean, (Class<Object>) interfaceClazz);
+        Class[] interfaces = fetchServiceInstanceInterfaces(rpcServerStub, clazz);
+
+        for (Class anInterface : interfaces) {
+            rpcCoreService.registerProvider(bean, anInterface);
+        }
+    }
+
+    private static Class[] fetchServiceInstanceInterfaces(RpcServerStub rpcServerStub, Class<?> instanceClass) {
+        Class[] interfaceTypes = rpcServerStub.interfaceTypes();
+
+        // 存在指定接口
+        if (interfaceTypes.length != 0) {
+            Class[] result = new Class[interfaceTypes.length];
+            for (int i = 0; i < interfaceTypes.length; ++i) {
+                Class interfaceType = interfaceTypes[i];
+                if (!interfaceType.isInterface()) {
+                    throw new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.SERVICE_STUB_CREATE_ERROR.create(
+                        interfaceType.getName() + " is not interface"
+                    ));
                 }
+                result[i] = interfaceType;
             }
-            clazz = clazz.getSuperclass();
+            return result;
         }
 
+        // 不断向上遍历类型，直到找到接口类型
+        while (!Object.class.equals(instanceClass)) {
+            Class[] interfaces = instanceClass.getInterfaces();
+            if (interfaces.length != 0) {
+                return interfaces;
+            }
+            instanceClass = instanceClass.getSuperclass();
+        }
+
+        throw new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.SERVICE_STUB_CREATE_ERROR.create(
+            instanceClass.getName() + "didn't implement any interface"
+        ));
     }
 
     private void injectClientStub(Object bean) {

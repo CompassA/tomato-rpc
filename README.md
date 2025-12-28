@@ -11,8 +11,7 @@ jdk版本:openjdk-11
 
 ## 如何使用
 本段以EchoService接口为例，介绍如何通过Tomato-RPC框架，使RPC服务端能够暴露服务接口、 使RPC客户端能够发起RPC调用。  
-具体代码见项目的tomato-rpc-sample-api、tomato-rpc-sample-client、  
-tomato-rpc-sample-server、tomato-rpc-spring-sample-client、tomato-rpc-spring-sample-server
+具体代码见项目的tomato-rpc-sample-api、tomato-rpc-spring-sample-client、tomato-rpc-spring-sample-server
 ### 公共jar包
 Tomato-RPC的RPC通信是基于接口的， 因此RPC的客户端、服务端需保持接口一致。  
 开发RPC程序时，RPC服务端开发者需提供一个公共的jar包，jar包中包含了rpc接口以及接口所需的参数。  
@@ -20,8 +19,6 @@ RPC客户端与RPC服务端需共同引入此jar包，保持接口一致性。
 
 接口及方法参数
 ```java
-// TomatoApi注解为框架自定义注解，发布的接口需带上此注解，目的是告诉客户端，发布该接口的服务端的唯一标识
-@TomatoApi(microServiceId = "demo-rpc-service")
 public interface EchoService {
     String echo(String request);
 }
@@ -139,7 +136,7 @@ public class EchoApiWrapper {
     // 使用此注解时，类必须是一个java bean
     // 可配置客户端接口调用的超时时间，单位为毫秒
     // 可配置rpc消息是否进行压缩，若compressBody为true，rpc请求与响应均会被压缩
-    @RpcClientStub(timeout = 2000, compressBody = true)
+    @RpcClientStub(microServiceId = "demo-rpc-service", timeout = 2000, compressBody = true)
     private EchoService echoService;
 
     public String echo(String msg) {
@@ -186,7 +183,7 @@ Worker线程池负责连接的读写、协议的解析(也许可以把协议的�
 #### 数据结构
 Tomato-RPC的每个[RpcInvoker](./tomato-rpc-netty/src/main/java/org/tomato/study/rpc/netty/invoker/NettyRpcInvoker.java)对象维护了与RPC服务端某个实例的TCP连接。  
 客户端会内存中会维护[MicroServiceId -> List\<RpcInvoker\>]这样的映射关系。假设客户端订阅了1个微服务(id="test-service")，该微服务有5个实例，则内存中会有5个与"test-service"相关联的RpcInvoker对象。  
-每个RpcInvoker对象组合了一个[NettyClient](https://github.com/CompassA/tomato-rpc/blob/285948ca36ca7861cb0223331d30e71ad39c3a66/tomato-rpc-netty/src/main/java/org/tomato/study/rpc/netty/transport/client/NettyRpcClient.java)对象，NettyClient对象封装了客户端的连接通信逻辑。  
+每个RpcInvoker对象组合了一个[NettyClient](./tomato-rpc-netty/src/main/java/org/tomato/study/rpc/netty/transport/client/NettyRpcClient.java)对象，NettyClient对象封装了客户端的连接通信逻辑。  
 #### 心跳机制
 Tomato-RPC的客户端会与RPC服务端的每个实例建立TCP长连接，并根据配置的心跳间隔向服务端发送心跳包(参数: client-keep-alive-ms)。  
 而Tomato-RPC的服务端则有空闲连接检测机制，会关闭不活跃的连接(超过一定时间未发消息的连接即为不活跃连接，阈值配置参数: server-idle-check-ms)。  

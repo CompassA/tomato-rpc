@@ -25,13 +25,6 @@
 
     <artifactId>tomato-rpc-sample-api</artifactId>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.tomato.study.rpc</groupId>
-            <artifactId>tomato-rpc-core</artifactId>
-        </dependency>
-    </dependencies>
-
     <build>
         <plugins>
             <plugin>

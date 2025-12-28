@@ -23,6 +23,7 @@ import org.springframework.stereotype.Component;
 import org.tomato.study.rpc.config.annotation.RpcClientStub;
 import org.tomato.study.rpc.sample.api.EchoService;
 import org.tomato.study.rpc.sample.api.SumService;
+import org.tomato.study.rpc.sample.api.data.Constant;
 import org.tomato.study.rpc.sample.api.data.DemoRequest;
 
 import java.util.Arrays;
@@ -45,10 +46,10 @@ public class SpringDemoClientApplication {
     public static final String ECHO_MODE = "echo";
     public static final String SUM_MODE = "sum";
 
-    @RpcClientStub(compressBody = true, timeout = 1000)
+    @RpcClientStub(microServiceId = Constant.serviceId, compressBody = true, timeout = 1000)
     private EchoService echoService;
 
-    @RpcClientStub(compressBody = true, timeout = 5000)
+    @RpcClientStub(microServiceId = Constant.serviceId, compressBody = true, timeout = 5000)
     private SumService sumService;
 
     public String echo(String msg) {

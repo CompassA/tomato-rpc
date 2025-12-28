@@ -31,6 +31,12 @@ import java.lang.annotation.Target;
 public @interface RpcClientStub {
 
     /**
+     * 用于设置服务的唯一标识
+     * @return 服务唯一标识
+     */
+    String microServiceId();
+
+    /**
      * 配置客户端调用的超时时间
      * @return 超时时间，单位ms
      */

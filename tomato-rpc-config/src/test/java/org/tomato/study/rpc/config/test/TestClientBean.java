@@ -26,9 +26,11 @@ import org.tomato.study.rpc.config.annotation.RpcClientStub;
 @Component
 public class TestClientBean {
 
-    @RpcClientStub
+    public static final String MICRO_SERVICE_ID = "rpc-test-service";
+
+    @RpcClientStub(microServiceId = MICRO_SERVICE_ID)
     private TestApi testApi;
 
-    @RpcClientStub(timeout = 500)
+    @RpcClientStub(microServiceId = MICRO_SERVICE_ID, timeout = 500)
     private TestTimeoutApi timeoutApi;
 }

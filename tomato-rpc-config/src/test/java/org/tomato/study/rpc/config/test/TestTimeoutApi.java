@@ -14,13 +14,10 @@
 
 package org.tomato.study.rpc.config.test;
 
-import org.tomato.study.rpc.core.api.TomatoApi;
-
 /**
  * @author Tomato
  * Created on 2021.11.30
  */
-@TomatoApi(microServiceId = "rpc-test-service")
 public interface TestTimeoutApi {
     String echo(String s);
 }

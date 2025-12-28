@@ -32,4 +32,10 @@ import java.lang.annotation.Target;
 @Target({ElementType.TYPE})
 @Component
 public @interface RpcServerStub {
+
+    /**
+     * 当服务实现类实现了多个接口时, 通过此属性指定实现类
+     * @return interface class
+     */
+    Class<?>[] interfaceTypes() default {};
 }
