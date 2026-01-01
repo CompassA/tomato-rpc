@@ -30,6 +30,11 @@ import java.util.Set;
 public class RefreshInvokerTask {
 
     /**
+     * taskID
+     */
+    private String id;
+
+    /**
      * 微服务对象
      */
     private MicroServiceSpace microServiceSpace;

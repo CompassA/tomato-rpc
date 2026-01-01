@@ -34,6 +34,7 @@ import org.tomato.study.rpc.expression.ast.RootExpressionParser;
 import org.tomato.study.rpc.expression.ast.RouterExpressionParser;
 import org.tomato.study.rpc.expression.token.TokenLexer;
 import org.tomato.study.rpc.expression.token.TokenStream;
+import org.tomato.study.rpc.utils.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -186,6 +187,7 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
     public void refresh(Set<MetaData> newRpcInstanceInfoSet) throws TomatoRpcException {
         // 若实例节点为空，表明这个服务已经没有节点了，清空Invoker
         if (CollectionUtils.isEmpty(newRpcInstanceInfoSet)) {
+            Logger.DEFAULT.info("clean {} invokers", microServiceId);
             cleanInvoker();
             return;
         }
@@ -210,9 +212,11 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
             RpcInvoker oldInvoker = invokerMap.remove(metaData);
             // 关闭invoker
             try {
+                Logger.DEFAULT.info("close invoker{}", oldInvoker.getMetadata());
                 oldInvoker.destroy();
             } catch (TomatoRpcException e) {
-                // 什么都不做
+                // 仅打日志, 什么都不做
+                Logger.DEFAULT.error("close invoker{} failed", oldInvoker.getMetadata(), e);
             }
         }
 
@@ -242,6 +246,7 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
     }
 
     private RpcInvoker createInvoker(MetaData metaData) {
+        Logger.DEFAULT.info("create invoker {}", metaData);
         RpcInvoker rpcInvoker = doCreateInvoker(metaData);
         if (!rpcConfig.isEnableCircuit()) {
             return rpcInvoker;

@@ -82,7 +82,7 @@ public class SpringDemoClientApplication {
 
                     try {
 
-                        Thread.sleep(Math.round(3 + Math.random() * 1000));
+                        Thread.sleep(Math.round(100 * Math.random() + 1000));
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);
                     }

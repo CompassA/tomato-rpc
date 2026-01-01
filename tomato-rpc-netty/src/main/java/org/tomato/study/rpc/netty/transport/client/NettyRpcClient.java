@@ -32,6 +32,7 @@ import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.AllArgsConstructor;
 import org.tomato.study.rpc.core.ResponseFuture;
 import org.tomato.study.rpc.core.data.Command;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorInfo;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.transport.BaseRpcClient;
@@ -118,8 +119,9 @@ public class NettyRpcClient extends BaseRpcClient<Command> {
                     });
             return new ClientResponseFuture(id, future, responseHolder);
         } catch (Exception e) {
-            throw new TomatoRpcException(
-                    NettyRpcErrorEnum.NETTY_CLIENT_RPC_ERROR.create("channel fetch error"), e);
+            TomatoRpcErrorInfo errorInfo = NettyRpcErrorEnum.NETTY_CLIENT_RPC_ERROR.create(
+                String.format("channel[%s,%d] fetch error", getHost(), getPort()));
+            throw new TomatoRpcException(errorInfo, e);
         }
     }
 

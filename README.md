@@ -188,7 +188,7 @@ Tomato-RPC的每个[RpcInvoker](./tomato-rpc-netty/src/main/java/org/tomato/stud
 Tomato-RPC的客户端会与RPC服务端的每个实例建立TCP长连接，并根据配置的心跳间隔向服务端发送心跳包(参数: client-keep-alive-ms)。  
 而Tomato-RPC的服务端则有空闲连接检测机制，会关闭不活跃的连接(超过一定时间未发消息的连接即为不活跃连接，阈值配置参数: server-idle-check-ms)。  
 心跳机制是基于Netty的IdleStateHandler实现的，这里就不赘述其具体原理了。  
-#### 优雅关闭
+#### 客户端断开连接
 RpcInvoker内部维护了一个计数器，一个标记位。  
 计数器记录了当前RpcInvoker被多少个线程调用。  
 标记位标记了当前RpcInvoker是否能被调用。 

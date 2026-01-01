@@ -14,6 +14,7 @@
 
 package org.tomato.study.rpc.core.registry;
 
+import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.data.NameServerConfig;
 import org.tomato.study.rpc.core.data.RefreshInvokerTask;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
@@ -63,13 +64,28 @@ public abstract class BaseNameServer extends BaseLifeCycleComponent implements N
     protected void doInit() throws TomatoRpcException {
         this.refreshInvokerThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
+                String success = "Y";
+                String code = "Y";
+                long startTime = System.currentTimeMillis();
+                String id = StringUtils.EMPTY;
                 try {
                     RefreshInvokerTask task = refreshTaskQueue.take();
+                    id = task.getId();
+                    Logger.DIGEST.info("|name-server|invoker-refresh|req|{}|", id);
                     task.getMicroServiceSpace().refresh(task.getInvokerInfoSet());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
+                    success = "N";
+                    code = "InterruptedException";
                 } catch (Throwable e) {
-                    Logger.DEFAULT.error("refresh error", e);
+                    Logger.DEFAULT.error("|name-server|invoker-refresh|exception|{}|", id, e);
+                } finally {
+                    Logger.DIGEST.info("|name-server|invoker-refresh|res|{}|{}|{}|{}|",
+                        success,
+                        System.currentTimeMillis() - startTime,
+                        code,
+                        id
+                    );
                 }
             }
         }, "invoker-refresh-thread");
