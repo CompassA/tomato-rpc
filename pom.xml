@@ -44,7 +44,7 @@
 
     <properties>
         <encoding>UTF-8</encoding>
-        <java.version>11</java.version>
+        <java.version>17</java.version>
         <maven-compile-plugin.version>3.8.0</maven-compile-plugin.version>
         <jacoco.version>0.8.7</jacoco.version>
         <protostuff.version>1.7.2</protostuff.version>
@@ -58,8 +58,8 @@
         <zookeeper.version>3.5.9</zookeeper.version>
         <curator.version>4.0.0</curator.version>
         <slf4j.version>1.7.30</slf4j.version>
-        <jackson.version>2.10.1</jackson.version>
-        <spring-boot.version>2.2.2.RELEASE</spring-boot.version>
+        <jackson.version>2.19.0</jackson.version>
+        <spring-boot.version>3.2.12</spring-boot.version>
         <curator-test.version>2.12.0</curator-test.version>
     </properties>
 
@@ -231,9 +231,20 @@
                 <artifactId>jackson-databind</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
+            <!--- 支持LocalDateTime类型序列化 -->
             <dependency>
                 <groupId>com.fasterxml.jackson.datatype</groupId>
                 <artifactId>jackson-datatype-jsr310</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-core</artifactId>
+                <version>${jackson.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.fasterxml.jackson.core</groupId>
+                <artifactId>jackson-annotations</artifactId>
                 <version>${jackson.version}</version>
             </dependency>
 

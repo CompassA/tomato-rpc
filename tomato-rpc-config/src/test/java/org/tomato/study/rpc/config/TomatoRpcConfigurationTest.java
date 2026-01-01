@@ -14,6 +14,7 @@
 
 package org.tomato.study.rpc.config;
 
+import jakarta.annotation.PostConstruct;
 import org.apache.curator.test.TestingServer;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -39,7 +40,6 @@ import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.utils.ReflectUtils;
 
-import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.util.Objects;
 import java.util.Optional;

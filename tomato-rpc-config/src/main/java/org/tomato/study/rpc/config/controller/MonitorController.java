@@ -14,6 +14,8 @@
 
 package org.tomato.study.rpc.config.controller;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -24,8 +26,6 @@ import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.registry.NameServer;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;

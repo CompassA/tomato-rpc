@@ -6,7 +6,8 @@
 # 快速开始
 
 ## 依赖检查
-jdk版本:openjdk-11  
+jdk版本:openjdk-17  
+spring-boot: 3.2.12
 默认注册中心: zookeeper 3.5.9
 
 ## 如何使用

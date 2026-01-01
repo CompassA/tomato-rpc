@@ -17,11 +17,13 @@ package org.tomato.study.rpc.config.component;
 import lombok.AllArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Role;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
@@ -50,11 +52,13 @@ import java.util.Optional;
 @AllArgsConstructor
 @Import(RpcFactoryBeanDefinitionPostProcessor.class)
 @EnableConfigurationProperties({TomatoRpcProperties.class})
+@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class TomatoRpcConfiguration {
 
     private TomatoRpcProperties properties;
 
     @Bean
+    @Role(BeanDefinition.ROLE_SUPPORT)
     public RpcCoreService rpcCoreService() throws TomatoRpcException {
         RpcConfig.Builder rpcConfigBuilder = RpcConfig.builder();
         if (StringUtils.isBlank(properties.getMicroServiceId())) {
@@ -102,11 +106,13 @@ public class TomatoRpcConfiguration {
     }
 
     @Bean
+    @Role(BeanDefinition.ROLE_SUPPORT)
     public RpcStubPostProcessor rpcStubPostProcessor(RpcCoreService rpcCoreService) {
         return new RpcStubPostProcessor(rpcCoreService);
     }
 
     @Bean
+    @Role(BeanDefinition.ROLE_SUPPORT)
     public MonitorController monitorController(RpcCoreService rpcCoreService) {
         return new MonitorController(rpcCoreService);
     }

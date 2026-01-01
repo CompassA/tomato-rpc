@@ -229,6 +229,11 @@ public class MetaData {
         public String toUrl() {
             return String.format("%s%s%s", WEIGHT_KEY, DELIMITER, weight);
         }
+
+        @Override
+        public String toString() {
+            return toUrl();
+        }
     }
 
     /**

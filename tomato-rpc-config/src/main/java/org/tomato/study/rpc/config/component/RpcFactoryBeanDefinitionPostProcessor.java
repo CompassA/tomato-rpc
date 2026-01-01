@@ -54,7 +54,7 @@ public class RpcFactoryBeanDefinitionPostProcessor implements BeanDefinitionRegi
             }
 
             // 创建FactoryBean
-            while (!Object.class.equals(clazz)) {
+            while (clazz != null && !Object.class.equals(clazz)) {
                 ReflectionUtils.doWithFields(clazz, new ReflectionUtils.FieldCallback() {
                     @Override
                     public void doWith(Field field) throws IllegalArgumentException {

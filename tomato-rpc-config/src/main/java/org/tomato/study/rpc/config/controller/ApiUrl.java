@@ -20,19 +20,16 @@ package org.tomato.study.rpc.config.controller;
  */
 public class ApiUrl {
 
-    private static final String ROOT = "/tomato";
-
     public static class Status {
-        private static final String STATUS_ROOT = "/status";
 
         /**
          * 获取某个服务的invoker信息
          */
-        public static final String INVOKER_STATUS = ROOT + STATUS_ROOT + "/invoker";
+        public static final String INVOKER_STATUS = "/tomato/status/invoker";
 
         /**
          * rpc是否准备就绪
          */
-        public static final String READY = ROOT + STATUS_ROOT + "/ready";
+        public static final String READY = "/tomato/status/ready";
     }
 }
