@@ -14,7 +14,6 @@
 package org.tomato.study.rpc.registry.zookeeper;
 
 import org.apache.curator.test.TestingServer;
-import org.apache.zookeeper.data.Stat;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -86,7 +85,6 @@ public class ZookeeperNameServerTest extends BaseTest {
                 Assert.fail();
             }
             String path = ZookeeperRegistry.convertToZNodePath(
-                    config.getCharset(),
                     info.getMicroServiceId(),
                     info.getStage(),
                     ZookeeperRegistry.PROVIDER_DICTIONARY,

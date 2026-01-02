@@ -15,14 +15,12 @@
 package org.tomato.study.rpc.dashboard.service.impl;
 
 import lombok.RequiredArgsConstructor;
-import org.apache.commons.collections4.CollectionUtils;
 import org.springframework.stereotype.Service;
 import org.tomato.study.rpc.dashboard.dao.NameServerManager;
-import org.tomato.study.rpc.dashboard.dao.data.RpcAppData;
-import org.tomato.study.rpc.dashboard.dao.data.RpcAppProviderData;
+import org.tomato.study.rpc.dashboard.dao.data.RpcInvokerData;
+import org.tomato.study.rpc.dashboard.service.ListInvokerReq;
 import org.tomato.study.rpc.dashboard.service.RpcStatService;
-import org.tomato.study.rpc.dashboard.service.model.RpcAppModel;
-import org.tomato.study.rpc.dashboard.service.model.RpcProviderModel;
+import org.tomato.study.rpc.dashboard.service.model.RpcInvokerModel;
 
 import java.util.Collections;
 import java.util.List;
@@ -39,24 +37,13 @@ public class RpcStatServiceImpl implements RpcStatService {
     private final NameServerManager nameServerDAO;
 
     @Override
-    public List<RpcAppModel> showRpcModels(int offset, int numbers) throws Exception {
-        List<RpcAppData> rpcAppData = nameServerDAO.listRpcData(offset, numbers);
-        if (CollectionUtils.isEmpty(rpcAppData)) {
+    public List<RpcInvokerModel> listInvokers(ListInvokerReq req) throws Exception {
+        List<RpcInvokerData> invokers = nameServerDAO.listInvokers(req.getMicroServiceId(), req.getStage());
+        if (invokers == null) {
             return Collections.emptyList();
         }
-        return rpcAppData.stream()
-                .map(data -> new RpcAppModel(data.getAppName()))
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<RpcProviderModel> listProviders(String appName, String stage) throws Exception {
-        List<RpcAppProviderData> providers = nameServerDAO.listProviders(appName, stage);
-        if (providers == null) {
-            return Collections.emptyList();
-        }
-        return providers.stream()
-                .map(data -> new RpcProviderModel(data.getAppName(), data.getNodeProperties(), data.getRpcConfig()))
+        return invokers.stream()
+                .map(data -> new RpcInvokerModel(data.getMicroServiceId(), data.getNodeProperties()))
                 .collect(Collectors.toList());
 
     }

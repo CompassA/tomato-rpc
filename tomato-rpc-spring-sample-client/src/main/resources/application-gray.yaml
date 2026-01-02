@@ -1,0 +1,5 @@
+tomato-rpc:
+  # 服务环境
+  stage: "prod"
+  # 服务分组
+  group: "gray"

@@ -14,8 +14,7 @@
 
 package org.tomato.study.rpc.dashboard.service;
 
-import org.tomato.study.rpc.dashboard.service.model.RpcAppModel;
-import org.tomato.study.rpc.dashboard.service.model.RpcProviderModel;
+import org.tomato.study.rpc.dashboard.service.model.RpcInvokerModel;
 
 import java.util.List;
 
@@ -26,18 +25,9 @@ import java.util.List;
 public interface RpcStatService {
 
     /**
-     * 展示多个rpc应用信息信息
-     * @param offset 从第几个app开始展示, 初始值1
-     * @param numbers 要展示的应用的数量
-     * @return rpc应用信息
-     */
-    List<RpcAppModel> showRpcModels(int offset, int numbers) throws Exception;
-
-    /**
      * 展示一个应用的某个环境的所有rpc节点信息
-     * @param appName app名称
-     * @param stage 环境筛选
+     * @param req 请求
      * @return rpc服务节点数据
      */
-    List<RpcProviderModel> listProviders(String appName, String stage) throws Exception;
+    List<RpcInvokerModel> listInvokers(ListInvokerReq req) throws Exception;
 }

@@ -535,6 +535,25 @@ Tomato-RPC的均衡负载的单位为接口方法
 ## 核心类图
 ![04a28c93a2bb83ee0b0e4f946d8a7f201df85d2b7f075652.png](https://www.imageoss.com/images/2022/02/19/04a28c93a2bb83ee0b0e4f946d8a7f201df85d2b7f075652.png "uml")
 
+# API
+## dashboard
+
+### 查询微服务实例
+curl -X GET http://localhost:12222/api/tomato/stat/invokers?microServiceId="demo-rpc-service"&stage="dev"
+
+microServiceId: 微服务ID
+stage: 环境
+
+## 服务本地API
+
+### 服务就绪
+curl -X GET http://localhost:9090/api/tomato/invoker/local/ready
+
+### 服务订阅信息
+curl -X GET http://localhost:9090/api/tomato/invoker/local/status?microServiceId="demo-rpc-service"
+
+microServiceId: 订阅的微服务ID
+
 # k8s部署样例
 
 ## 搭建zookeeper

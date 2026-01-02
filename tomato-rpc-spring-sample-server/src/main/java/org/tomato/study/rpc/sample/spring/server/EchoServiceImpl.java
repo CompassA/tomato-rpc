@@ -46,17 +46,17 @@ public class EchoServiceImpl implements EchoService, SumService {
         DemoResponse response = new DemoResponse();
         StringBuilder builder = new StringBuilder();
         try {
+            log.info("|req|{}|", request);
             InetAddress localAddress = NetworkUtil.getLocalAddress();
             if (localAddress == null) {
                 throw new RuntimeException("local address == null");
             }
-            builder.append("host=").append(localAddress.getHostAddress()).append("|")
-                .append("port=").append(coreService.getPort()).append("|")
-                .append("micro-service-id=").append(coreService.getMicroServiceId()).append("|")
-                .append("no.").append(cnt.addAndGet(1)).append("|")
-                .append("stage=").append(coreService.getStage()).append("|")
-                .append("group=").append(coreService.getGroup()).append("|")
-                .append("message=").append(request.toString());
+            builder.append("host=").append(localAddress.getHostAddress()).append(",")
+                .append("port=").append(coreService.getPort()).append(",")
+                .append("micro-service-id=").append(coreService.getMicroServiceId()).append(",")
+                .append("stage=").append(coreService.getStage()).append(",")
+                .append("group=").append(coreService.getGroup()).append(",")
+                .append("number=").append(cnt.addAndGet(1));
         } catch (Exception e) {
             log.error(e.getMessage(), e);
             response.setData(e.getMessage());

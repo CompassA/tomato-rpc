@@ -12,27 +12,26 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.dashboard.service.model;
+package org.tomato.study.rpc.dashboard.service;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.data.RpcConfig;
 
 /**
- * 一个RPC节点的数据
  * @author Tomato
- * Created on 2022.08.07
+ * Created on 2026.01.02
  */
 @Getter
 @Setter
-@NoArgsConstructor
-@AllArgsConstructor
-public class RpcProviderModel {
+public class ListInvokerReq {
 
-    private String appName;
-    private MetaData meta;
-    private RpcConfig rpcConfig;
+    /**
+     * 微服务ID
+     */
+    private String microServiceId;
+
+    /**
+     * 目标环境
+     */
+    private String stage;
 }

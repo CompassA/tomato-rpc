@@ -33,4 +33,20 @@ public class DashboardResponse {
     private Integer code;
     private String message;
     private Object data;
+
+    public static DashboardResponse success(Object data) {
+        return new DashboardResponse()
+            .setCode(ResponseCodeEnum.SUCCESS.getCode())
+            .setData(data);
+    }
+
+    public static DashboardResponse failed(ResponseCodeEnum errCode) {
+        return failed(errCode, errCode.getMessage());
+    }
+
+    public static DashboardResponse failed(ResponseCodeEnum errCode, String errMsg) {
+        return new DashboardResponse()
+            .setCode(errCode.getCode())
+            .setMessage(errMsg);
+    }
 }

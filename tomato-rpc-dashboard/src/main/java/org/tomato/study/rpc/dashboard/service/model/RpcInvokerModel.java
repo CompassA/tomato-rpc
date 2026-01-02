@@ -12,20 +12,16 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.dashboard.web.view;
+package org.tomato.study.rpc.dashboard.service.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import lombok.experimental.Accessors;
-
-import java.util.List;
+import org.tomato.study.rpc.core.data.MetaData;
 
 /**
- * 服务列表对象
+ * 一个RPC节点的数据
  * @author Tomato
  * Created on 2022.08.07
  */
@@ -33,21 +29,8 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
-@Accessors(chain = true)
-@JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonIgnoreProperties(ignoreUnknown = true)
-public class AppListVO {
+public class RpcInvokerModel {
 
-    private List<AppConfigInfo> apps;
-
-    @Getter
-    @Setter
-    @NoArgsConstructor
-    @AllArgsConstructor
-    @Accessors(chain = true)
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class AppConfigInfo {
-        private String appName;
-    }
+    private String microServiceId;
+    private MetaData meta;
 }

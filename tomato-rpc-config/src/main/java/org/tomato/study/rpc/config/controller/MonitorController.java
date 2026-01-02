@@ -48,8 +48,8 @@ public class MonitorController {
 
     @GetMapping(ApiUrl.Status.INVOKER_STATUS)
     public List<InvokerStatusVO> invokerStatus(
-            @RequestParam("service-id") String serviceId) {
-        List<InvokerMetaVO> invokerMetaList = nameServer.listInvokers(serviceId)
+            @RequestParam("microServiceId") String microServiceId) {
+        List<InvokerMetaVO> invokerMetaList = nameServer.listInvokers(microServiceId)
                 .stream()
                 .map(invoker -> {
                     MetaData metadata = invoker.getMetadata();

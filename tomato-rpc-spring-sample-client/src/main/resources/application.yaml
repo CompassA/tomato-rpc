@@ -1,5 +1,5 @@
 server:
-  port: 5678
+  port: 9090
 
 tomato-rpc:
   # 微服务id
@@ -10,7 +10,7 @@ tomato-rpc:
   # 注册中心地址
   name-service-uri: "127.0.0.1:2181"
   # RPC服务暴露的端口
-  port: 3456
+  port: 4567
   # RPC服务处理线程池数量
   business-thread: 1
   # 服务环境

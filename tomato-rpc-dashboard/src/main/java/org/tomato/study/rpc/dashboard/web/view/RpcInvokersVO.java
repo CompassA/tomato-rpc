@@ -21,14 +21,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.experimental.Accessors;
-import org.apache.commons.collections4.CollectionUtils;
-import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.data.RpcConfig;
-import org.tomato.study.rpc.dashboard.service.model.RpcProviderModel;
 
 import java.util.List;
-import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * @author Tomato
@@ -41,21 +35,10 @@ import java.util.stream.Collectors;
 @Accessors(chain = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class RpcProvidersVO {
+public class RpcInvokersVO {
 
-    private String appName;
-    private List<RpcProviderVO> providers;
-
-    public static Optional<RpcProvidersVO> toVO(List<RpcProviderModel> models) {
-        if (CollectionUtils.isEmpty(models)) {
-            return Optional.empty();
-        }
-        String appName = models.get(0).getAppName();
-        List<RpcProviderVO> providers = models.stream()
-                .map(model -> new RpcProviderVO(model.getMeta(), model.getRpcConfig()))
-                .collect(Collectors.toList());
-        return Optional.of(new RpcProvidersVO(appName, providers));
-    }
+    private String microServiceId;
+    private List<RpcInvokerVO> invokers;
 
     @Getter
     @Setter
@@ -64,9 +47,8 @@ public class RpcProvidersVO {
     @Accessors(chain = true)
     @JsonInclude(JsonInclude.Include.NON_NULL)
     @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class RpcProviderVO {
-        private MetaData meta;
-        private RpcConfig config;
+    public static class RpcInvokerVO {
+        private String url;
     }
 
 }

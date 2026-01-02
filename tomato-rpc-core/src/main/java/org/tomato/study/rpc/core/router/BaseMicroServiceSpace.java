@@ -226,6 +226,7 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
 
     @Override
     public void refreshRouter(List<String> routers) throws TomatoRpcException {
+
         List<Router> newRouters = new ArrayList<>();
         for (String router : routers) {
             TokenStream tokenStream = TokenLexer.tokenize(router);

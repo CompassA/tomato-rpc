@@ -14,8 +14,7 @@
 
 package org.tomato.study.rpc.dashboard.dao;
 
-import org.tomato.study.rpc.dashboard.dao.data.RpcAppData;
-import org.tomato.study.rpc.dashboard.dao.data.RpcAppProviderData;
+import org.tomato.study.rpc.dashboard.dao.data.RpcInvokerData;
 
 import java.util.List;
 
@@ -26,18 +25,10 @@ import java.util.List;
 public interface NameServerDAO {
 
     /**
-     * 列举rpc应用信息
-     * @param start 从第几个应用开始列举
-     * @param nums 要列举多少应用
-     * @return 应用数据
-     */
-    List<RpcAppData> listRpcData(int start, int nums) throws Exception;
-
-    /**
      * 查询应用在某个环境的机器数据
-     * @param appName app应用名
+     * @param microServiceId 微服务ID
      * @param stage app环境
      * @return 机器数据
      */
-    List<RpcAppProviderData> listProviders(String appName, String stage) throws Exception;
+    List<RpcInvokerData> listInvokers(String microServiceId, String stage) throws Exception;
 }

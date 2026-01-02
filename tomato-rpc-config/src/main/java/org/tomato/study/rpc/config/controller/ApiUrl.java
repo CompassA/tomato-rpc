@@ -25,11 +25,11 @@ public class ApiUrl {
         /**
          * 获取某个服务的invoker信息
          */
-        public static final String INVOKER_STATUS = "/tomato/status/invoker";
+        public static final String INVOKER_STATUS = "/api/tomato/invoker/local/status";
 
         /**
          * rpc是否准备就绪
          */
-        public static final String READY = "/tomato/status/ready";
+        public static final String READY = "/api/tomato/invoker/local/ready";
     }
 }

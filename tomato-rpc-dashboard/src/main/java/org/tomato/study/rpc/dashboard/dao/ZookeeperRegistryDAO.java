@@ -17,12 +17,14 @@ package org.tomato.study.rpc.dashboard.dao;
 import lombok.RequiredArgsConstructor;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.curator.framework.CuratorFramework;
-import org.tomato.study.rpc.dashboard.dao.data.RpcAppData;
-import org.tomato.study.rpc.dashboard.dao.data.RpcAppProviderData;
+import org.tomato.study.rpc.dashboard.assembler.RpcInvokerAssembler;
+import org.tomato.study.rpc.dashboard.dao.data.RpcInvokerData;
+import org.tomato.study.rpc.dashboard.exception.DashboardSystemException;
+import org.tomato.study.rpc.dashboard.web.view.ResponseCodeEnum;
+import org.tomato.study.rpc.registry.zookeeper.impl.ZookeeperRegistry;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * @author Tomato
@@ -34,19 +36,17 @@ public class ZookeeperRegistryDAO implements NameServerDAO {
     public final CuratorFramework client;
 
     @Override
-    public List<RpcAppData> listRpcData(int start, int nums) throws Exception {
-        List<String> children = client.getChildren().forPath("/");
-        if (CollectionUtils.isEmpty(children) || children.size() < start) {
-            return Collections.emptyList();
+    public List<RpcInvokerData> listInvokers(String microServiceId, String stage) {
+        String microServicePath = ZookeeperRegistry.buildServiceNodePath(microServiceId, stage);
+        try {
+            List<String> invokerUrls = client.getChildren().forPath(microServicePath);
+            if (CollectionUtils.isEmpty(invokerUrls)) {
+                return Collections.emptyList();
+            }
+            return invokerUrls.stream().map(RpcInvokerAssembler::toData).toList();
+        } catch (Exception e) {
+            throw new DashboardSystemException(e, ResponseCodeEnum.ZOOKEEPER_CLIENT_ERROR,
+                String.format("getChildren for path %s failed", microServicePath));
         }
-        int beginIndex = start-1;
-        return children.subList(beginIndex, Math.min(beginIndex+nums, children.size())).stream()
-                .map(app -> new RpcAppData(app))
-                .collect(Collectors.toList());
-    }
-
-    @Override
-    public List<RpcAppProviderData> listProviders(String appName, String stage) {
-        return null;
     }
 }

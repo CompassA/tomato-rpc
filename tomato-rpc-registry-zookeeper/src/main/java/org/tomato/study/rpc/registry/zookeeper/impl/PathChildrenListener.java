@@ -25,8 +25,6 @@ import org.tomato.study.rpc.registry.zookeeper.ChildrenListener;
 import org.tomato.study.rpc.registry.zookeeper.CuratorClient;
 import org.tomato.study.rpc.utils.Logger;
 
-import java.net.URI;
-import java.net.URLDecoder;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -89,9 +87,7 @@ public class PathChildrenListener implements CuratorWatcher, ChildrenListener {
             }
             // RPC实例节点路径名包含了IP、端口等信息，将孩子节点路径转换为Metadata
             Set<MetaData> invokerInfo = children.stream()
-                .map(child -> URI.create(URLDecoder.decode(
-                    child, curatorClient.getZookeeperConfig().getCharset())))
-                .map(MetaData::convert)
+                .map(ZookeeperRegistry::convertToModel)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toSet());

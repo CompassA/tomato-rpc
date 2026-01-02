@@ -29,8 +29,7 @@
 package org.tomato.study.rpc.dashboard.dao;
 
 import lombok.RequiredArgsConstructor;
-import org.tomato.study.rpc.dashboard.dao.data.RpcAppData;
-import org.tomato.study.rpc.dashboard.dao.data.RpcAppProviderData;
+import org.tomato.study.rpc.dashboard.dao.data.RpcInvokerData;
 
 import java.util.List;
 
@@ -44,12 +43,7 @@ public class NameServerManager implements NameServerDAO {
     private final NameServerDAO nameServerDAO;
 
     @Override
-    public List<RpcAppData> listRpcData(int start, int nums) throws Exception {
-        return nameServerDAO.listRpcData(start, nums);
-    }
-
-    @Override
-    public List<RpcAppProviderData> listProviders(String appName, String stage) throws Exception {
-        return nameServerDAO.listProviders(appName, stage);
+    public List<RpcInvokerData> listInvokers(String microServiceId, String stage) throws Exception {
+        return nameServerDAO.listInvokers(microServiceId, stage);
     }
 }

@@ -12,35 +12,21 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.dashboard.dao.data;
+package org.tomato.study.rpc.dashboard.exception;
 
-import lombok.Getter;
-import lombok.Setter;
-import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.data.RpcConfig;
+import org.tomato.study.rpc.dashboard.web.view.ResponseCodeEnum;
 
 /**
- * 一个rpc节点的数据
  * @author Tomato
- * Created on 2022.08.07
+ * Created on 2026.01.02
  */
-@Getter
-@Setter
-public class RpcAppProviderData {
+public class DashboardParamException extends DashboardRuntimeException {
 
-    /**
-     * 应用名称
-     */
-    private String appName;
+    public DashboardParamException() {
+        super(ResponseCodeEnum.PARAMETER_INVALID);
+    }
 
-    /**
-     * 应用配置
-     */
-    private RpcConfig rpcConfig;
-
-    /**
-     * 应用属性
-     */
-    private MetaData nodeProperties;
-
+    public DashboardParamException(String errMsg) {
+        super(ResponseCodeEnum.PARAMETER_INVALID, errMsg);
+    }
 }

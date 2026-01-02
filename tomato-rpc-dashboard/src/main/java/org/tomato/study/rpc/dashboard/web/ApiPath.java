@@ -21,14 +21,15 @@ package org.tomato.study.rpc.dashboard.web;
  */
 public class ApiPath {
 
-    public static final String ROOT = "/tomato/api";
-
     public static class Stat {
+        /**
+         * 微服务实例列表
+         */
+        public static final String INVOKER_LIST = "/api/tomato/stat/invokers";
 
-        public static final String STAT_ROOT = ROOT + "/stat";
-
-        public static final String APP_LIST = STAT_ROOT + "/apps";
-
-        public static final String NODE_LIST = STAT_ROOT + "/nodes";
+        /**
+         * 微服务路由规则列表
+         */
+        public static final String ROUTER_LIST = "/api/tomato/stat/routers";
     }
 }

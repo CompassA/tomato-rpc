@@ -3,7 +3,7 @@
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,35 +12,29 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.registry.zookeeper.data;
+package org.tomato.study.rpc.dashboard.dao.data;
 
-import lombok.AllArgsConstructor;
-import lombok.Builder;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
+import org.tomato.study.rpc.core.data.MetaData;
 
 /**
+ * 一个rpc节点的数据
  * @author Tomato
- * Created on 2021.07.08
+ * Created on 2022.08.07
  */
 @Getter
 @Setter
-@Builder
-@NoArgsConstructor
-@AllArgsConstructor
-public class ZookeeperConfig {
+public class RpcInvokerData {
 
-    public static Charset CHARSET = StandardCharsets.UTF_8;
+    /**
+     * 微服务配置
+     */
+    private String microServiceId;
 
-    private String connString;
-
-    private String namespace = "tomato";
-
-    @Deprecated
-    private Charset charset = StandardCharsets.UTF_8;
+    /**
+     * 应用属性
+     */
+    private MetaData nodeProperties;
 
 }

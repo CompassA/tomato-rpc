@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.nio.charset.Charset;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -59,16 +58,6 @@ public class ZookeeperRegistry {
     private final CuratorClient curatorClient;
 
     /**
-     * zookeeper config
-     */
-    private final ZookeeperConfig config;
-
-    /**
-     * zookeeper char set
-     */
-    private final Charset charset;
-
-    /**
      * name server
      */
     private final NameServer owner;
@@ -84,8 +73,6 @@ public class ZookeeperRegistry {
     private final ConcurrentMap<MicroServiceSpace, ChildrenListener> listenerMap = new ConcurrentHashMap<>(0);
 
     public ZookeeperRegistry(ZookeeperConfig config, NameServer owner) {
-        this.config = config;
-        this.charset = config.getCharset();
         this.curatorClient = new CuratorClient(config);
         this.owner = owner;
     }
@@ -106,7 +93,6 @@ public class ZookeeperRegistry {
         }
         // 路径：/namespace/micro-service-id/stage/providers/ip+port....
         String zNodePath = convertToZNodePath(
-                charset,
                 metaData.getMicroServiceId(),
                 metaData.getStage(),
                 PROVIDER_DICTIONARY,
@@ -125,7 +111,6 @@ public class ZookeeperRegistry {
             return;
         }
         String zNodePath = convertToZNodePath(
-                charset,
                 metaData.getMicroServiceId(),
                 metaData.getStage(),
                 PROVIDER_DICTIONARY,
@@ -152,7 +137,7 @@ public class ZookeeperRegistry {
             microServiceMap.putIfAbsent(microServiceId, microService);
 
             // 根据固定的 /micro-service-id/stage/PROVIDER_DICTIONARY规则，计算出被订阅服务的zookeeper路径
-            String targetPath = convertToZNodePath(charset, microServiceId, stage, PROVIDER_DICTIONARY);
+            String targetPath = convertToZNodePath(microServiceId, stage, PROVIDER_DICTIONARY);
 
             // 创建WATCHER, 监听服务节点的子节点变化，保证服务实例的更新与删除能同步到订阅方的内存中
             ChildrenListener listener = listenerMap.computeIfAbsent(microService,
@@ -167,7 +152,7 @@ public class ZookeeperRegistry {
             // 将RPC实例节点路径解码并转成Metadata形式
             final Set<MetaData> metadata = new HashSet<>(children.size());
             for (String child : children) {
-                String servicePath = URLDecoder.decode(child, charset);
+                String servicePath = URLDecoder.decode(child, ZookeeperConfig.CHARSET);
                 URI serviceMetadataURI = URI.create(servicePath);
                 MetaData.convert(serviceMetadataURI)
                         .filter(MetaData::isValid)
@@ -238,19 +223,40 @@ public class ZookeeperRegistry {
     }
 
     /**
-     * 将传入的字符串拼接成路径
+     * 将传入的字符串拼接成zookeeper路径
      * @param parts 多个字符串
      * @return zookeeper路径
      */
-    public static String convertToZNodePath(Charset charset, String... parts) {
+    public static String convertToZNodePath(String... parts) {
         if (parts == null || parts.length == 0) {
             return StringUtils.EMPTY;
         }
         StringBuilder builder = new StringBuilder(0);
         for (String part : parts) {
             builder.append(PATH_DELIMITER)
-                    .append(URLEncoder.encode(part, charset));
+                    .append(URLEncoder.encode(part, ZookeeperConfig.CHARSET));
         }
         return builder.toString();
+    }
+
+    /**
+     * 拼接单个微服务在Zookeeper的目录
+     * @param microServiceId 微服务ID
+     * @param stage 环境
+     * @return 路径
+     */
+    public static String buildServiceNodePath(String microServiceId, String stage) {
+        return convertToZNodePath(microServiceId, stage, PROVIDER_DICTIONARY);
+    }
+
+    /**
+     * 将zookeeperURL 转换为 内存对象
+     * @param invokerURL zookeeper中保存的URL
+     * @return invoker元数据内存对象
+     */
+    public static Optional<MetaData> convertToModel(String invokerURL) {
+       return MetaData.convert(
+           URI.create(
+               URLDecoder.decode(invokerURL, ZookeeperConfig.CHARSET)));
     }
 }
