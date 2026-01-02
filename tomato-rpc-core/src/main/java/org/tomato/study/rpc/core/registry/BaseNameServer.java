@@ -64,8 +64,8 @@ public abstract class BaseNameServer extends BaseLifeCycleComponent implements N
     protected void doInit() throws TomatoRpcException {
         this.refreshInvokerThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
-                String success = "Y";
-                String code = "Y";
+                String success = Logger.SUCCESS_MARK;
+                String code = Logger.SUCCESS_MARK;
                 long startTime = System.currentTimeMillis();
                 String id = StringUtils.EMPTY;
                 try {
@@ -75,9 +75,11 @@ public abstract class BaseNameServer extends BaseLifeCycleComponent implements N
                     task.getMicroServiceSpace().refresh(task.getInvokerInfoSet());
                 } catch (InterruptedException e) {
                     Thread.currentThread().interrupt();
-                    success = "N";
+                    success = Logger.FAILURE_MARK;
                     code = "InterruptedException";
                 } catch (Throwable e) {
+                    success = Logger.FAILURE_MARK;
+                    code = e.getClass().getSimpleName();
                     Logger.DEFAULT.error("|name-server|invoker-refresh|exception|{}|", id, e);
                 } finally {
                     Logger.DIGEST.info("|name-server|invoker-refresh|res|{}|{}|{}|{}|",

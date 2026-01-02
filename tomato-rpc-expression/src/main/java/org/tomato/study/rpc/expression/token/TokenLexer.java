@@ -31,7 +31,7 @@ public class TokenLexer {
      * @param code 代码
      * @return 词法分析后的token流
      */
-    public TokenStream tokenize(String code) {
+    public static TokenStream tokenize(String code) {
         if (StringUtils.isBlank(code)) {
             throw new IllegalArgumentException("code is empty");
         }

@@ -27,6 +27,9 @@ public enum Logger implements org.slf4j.Logger {
     DIGEST(LoggerFactory.getLogger("TOMATO-RPC-DIGEST")),
     ;
 
+    public static final String SUCCESS_MARK = "Y";
+    public static final String FAILURE_MARK = "N";
+
     private final org.slf4j.Logger logger;
 
     Logger(org.slf4j.Logger logger) {

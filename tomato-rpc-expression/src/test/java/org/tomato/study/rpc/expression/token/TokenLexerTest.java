@@ -25,11 +25,9 @@ import org.tomato.study.rpc.expression.TestCode;
  */
 public class TokenLexerTest {
 
-    private final TokenLexer lexer = new TokenLexer();
-
     @Test
     public void tokenizeTest0() {
-        Token[] tokensRes = lexer.tokenize(TestCode.CODES.get(0)).getTokens();
+        Token[] tokensRes = TokenLexer.tokenize(TestCode.CODES.get(0)).getTokens();
         Assert.assertTrue(tokensRes != null && tokensRes.length == 11);
 
         Assert.assertTrue(StringUtils.equals(tokensRes[0].getValue(), "group"));
@@ -68,7 +66,7 @@ public class TokenLexerTest {
 
     @Test
     public void tokenizeTest1() {
-        TokenStream tokenStream = lexer.tokenize(TestCode.CODES.get(1));
+        TokenStream tokenStream = TokenLexer.tokenize(TestCode.CODES.get(1));
         Token[] tokensRes = tokenStream.getTokens();
 
         Assert.assertTrue(tokensRes != null && tokensRes.length == 9);
@@ -114,7 +112,7 @@ public class TokenLexerTest {
 
     @Test
     public void tokenizeTest2() {
-        Token[] tokensRes = lexer.tokenize(TestCode.CODES.get(2)).getTokens();
+        Token[] tokensRes = TokenLexer.tokenize(TestCode.CODES.get(2)).getTokens();
         Assert.assertTrue(tokensRes != null && tokensRes.length == 25);
 
         Assert.assertTrue(StringUtils.equals(tokensRes[0].getValue(), "("));
@@ -195,7 +193,7 @@ public class TokenLexerTest {
 
     @Test
     public void tokenizeTest3() {
-        Token[] tokensRes = lexer.tokenize(TestCode.CODES.get(3)).getTokens();
+        Token[] tokensRes = TokenLexer.tokenize(TestCode.CODES.get(3)).getTokens();
         Assert.assertTrue(tokensRes != null && tokensRes.length == 17);
 
         Assert.assertTrue(StringUtils.equals(tokensRes[0].getValue(), "id"));
@@ -254,7 +252,7 @@ public class TokenLexerTest {
     public void tokenizeTest4() {
         boolean hasError = false;
         try {
-            lexer.tokenize(TestCode.CODES.get(4));
+            TokenLexer.tokenize(TestCode.CODES.get(4));
         } catch (IllegalStateException ex) {
             hasError = true;
         }

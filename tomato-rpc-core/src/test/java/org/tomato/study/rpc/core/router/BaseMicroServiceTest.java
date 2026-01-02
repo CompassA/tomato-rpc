@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -57,7 +58,7 @@ public class BaseMicroServiceTest extends BaseTest {
 
     private Set<MetaData> originMataDataSet;
 
-    private final BaseMicroServiceSpace baseMicroServiceSpace = spy(new TestServiceProvider(mockServiceId));
+    private final BaseMicroServiceSpace baseMicroServiceSpace = spy(new TestMicroServiceSpace(mockServiceId));
 
     @Before
     public void init() {
@@ -96,7 +97,7 @@ public class BaseMicroServiceTest extends BaseTest {
         Set<MetaData> newMetaSet = mockMetadataSet(mockServiceId);
         Iterator<MetaData> iterator = newMetaSet.iterator();
         MetaData deletedInvoker = iterator.next();
-        RpcInvoker mockInvoker = baseMicroServiceSpace.getInvokerMap().get(deletedInvoker);
+        RpcInvoker mockInvoker = baseMicroServiceSpace.getAllInvokers().stream().filter(v -> Objects.equals(v.getMetadata(), deletedInvoker)).findAny().orElse(null);
         iterator.remove();
         baseMicroServiceSpace.refresh(newMetaSet);
 
@@ -154,19 +155,24 @@ public class BaseMicroServiceTest extends BaseTest {
     @Test
     public void refreshRouterTest() throws TomatoRpcException {
         List<String> routers = Arrays.asList(
-                "user-id % 10 == 0 -> group == fast",
-                "user-id % 10 == 1 -> group == slow");
+                """
+                user-id % 10 == 0 -> group == "fast"
+                """,
+                """
+                user-id % 10 == 1 -> group == "slow"
+                """
+                );
         baseMicroServiceSpace.refreshRouter(routers);
 
         Assert.assertEquals(baseMicroServiceSpace.getDefaultRouters().size() + routers.size(),
                 baseMicroServiceSpace.getRouters().size());
     }
 
-    public static class TestServiceProvider extends BaseMicroServiceSpace {
+    public static class TestMicroServiceSpace extends BaseMicroServiceSpace {
 
-        public TestServiceProvider(String mockServiceId) {
+        public TestMicroServiceSpace(String mockServiceId) {
             super(mockServiceId,
-                    RpcConfig.builder().microServiceId("mock-client-id").group("default").build(),
+                    RpcConfig.builder().microServiceId("mock-client-id").stage("default").group("default").build(),
                     new RoundRobinLoadBalance());
         }
 
