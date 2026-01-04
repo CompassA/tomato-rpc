@@ -14,9 +14,9 @@
 
 package org.tomato.study.rpc.core.router;
 
+import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
-import org.tomato.study.rpc.core.data.Invocation;
 import org.tomato.study.rpc.core.invoker.RpcInvoker;
 import org.tomato.study.rpc.expression.ast.ASTNode;
 import org.tomato.study.rpc.expression.ast.ExpressionCalcContext;
@@ -29,9 +29,12 @@ import org.tomato.study.rpc.expression.ast.ExpressionConstant;
  */
 @Getter
 @Setter
+@AllArgsConstructor
 public class ExprRouter implements Router {
 
     private int priority;
+
+    private String expression;
 
     /**
      * 左表达式, 筛选请求
@@ -44,12 +47,8 @@ public class ExprRouter implements Router {
     private ASTNode rightExpr;
 
     @Override
-    public boolean matchRequest(Invocation invocation) {
-        ExpressionCalcContext context = new ExpressionCalcContext();
-        context.setValMap(invocation.fetchContextMap());
-
+    public boolean matchRequest(ExpressionCalcContext context) {
         String res = leftExpr.calc(context);
-
         return ExpressionConstant.TRUE.equals(res);
     }
 

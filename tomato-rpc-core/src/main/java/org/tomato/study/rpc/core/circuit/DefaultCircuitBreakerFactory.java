@@ -25,8 +25,8 @@ public class DefaultCircuitBreakerFactory implements CircuitBreakerFactory {
     @Override
     public CircuitBreaker createBreaker(RpcConfig rpcConfig) {
         return new DefaultCircuitBreaker(
-                rpcConfig.getCircuitOpenRate(),
-                rpcConfig.getCircuitOpenSeconds() * 1000_000_000L,
-                rpcConfig.getCircuitWindow());
+                rpcConfig.circuitOpenRate(),
+                rpcConfig.circuitOpenSeconds() * 1000_000_000L,
+                rpcConfig.circuitWindow());
     }
 }

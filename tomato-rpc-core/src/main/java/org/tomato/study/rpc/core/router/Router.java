@@ -14,8 +14,8 @@
 
 package org.tomato.study.rpc.core.router;
 
-import org.tomato.study.rpc.core.data.Invocation;
 import org.tomato.study.rpc.core.invoker.RpcInvoker;
+import org.tomato.study.rpc.expression.ast.ExpressionCalcContext;
 
 /**
  * 路由规则
@@ -25,11 +25,17 @@ import org.tomato.study.rpc.core.invoker.RpcInvoker;
 public interface Router {
 
     /**
+     * 获取原始表达式
+     * @return 原始表达式
+     */
+    String getExpression();
+
+    /**
      * 判断RPC请求是否命中路由规则
-     * @param invocation RPC请求
+     * @param context RPC请求上下文参数
      * @return true 命中规则
      */
-    boolean matchRequest(Invocation invocation);
+    boolean matchRequest(ExpressionCalcContext context);
 
     /**
      * 判断RPC invoker是否满足条件

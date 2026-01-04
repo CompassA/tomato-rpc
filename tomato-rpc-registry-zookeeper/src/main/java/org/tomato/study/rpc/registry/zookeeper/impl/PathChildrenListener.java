@@ -17,13 +17,14 @@ package org.tomato.study.rpc.registry.zookeeper.impl;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.curator.framework.api.CuratorWatcher;
 import org.apache.zookeeper.WatchedEvent;
+import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RefreshInvokerTask;
 import org.tomato.study.rpc.core.registry.NameServer;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.registry.zookeeper.ChildrenListener;
 import org.tomato.study.rpc.registry.zookeeper.CuratorClient;
-import org.tomato.study.rpc.utils.Logger;
+import org.tomato.study.rpc.registry.zookeeper.utils.ZookeeperAssembler;
 
 import java.util.Collections;
 import java.util.List;
@@ -81,13 +82,12 @@ public class PathChildrenListener implements CuratorWatcher, ChildrenListener {
         try {
             // 节点为空, 表明监听的父路径下已无实例节点
             if (CollectionUtils.isEmpty(children)) {
-                nameServer.submitInvokerRefreshTask(
-                    new RefreshInvokerTask(uniqueId, microService, Collections.emptySet()));
+                nameServer.submitInvokerRefreshTask(new RefreshInvokerTask(uniqueId, microService, Collections.emptySet()));
                 return;
             }
             // RPC实例节点路径名包含了IP、端口等信息，将孩子节点路径转换为Metadata
             Set<MetaData> invokerInfo = children.stream()
-                .map(ZookeeperRegistry::convertToModel)
+                .map(ZookeeperAssembler::convertToModel)
                 .filter(Optional::isPresent)
                 .map(Optional::get)
                 .collect(Collectors.toSet());

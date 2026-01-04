@@ -63,8 +63,8 @@ public class ZookeeperNameServer extends BaseNameServer {
     }
 
     @Override
-    public void subscribe(MicroServiceSpace[] microServices, String stage) throws Exception {
-        registry.subscribe(microServices, stage);
+    public void subscribe(MetaData rpcServerMetaData, MicroServiceSpace[] microServices, String stage) throws Exception {
+        registry.subscribe(rpcServerMetaData, microServices, stage);
     }
 
     @Override

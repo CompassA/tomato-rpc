@@ -18,19 +18,21 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import lombok.Setter;
+import lombok.Getter;
+import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.core.CommandInterceptor;
+import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.ServerHandler;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
 import org.tomato.study.rpc.core.data.ExtensionHeaderBuilder;
 import org.tomato.study.rpc.core.data.Header;
+import org.tomato.study.rpc.core.data.InvocationContext;
 import org.tomato.study.rpc.core.data.RpcResponse;
 import org.tomato.study.rpc.core.serializer.SerializerHolder;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.interceptor.CompressInterceptor;
-import org.tomato.study.rpc.utils.Logger;
 
 import java.util.Collections;
 import java.util.HashMap;
@@ -43,26 +45,31 @@ import java.util.concurrent.ExecutorService;
  * @author Tomato
  * Created on 2021.04.18
  */
+@Getter
 @ChannelHandler.Sharable
 public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
 
     private final Map<CommandType, ServerHandler> handlerMap;
     private final CommandInterceptor[] interceptors;
 
-    @Setter
-    private ExecutorService businessExecutor;
+    /**
+     * 业务线程池, 可能为空
+     */
+    private final ExecutorService businessExecutor;
 
-    public DispatcherHandler() {
+    public DispatcherHandler(ProviderRegistry providerRegistry, ExecutorService businessExecutor) {
         // 通过jdk spi加载依赖的ServerHandler
         ServiceLoader<ServerHandler> serverHandlers = ServiceLoader.load(ServerHandler.class);
         Map<CommandType, ServerHandler> serverHandlerMap = new HashMap<>(0);
         for (ServerHandler serverHandler : serverHandlers) {
+            serverHandler.setProviderRegistry(providerRegistry);
             serverHandlerMap.put(serverHandler.getType(), serverHandler);
         }
         this.handlerMap = Collections.unmodifiableMap(serverHandlerMap);
         this.interceptors = new CommandInterceptor[] {
                 new CompressInterceptor(),
         };
+        this.businessExecutor = businessExecutor;
     }
 
     @Override
@@ -89,6 +96,9 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
         Map<String, String> extensionHeaders = ExtensionHeaderBuilder.getExtensionHeader(request);
         request = beforeProcess(request, extensionHeaders);
         Header header = request.getHeader();
+
+        // 收到请求后, 将拓展参数塞入thread-local
+        InvocationContext.set(extensionHeaders);
         try {
             Command response = matchHandler.handle(request);
             if (response == null) {
@@ -122,6 +132,9 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
                     )
             );
             ctx.close();
+        } finally {
+            // 请求处理完成, 清空ThreadLocal
+            InvocationContext.remove();
         }
     }
 

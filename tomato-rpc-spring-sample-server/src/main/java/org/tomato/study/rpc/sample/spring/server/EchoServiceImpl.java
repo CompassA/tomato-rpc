@@ -17,13 +17,13 @@ package org.tomato.study.rpc.sample.spring.server;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.tomato.study.rpc.common.utils.NetworkUtil;
 import org.tomato.study.rpc.config.annotation.RpcServerStub;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.sample.api.EchoService;
 import org.tomato.study.rpc.sample.api.SumService;
 import org.tomato.study.rpc.sample.api.data.DemoRequest;
 import org.tomato.study.rpc.sample.api.data.DemoResponse;
-import org.tomato.study.rpc.utils.NetworkUtil;
 
 import java.net.InetAddress;
 import java.util.List;

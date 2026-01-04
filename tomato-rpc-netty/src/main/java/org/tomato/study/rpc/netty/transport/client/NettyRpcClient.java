@@ -30,6 +30,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
 import lombok.AllArgsConstructor;
+import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.core.ResponseFuture;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.error.TomatoRpcErrorInfo;
@@ -43,7 +44,6 @@ import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.transport.handler.ClientIdleCheckHandler;
 import org.tomato.study.rpc.netty.transport.handler.KeepAliveHandler;
 import org.tomato.study.rpc.netty.transport.handler.ResponseHandler;
-import org.tomato.study.rpc.utils.Logger;
 
 import java.net.URI;
 import java.util.Optional;
@@ -127,7 +127,7 @@ public class NettyRpcClient extends BaseRpcClient<Command> {
 
     @Override
     public boolean isUsable() {
-        return START == getState();
+        return START_FINISHED == getState();
     }
 
     @Override

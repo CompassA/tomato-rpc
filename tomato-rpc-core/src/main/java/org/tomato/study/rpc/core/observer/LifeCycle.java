@@ -31,19 +31,34 @@ public interface LifeCycle {
     int CREATED = 0;
 
     /**
-     * 初始化
+     * 初始化中
      */
     int INIT = 1;
 
     /**
-     * 启动
+     * 初始化完成
      */
-    int START = 2;
+    int INIT_FINISHED = 2;
 
     /**
-     * 停止
+     * 启动中
      */
-    int STOP = 3;
+    int START = 3;
+
+    /**
+     * 启动完成
+     */
+    int START_FINISHED = 4;
+
+    /**
+     * 停止中
+     */
+    int STOP = 5;
+
+    /**
+     * 已停止
+     */
+    int STOP_FINISHED = 6;
 
     /**
      * 组件初始化方法

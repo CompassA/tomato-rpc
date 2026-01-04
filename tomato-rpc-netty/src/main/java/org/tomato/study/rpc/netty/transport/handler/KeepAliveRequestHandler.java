@@ -14,6 +14,7 @@
 
 package org.tomato.study.rpc.netty.transport.handler;
 
+import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.ServerHandler;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
@@ -46,5 +47,9 @@ public class KeepAliveRequestHandler implements ServerHandler {
     @Override
     public CommandType getType() {
         return CommandType.KEEP_ALIVE_REQUEST;
+    }
+
+    @Override
+    public void setProviderRegistry(ProviderRegistry providerRegistry) {
     }
 }

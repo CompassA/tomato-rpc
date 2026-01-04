@@ -17,7 +17,7 @@ package org.tomato.study.rpc.netty.transport.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
-import org.tomato.study.rpc.utils.Logger;
+import org.tomato.study.rpc.common.utils.Logger;
 
 import java.util.concurrent.TimeUnit;
 

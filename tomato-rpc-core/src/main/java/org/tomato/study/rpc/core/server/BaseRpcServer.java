@@ -15,6 +15,7 @@
 package org.tomato.study.rpc.core.server;
 
 import lombok.Getter;
+import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.data.RpcServerConfig;
 import org.tomato.study.rpc.core.observer.BaseLifeCycleComponent;
 
@@ -52,12 +53,19 @@ public abstract class BaseRpcServer extends BaseLifeCycleComponent implements Rp
     @Getter
     private final long readIdleCheckMilliseconds;
 
-    public BaseRpcServer(RpcServerConfig rpcServerConfig) {
+    /**
+     * 服务接口实现
+     */
+    @Getter
+    private final ProviderRegistry providerRegistry;
+
+    public BaseRpcServer(RpcServerConfig rpcServerConfig, ProviderRegistry providerRegistry) {
         this.host = rpcServerConfig.getHost();
         this.port = rpcServerConfig.getPort();
         this.useBusinessPool = rpcServerConfig.isUseBusinessThreadPool();
         this.businessPoolSize = rpcServerConfig.getBusinessThreadPoolSize();
         this.readIdleCheckMilliseconds = rpcServerConfig.getServerReadIdleCheckMilliseconds();
+        this.providerRegistry = providerRegistry;
     }
 
     @Override

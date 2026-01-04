@@ -22,8 +22,8 @@ import org.springframework.beans.factory.support.BeanDefinitionRegistry;
 import org.springframework.beans.factory.support.BeanDefinitionRegistryPostProcessor;
 import org.springframework.util.ClassUtils;
 import org.springframework.util.ReflectionUtils;
+import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.config.data.ClientStubMetadata;
-import org.tomato.study.rpc.utils.Logger;
 
 import java.lang.reflect.Field;
 import java.util.HashSet;

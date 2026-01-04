@@ -27,6 +27,9 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
+import lombok.Getter;
+import org.tomato.study.rpc.common.utils.Logger;
+import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.data.RpcServerConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.observer.LifeCycle;
@@ -37,7 +40,6 @@ import org.tomato.study.rpc.netty.codec.NettyProtoDecoder;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.transport.handler.DispatcherHandler;
 import org.tomato.study.rpc.netty.transport.handler.ServerIdleCheckHandler;
-import org.tomato.study.rpc.utils.Logger;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -49,6 +51,7 @@ import java.util.concurrent.TimeUnit;
  * @author Tomato
  * Created on 2021.04.18
  */
+@Getter
 public class NettyRpcServer extends BaseRpcServer {
 
     private static final String BOSS_GROUP_THREAD_NAME = "rpc-server-boss-thread";
@@ -80,13 +83,13 @@ public class NettyRpcServer extends BaseRpcServer {
      */
     private EventLoopGroup workerGroup;
 
-    public NettyRpcServer(RpcServerConfig rpcServerConfig) {
-        super(rpcServerConfig);
+    public NettyRpcServer(RpcServerConfig rpcServerConfig, ProviderRegistry providerRegistry) {
+        super(rpcServerConfig, providerRegistry);
     }
 
     @Override
-    protected synchronized void doInit() throws TomatoRpcException {
-        this.dispatcherHandler = new DispatcherHandler();
+    protected void doInit() throws TomatoRpcException {
+
         if (Epoll.isAvailable()) {
             this.bossGroup = new EpollEventLoopGroup(1, new DefaultThreadFactory(BOSS_GROUP_THREAD_NAME));
             this.workerGroup = new EpollEventLoopGroup(new DefaultThreadFactory(WORKER_GROUP_THREAD_NAME));
@@ -108,7 +111,9 @@ public class NettyRpcServer extends BaseRpcServer {
                         abortPolicy.rejectedExecution(r, executor);
                     }
             );
-            dispatcherHandler.setBusinessExecutor(businessThreadPool);
+            this.dispatcherHandler = new DispatcherHandler(getProviderRegistry(), businessThreadPool);
+        } else {
+            this.dispatcherHandler = new DispatcherHandler(getProviderRegistry(), null);
         }
         this.serverBootstrap = new ServerBootstrap()
                 .group(this.bossGroup, this.workerGroup)
@@ -130,19 +135,19 @@ public class NettyRpcServer extends BaseRpcServer {
     }
 
     @Override
-    protected synchronized void doStart() throws TomatoRpcException {
+    protected void doStart() throws TomatoRpcException {
         try {
             serverBootstrap.bind(getPort()).sync();
         } catch (InterruptedException exception) {
-            throw new TomatoRpcException(NettyRpcErrorEnum.LIFE_CYCLE_START_ERROR.create(
-                    "thread was interrupted when bind"),
-                    exception
+            throw new TomatoRpcException(
+                NettyRpcErrorEnum.LIFE_CYCLE_START_ERROR.create("thread was interrupted when bind"),
+                exception
             );
         }
     }
 
     @Override
-    protected synchronized void doStop() throws TomatoRpcException {
+    protected void doStop() throws TomatoRpcException {
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
         if (businessThreadPool != null) {
@@ -152,6 +157,6 @@ public class NettyRpcServer extends BaseRpcServer {
 
     @Override
     public boolean isClosed() {
-        return getState() == LifeCycle.STOP;
+        return getState() == LifeCycle.STOP_FINISHED;
     }
 }

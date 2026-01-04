@@ -27,6 +27,7 @@ import org.tomato.study.rpc.dashboard.web.view.DashboardResponse;
 public enum ServiceTemplateEnum {
 
     RPC_STAT("RpcStatus"),
+    RPC_OPS("RpcOps")
     ;
 
     private final String module;

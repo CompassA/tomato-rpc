@@ -18,12 +18,12 @@ import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.BeanFactory;
 import org.springframework.beans.factory.BeanFactoryAware;
 import org.springframework.beans.factory.config.BeanPostProcessor;
+import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.config.annotation.RpcServerStub;
 import org.tomato.study.rpc.config.data.ClientStubMetadata;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
-import org.tomato.study.rpc.utils.Logger;
 
 import java.lang.reflect.Field;
 

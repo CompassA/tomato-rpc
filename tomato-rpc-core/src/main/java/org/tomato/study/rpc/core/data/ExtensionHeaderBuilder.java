@@ -19,7 +19,7 @@ import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.RpcJvmConfigKey;
 
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -75,7 +75,7 @@ public class ExtensionHeaderBuilder {
     public static Map<String, String> getExtensionHeader(@NonNull Command command) {
         byte[] extension = command.getExtension();
         if (extension == null || extension.length < 1) {
-            return Collections.emptyMap();
+            return new HashMap<>();
         }
         return RpcJvmConfigKey.parseMultiKeyValue(new String(extension, StandardCharsets.UTF_8));
     }

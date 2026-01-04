@@ -40,27 +40,27 @@
         <module>tomato-rpc-spring-sample-server</module>
         <module>tomato-rpc-spring-sample-client</module>
         <module>tomato-rpc-log4j2-config</module>
+        <module>tomato-rpc-test</module>
     </modules>
 
     <properties>
         <encoding>UTF-8</encoding>
         <java.version>17</java.version>
         <maven-compile-plugin.version>3.8.0</maven-compile-plugin.version>
-        <jacoco.version>0.8.7</jacoco.version>
-        <protostuff.version>1.7.2</protostuff.version>
-        <powermock.version>2.0.2</powermock.version>
-        <netty.version>4.1.56.Final</netty.version>
-        <lombok.version>1.18.20</lombok.version>
+        <jacoco.version>0.8.11</jacoco.version>
+        <protostuff.version>1.8.0</protostuff.version>
+        <netty.version>4.1.97.Final</netty.version>
+        <lombok.version>1.18.42</lombok.version>
         <junit.version>4.12</junit.version>
-        <itranswarp.version>1.0</itranswarp.version>
-        <common-lang3.version>3.9</common-lang3.version>
-        <commons-collections4.version>4.3</commons-collections4.version>
+        <common-lang3.version>3.18.0</common-lang3.version>
+        <commons-collections4.version>4.5.0</commons-collections4.version>
         <zookeeper.version>3.5.9</zookeeper.version>
-        <curator.version>4.0.0</curator.version>
+        <curator.version>5.9.0</curator.version>
         <slf4j.version>1.7.30</slf4j.version>
         <jackson.version>2.19.0</jackson.version>
         <spring-boot.version>3.2.12</spring-boot.version>
-        <curator-test.version>2.12.0</curator-test.version>
+        <http-client.version>5.6</http-client.version>
+        <mockito-bom.version>5.20.0</mockito-bom.version>
     </properties>
 
     <dependencyManagement>
@@ -137,26 +137,6 @@
                 <artifactId>junit</artifactId>
                 <version>${junit.version}</version>
                 <scope>test</scope>
-            </dependency>
-
-            <dependency>
-                <groupId>org.powermock</groupId>
-                <artifactId>powermock-api-mockito2</artifactId>
-                <version>${powermock.version}</version>
-                <scope>test</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.powermock</groupId>
-                <artifactId>powermock-module-junit4</artifactId>
-                <version>${powermock.version}</version>
-                <scope>test</scope>
-            </dependency>
-
-            <!-- https://mvnrepository.com/artifact/com.itranswarp/compiler -->
-            <dependency>
-                <groupId>com.itranswarp</groupId>
-                <artifactId>compiler</artifactId>
-                <version>${itranswarp.version}</version>
             </dependency>
 
 
@@ -266,13 +246,19 @@
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-test</artifactId>
-                <version>${curator-test.version}</version>
+                <version>${curator.version}</version>
             </dependency>
 
             <dependency>
                 <groupId>com.lmax</groupId>
                 <artifactId>disruptor</artifactId>
                 <version>3.4.2</version>
+            </dependency>
+
+            <dependency>
+                <groupId>org.mockito</groupId>
+                <artifactId>mockito-bom</artifactId>
+                <version>${mockito-bom.version}</version>
             </dependency>
 
         </dependencies>
@@ -303,7 +289,7 @@
                         <excludes>
                             <!-- 配置想要排除的包路径 -->
 
-                            <exclude>org/tomato/study/rpc/sample/*</exclude>-->
+                            <exclude>org/tomato/study/rpc/sample/*</exclude>
 
                             <!-- 排除指定格式的类 -->
 <!--                        <exclude>**/*ShortUrl.class</exclude>-->

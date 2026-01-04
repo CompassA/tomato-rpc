@@ -28,7 +28,7 @@
 
 package org.tomato.study.rpc.core.utils;
 
-import org.tomato.study.rpc.utils.Logger;
+import org.tomato.study.rpc.common.utils.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

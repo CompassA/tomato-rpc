@@ -14,15 +14,18 @@
 
 package org.tomato.study.rpc.dashboard.assembler;
 
+import org.tomato.study.rpc.core.dashboard.data.RpcInvokerData;
+import org.tomato.study.rpc.core.dashboard.data.RpcRouterData;
+import org.tomato.study.rpc.core.dashboard.dto.RpcRouterDTO;
+import org.tomato.study.rpc.core.dashboard.model.RpcInvokerModel;
 import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.dashboard.dao.data.RpcInvokerData;
 import org.tomato.study.rpc.dashboard.exception.DashboardParamException;
-import org.tomato.study.rpc.dashboard.service.model.RpcInvokerModel;
 import org.tomato.study.rpc.dashboard.web.view.RpcInvokersVO;
-import org.tomato.study.rpc.registry.zookeeper.impl.ZookeeperRegistry;
+import org.tomato.study.rpc.registry.zookeeper.utils.ZookeeperAssembler;
 
 import java.net.URI;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -45,7 +48,7 @@ public class RpcInvokerAssembler {
     }
 
     public static RpcInvokerData toData(String url) {
-        Optional<MetaData> opt = ZookeeperRegistry.convertToModel(url);
+        Optional<MetaData> opt = ZookeeperAssembler.convertToModel(url);
         if (opt.isEmpty()) {
             throw new DashboardParamException("illegal invoker url: " + url);
         }
@@ -56,5 +59,33 @@ public class RpcInvokerAssembler {
         rpcInvokerData.setMicroServiceId(metaData.getMicroServiceId());
         rpcInvokerData.setNodeProperties(metaData);
         return rpcInvokerData;
+    }
+
+
+
+    public static RpcRouterData toRouterData(List<RpcRouterDTO> dto) {
+        dto.sort(Comparator.comparing(RpcRouterDTO::getPriority));
+
+        List<String> expr = new ArrayList<>(dto.size());
+        for (RpcRouterDTO rpcRouterDTO : dto) {
+            expr.add(rpcRouterDTO.getExpr());
+        }
+
+        RpcRouterData rpcRouterData = new RpcRouterData();
+        rpcRouterData.setExpr(expr);
+        return rpcRouterData;
+    }
+
+    public static List<RpcRouterDTO> toRouterDTO(RpcRouterData data) {
+        List<RpcRouterDTO> dtoList = new ArrayList<>();
+        List<String> expr = data.getExpr();
+        for (int i = 0; i < expr.size(); i++) {
+            RpcRouterDTO dto = new RpcRouterDTO();
+            dto.setPriority(i+1);
+            dto.setExpr(expr.get(i));
+
+            dtoList.add(dto);
+        }
+        return dtoList;
     }
 }

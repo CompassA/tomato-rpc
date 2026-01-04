@@ -32,4 +32,11 @@ public class ApiPath {
          */
         public static final String ROUTER_LIST = "/api/tomato/stat/routers";
     }
+
+    public static class Ops {
+        /**
+         * 下发路由规则
+         */
+        public static final String ROUTER_MODIFY = "/api/tomato/ops/router/modify";
+    }
 }

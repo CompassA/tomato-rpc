@@ -15,13 +15,12 @@
 package org.tomato.study.rpc.core.registry;
 
 import org.apache.commons.lang3.StringUtils;
+import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.core.data.NameServerConfig;
 import org.tomato.study.rpc.core.data.RefreshInvokerTask;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.observer.BaseLifeCycleComponent;
-import org.tomato.study.rpc.utils.Logger;
 
-import java.nio.charset.Charset;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
@@ -48,11 +47,7 @@ public abstract class BaseNameServer extends BaseLifeCycleComponent implements N
     }
 
     public String getConnString() {
-        return nameServerConfig.getConnString();
-    }
-
-    public Charset getCharset() {
-        return nameServerConfig.getCharset();
+        return nameServerConfig.connString();
     }
 
     @Override
@@ -64,20 +59,23 @@ public abstract class BaseNameServer extends BaseLifeCycleComponent implements N
     protected void doInit() throws TomatoRpcException {
         this.refreshInvokerThread = new Thread(() -> {
             while (!Thread.currentThread().isInterrupted()) {
+                RefreshInvokerTask task;
+                try {
+                    task = refreshTaskQueue.take();
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+
                 String success = Logger.SUCCESS_MARK;
                 String code = Logger.SUCCESS_MARK;
                 long startTime = System.currentTimeMillis();
                 String id = StringUtils.EMPTY;
                 try {
-                    RefreshInvokerTask task = refreshTaskQueue.take();
                     id = task.getId();
                     Logger.DIGEST.info("|name-server|invoker-refresh|req|{}|", id);
                     task.getMicroServiceSpace().refresh(task.getInvokerInfoSet());
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    success = Logger.FAILURE_MARK;
-                    code = "InterruptedException";
-                } catch (Throwable e) {
+                }  catch (Throwable e) {
                     success = Logger.FAILURE_MARK;
                     code = e.getClass().getSimpleName();
                     Logger.DEFAULT.error("|name-server|invoker-refresh|exception|{}|", id, e);

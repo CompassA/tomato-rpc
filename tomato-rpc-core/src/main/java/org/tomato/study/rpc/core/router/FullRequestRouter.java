@@ -18,7 +18,6 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.tomato.study.rpc.core.data.Invocation;
 import org.tomato.study.rpc.core.invoker.RpcInvoker;
 import org.tomato.study.rpc.expression.ast.ASTNode;
 import org.tomato.study.rpc.expression.ast.ExpressionCalcContext;
@@ -36,12 +35,17 @@ import org.tomato.study.rpc.expression.ast.ExpressionConstant;
 public class FullRequestRouter implements Router {
 
     /**
+     * 原始表达式
+     */
+    private String expression;
+
+    /**
      * 右表达式, 筛选Invoker
      */
     private ASTNode rightExpr;
 
     @Override
-    public boolean matchRequest(Invocation invocation) {
+    public boolean matchRequest(ExpressionCalcContext context) {
         return true;
     }
 

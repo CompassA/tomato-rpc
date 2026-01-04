@@ -14,16 +14,14 @@
 
 package org.tomato.study.rpc.dashboard.advice;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.commons.lang3.StringUtils;
+import org.tomato.study.rpc.common.utils.Logger;
+import org.tomato.study.rpc.core.serializer.JsonSerializer;
 import org.tomato.study.rpc.dashboard.exception.AbstractDashboardException;
 import org.tomato.study.rpc.dashboard.exception.DashboardParamException;
 import org.tomato.study.rpc.dashboard.exception.DashboardRuntimeException;
 import org.tomato.study.rpc.dashboard.web.view.DashboardResponse;
 import org.tomato.study.rpc.dashboard.web.view.ResponseCodeEnum;
-import org.tomato.study.rpc.utils.Logger;
 
 /**
  * @author Tomato
@@ -34,11 +32,7 @@ import org.tomato.study.rpc.utils.Logger;
 @Slf4j
 public abstract class ServiceTemplate<Q, R> {
 
-    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-
-    public static <Q, R> DashboardResponse execute(String module, String method, Q q,  ServiceTemplate<Q, R> template) {
-        return template.process(module, method, q);
-    }
+    private static final JsonSerializer JSON_SERIALIZER = new JsonSerializer();
 
     public DashboardResponse process(String module, String method, Q req) {
         String resMark = Logger.SUCCESS_MARK;
@@ -79,11 +73,6 @@ public abstract class ServiceTemplate<Q, R> {
     protected abstract R doProcess(Q q) throws Throwable;
 
     private static String convertToString(Object object) {
-        try {
-            return OBJECT_MAPPER.writeValueAsString(object);
-        } catch (JsonProcessingException e) {
-            log.error("writeValueAsString failed", e);
-            return StringUtils.EMPTY;
-        }
+        return new String(JSON_SERIALIZER.serialize(object));
     }
 }

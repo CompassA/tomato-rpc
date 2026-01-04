@@ -14,9 +14,6 @@
 
 package org.tomato.study.rpc.core.data;
 
-import java.util.Map;
-import java.util.Optional;
-
 /**
  * the necessary data for a remote procedure call
  * @author Tomato
@@ -67,30 +64,4 @@ public interface Invocation {
     default String getApiId() {
         return getMicroServiceId() + "$" + getInterfaceName() + "$" + getMethodName();
     }
-
-    /**
-     * 获取调用的一些参数
-     * @return 参数map
-     */
-    Map<String, String> fetchContextMap();
-
-    /**
-     * put context parameter
-     * @param key parameter key
-     * @param value parameter value
-     */
-    void putContextParameter(String key, String value);
-
-    /**
-     * get parameter value
-     * @param key parameter key
-     * @return parameter value
-     */
-    Optional<String> fetchContextParameter(String key);
-
-    /**
-     * 构造一个没有ParameterContext的对象
-     * @return InvocationWithoutContext
-     */
-    Invocation cloneInvocationWithoutContext();
 }

@@ -15,13 +15,16 @@
 package org.tomato.study.rpc.core.stub;
 
 import lombok.Getter;
-import org.tomato.study.rpc.core.data.Invocation;
-import org.tomato.study.rpc.core.data.Response;
 import org.tomato.study.rpc.core.RpcParameterKey;
+import org.tomato.study.rpc.core.data.Invocation;
+import org.tomato.study.rpc.core.data.InvocationContext;
+import org.tomato.study.rpc.core.data.Response;
 import org.tomato.study.rpc.core.data.RpcRequestDTO;
 import org.tomato.study.rpc.core.data.StubConfig;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Tomato
@@ -42,6 +45,7 @@ public abstract class BaseStubInvoker implements StubInvoker {
      * 服务分组
      */
     @Getter
+    @Deprecated
     private final String group;
 
     /**
@@ -74,26 +78,33 @@ public abstract class BaseStubInvoker implements StubInvoker {
             return proxy.equals(args[0]);
         }
 
-        // 将方法参数转化为可序列化的DTO对象
-        Invocation invocation = createInvocation(method, args);
+        // 作为上游的被调用方, 调用下游的接口, 此时需要保留现场
+        Map<String, String> originContext = InvocationContext.get();
+        Map<String, String> currentContext = originContext == null ? new HashMap<>() : new HashMap<>(originContext);
+        InvocationContext.set(currentContext);
+        try {
+            // 塞参数
+            putParameter(currentContext);
 
-        // 塞参数
-        putParameter(invocation);
+            // 将方法参数转化为可序列化的DTO对象
+            Invocation invocation = createInvocation(method, args);
 
-        // 调用
-        Response response = doInvoke(invocation);
+            // 调用
+            Response response = doInvoke(invocation);
 
-        // 转化为接口返回对象
-        return response.getData();
+            // 转化为接口返回对象
+            return response.getData();
+        } finally {
+            InvocationContext.set(originContext);
+        }
     }
 
     /**
      * 塞一些通用的参数
-     * @param rpcInvocation rpc请求
      */
-    private void putParameter(Invocation rpcInvocation) {
-        rpcInvocation.putContextParameter(RpcParameterKey.TIMEOUT, String.valueOf(stubConfig.getTimeoutMs()));
-        rpcInvocation.putContextParameter(RpcParameterKey.COMPRESS, String.valueOf(stubConfig.isCompressBody()));
+    private void putParameter(Map<String, String> threadLocalParameter) {
+        threadLocalParameter.put(RpcParameterKey.TIMEOUT, String.valueOf(stubConfig.getTimeoutMs()));
+        threadLocalParameter.put(RpcParameterKey.COMPRESS, String.valueOf(stubConfig.isCompressBody()));
     }
 
     protected Invocation createInvocation(Method method, Object[] args) {

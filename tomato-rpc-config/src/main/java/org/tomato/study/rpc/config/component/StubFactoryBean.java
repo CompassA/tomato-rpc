@@ -21,10 +21,10 @@ import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.config.data.ClientStubMetadata;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.data.StubConfig;
-import org.tomato.study.rpc.utils.Logger;
 
 /**
  * 创建StubProxyBean

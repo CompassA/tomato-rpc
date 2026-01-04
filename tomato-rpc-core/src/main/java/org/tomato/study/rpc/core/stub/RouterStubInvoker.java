@@ -19,6 +19,7 @@ import org.tomato.study.rpc.core.data.Invocation;
 import org.tomato.study.rpc.core.data.Response;
 import org.tomato.study.rpc.core.data.StubConfig;
 import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorInfo;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.invoker.RpcInvoker;
@@ -46,26 +47,25 @@ public class RouterStubInvoker extends BaseStubInvoker {
         try {
             Optional<RpcInvoker> invokerOpt = nameServer.lookupInvoker(invocation);
             if (invokerOpt.isEmpty()) {
-                throw new TomatoRpcRuntimeException(
-                        TomatoRpcCoreErrorEnum.STUB_INVOKER_SEARCH_ERROR.create(
-                                String.format("[invoker not found, micro-service-id=%s, interface=%s]",
-                                        invocation.getMicroServiceId(), invocation.getInterfaceName())));
+                TomatoRpcErrorInfo errorInfo = TomatoRpcCoreErrorEnum.STUB_INVOKER_SEARCH_ERROR.create(
+                    String.format("[invoker not found, micro-service-id=%s, interface=%s]", invocation.getMicroServiceId(), invocation.getInterfaceName()));
+                throw new TomatoRpcRuntimeException(errorInfo);
             }
             Response response = invokerOpt.get().invoke(invocation).getResultSync();
             if (!Code.SUCCESS.equals(response.getCode())) {
                 if (response.getData() instanceof TomatoRpcRuntimeException) {
                     throw (TomatoRpcRuntimeException) response.getData();
                 } else {
-                    throw new TomatoRpcRuntimeException(
-                            TomatoRpcCoreErrorEnum.STUB_INVOKER_RPC_ERROR.create(
-                                    "[rpc invocation failed, server response: " + response.getMessage() + "]"));
+                    TomatoRpcErrorInfo errorInfo = TomatoRpcCoreErrorEnum.STUB_INVOKER_RPC_ERROR.create(
+                        "[rpc invocation failed, server response: " + response.getMessage() + "]");
+                    throw new TomatoRpcRuntimeException(errorInfo);
                 }
             }
             return response;
         } catch (ExecutionException | InterruptedException | TomatoRpcException e) {
-            throw new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.STUB_INVOKER_SEARCH_ERROR.create(
-                    String.format("[rpc invocation failed, micro-service-id=%s, interface=%s]",
-                            invocation.getMicroServiceId(), invocation.getInterfaceName())), e);
+            TomatoRpcErrorInfo errorInfo = TomatoRpcCoreErrorEnum.STUB_INVOKER_SEARCH_ERROR.create(
+                String.format("[rpc invocation failed, micro-service-id=%s, interface=%s]", invocation.getMicroServiceId(), invocation.getInterfaceName()));
+            throw new TomatoRpcRuntimeException(errorInfo, e);
         }
     }
 }

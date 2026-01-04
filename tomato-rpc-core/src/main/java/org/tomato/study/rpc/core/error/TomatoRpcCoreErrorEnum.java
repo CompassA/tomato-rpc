@@ -29,9 +29,12 @@ public enum TomatoRpcCoreErrorEnum {
     RPC_CLIENT_TIMEOUT(10002, "rpc timeout"),
     RPC_CIRCUIT_ERROR(10003, "circuit breaker is open"),
     RPC_INVOKER_CLOSED(10004, "rpc invoker and net connection have been closed"),
+    RPC_COMPONENT_LIFE_CYCLE_INVALID_STATE(10005, "invalid rpc componet liv"),
 
 
     RPC_ROUND_ROBIN_LOAD_BALANCE_ERROR(20001, "round robin error"),
+    RPC_SERIALIZE_ERROR(20002, "json serialize failed"),
+    RPC_ROUTER_REFRESH_ERROR(20003, "rpc router refresh error"),
 
     STUB_INVOKER_SEARCH_ERROR(30001, "invoker not found"),
     STUB_INVOKER_RPC_ERROR(30002, "client rpc failed"),

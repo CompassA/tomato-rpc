@@ -16,17 +16,22 @@ package org.tomato.study.rpc.core.router;
 
 import lombok.Getter;
 import org.apache.commons.collections4.CollectionUtils;
+import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.core.RpcJvmConfigKey;
 import org.tomato.study.rpc.core.circuit.CircuitRpcInvoker;
 import org.tomato.study.rpc.core.data.Invocation;
+import org.tomato.study.rpc.core.data.InvocationContext;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RpcConfig;
+import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.invoker.RpcInvoker;
 import org.tomato.study.rpc.core.loadbalance.LoadBalance;
 import org.tomato.study.rpc.expression.ast.ASTNode;
 import org.tomato.study.rpc.expression.ast.AddAndSubParser;
 import org.tomato.study.rpc.expression.ast.CmpParser;
+import org.tomato.study.rpc.expression.ast.ExpressionCalcContext;
 import org.tomato.study.rpc.expression.ast.LogicParser;
 import org.tomato.study.rpc.expression.ast.MulAndDivAndModParser;
 import org.tomato.study.rpc.expression.ast.PrimaryTokenParser;
@@ -34,7 +39,6 @@ import org.tomato.study.rpc.expression.ast.RootExpressionParser;
 import org.tomato.study.rpc.expression.ast.RouterExpressionParser;
 import org.tomato.study.rpc.expression.token.TokenLexer;
 import org.tomato.study.rpc.expression.token.TokenStream;
-import org.tomato.study.rpc.utils.Logger;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -51,6 +55,8 @@ import java.util.stream.Collectors;
  */
 @Getter
 public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
+
+    public static final long INITIAL_ROUTER_OPS_ID = 0;
 
     /**
      * 路由规则语法分析器
@@ -92,9 +98,14 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
     private List<FullRequestRouter> defaultRouters;
 
     /**
+     * 路由规则操作序列号
+     */
+    private volatile long routerOpsGlobalId = INITIAL_ROUTER_OPS_ID-1;
+
+    /**
      * 路由规则
      */
-    private volatile List<Router> routers;
+    private volatile List<Router> routers = Collections.emptyList();
 
     /**
      * 一个RPC服务的所有实例节点，一个RpcInvoker持有一个与服务实例节点的连接并与其通信
@@ -113,21 +124,19 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
         // 设置兜底路由规则, 将rpc请求发送给同组的节点
         String finalGroup = fetchTargetGroup(rpcConfig);
 
-        TokenStream tokenize = TokenLexer.tokenize(
-            String.format("""
-                %s=="%s"
-                """, MetaData.GROUP_PARAM_NAME, finalGroup));
+        String defaultExpression = String.format("""
+            %s=="%s"
+            """, MetaData.GROUP_PARAM_NAME, finalGroup);
+        TokenStream tokenize = TokenLexer.tokenize(defaultExpression);
         ASTNode node = PARSER.getRootExpressionParser().parse(tokenize);
 
-        this.defaultRouters = Collections.singletonList(new FullRequestRouter(node));
-
-        this.routers = new ArrayList<>(this.defaultRouters);
+        this.defaultRouters = Collections.singletonList(new FullRequestRouter(defaultExpression, node));
     }
 
     protected String fetchTargetGroup(RpcConfig rpcConfig) {
         // 查看有无指定的分组配置
         // 若无, 目标分组与自身分组一致
-        return getJvmConfigGroup(microServiceId).orElse(rpcConfig.getGroup());
+        return getJvmConfigGroup(microServiceId).orElse(rpcConfig.group());
     }
 
     /**
@@ -147,6 +156,11 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
     }
 
     @Override
+    public List<Router> getAllRouters() {
+        return routers;
+    }
+
+    @Override
     public String getMicroServiceId() {
         return microServiceId;
     }
@@ -162,8 +176,12 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
         List<RpcInvoker> invokers = new ArrayList<>(0);
         List<Router> routers = this.routers;
         List<RpcInvoker> allInvokers = getAllInvokers();
+
+        ExpressionCalcContext context = new ExpressionCalcContext();
+        context.setValMap(InvocationContext.get());
+
         for (Router router : routers) {
-            if (!router.matchRequest(invocation)) {
+            if (!router.matchRequest(context)) {
                 continue;
             }
 
@@ -225,22 +243,43 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
     }
 
     @Override
-    public void refreshRouter(List<String> routers) throws TomatoRpcException {
-
-        List<Router> newRouters = new ArrayList<>();
-        for (String router : routers) {
-            TokenStream tokenStream = TokenLexer.tokenize(router);
-            ASTNode node = PARSER.parse(tokenStream);
-            if (node != null) {
-                ASTNode[] children = node.getChildren();
-                ExprRouter expr = new ExprRouter();
-                expr.setLeftExpr(children[0]);
-                expr.setRightExpr(children[1]);
-                newRouters.add(expr);
+    public synchronized void refreshRouter(Long routerOpsGlobalId, List<String> routers) {
+        long start = System.currentTimeMillis();
+        String resMark = Logger.SUCCESS_MARK;
+        try {
+            // 检查版本号
+            if (routerOpsGlobalId <= this.routerOpsGlobalId) {
+                Logger.DEFAULT.warn("routerOpsGlobalId in mem is {}, not less than {}", this.routerOpsGlobalId, routerOpsGlobalId);
+                return;
             }
+            this.routerOpsGlobalId = routerOpsGlobalId;
+
+            // 执行解析
+            List<Router> newRouters = new ArrayList<>();
+            for (int i = 0; i < routers.size(); ++i) {
+                String expression = routers.get(i);
+                TokenStream tokenStream = TokenLexer.tokenize(expression);
+                ASTNode node = PARSER.parse(tokenStream);
+                if (node != null) {
+                    ASTNode[] children = node.getChildren();
+                    newRouters.add(new ExprRouter(i + 1, expression, children[0], children[1]));
+                } else {
+                    throw new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.RPC_ROUTER_REFRESH_ERROR.create(
+                        String.format("invalid expression: %s", expression)));
+                }
+            }
+
+            // 增加兜底规则
+            newRouters.addAll(defaultRouters);
+
+            // 替换引用
+            this.routers = newRouters;
+        } catch (Throwable e) {
+            resMark = Logger.FAILURE_MARK;
+            Logger.DEFAULT.error("router refresh failed", e);
+        } finally {
+            Logger.DIGEST.info("|refresh-router|{}|{}|{}|", resMark, System.currentTimeMillis()-start, routerOpsGlobalId);
         }
-        newRouters.addAll(defaultRouters);
-        this.routers = newRouters;
     }
 
     private void cleanInvoker() throws TomatoRpcException {
@@ -263,7 +302,7 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
     private RpcInvoker createInvoker(MetaData metaData) {
         Logger.DEFAULT.info("create invoker {}", metaData);
         RpcInvoker rpcInvoker = doCreateInvoker(metaData);
-        if (!rpcConfig.isEnableCircuit()) {
+        if (!rpcConfig.enableCircuit()) {
             return rpcInvoker;
         }
         return doCreateCircuitBreaker(rpcInvoker);

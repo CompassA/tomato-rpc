@@ -511,7 +511,7 @@ Param
 可基于路由规则实现灰度。  
 
 ### 路由规则配置
-todo 规则CRUD
+目前通过tomato-rpc-dashboard API(POST /api/tomato/ops/router/modify)下发, 详见API介绍
 
 ### 路由表达式语法规则
 ```text
@@ -539,11 +539,50 @@ Tomato-RPC的均衡负载的单位为接口方法
 ## dashboard
 
 ### 查询微服务实例
+```bash
+# microServiceId:微服务ID
+# stage: 环境
 curl -X GET http://localhost:12222/api/tomato/stat/invokers?microServiceId="demo-rpc-service"&stage="dev"
+```
 
-microServiceId: 微服务ID
-stage: 环境
+### 查询路由规则
+```bash
+# microServiceId: 微服务ID
+# stage: 环境
+# routerMicroServiceId: 路由规则路由目标的微服务ID
+curl -X GET http://localhost:12222/api/tomato/stat/routers?microServiceId="demo-rpc-client"&stage="dev"&routerMicroServiceId="demo-rpc-service"
+#{
+#  "code": 10000,
+#  "data": [
+#    {
+#      "priority": 1,
+#      "expr": "userId % 10 == 1 -> group == \"gray\""
+#    }
+#  ]
+#}
+```
 
+
+### 下发路由规则
+
+```bash
+curl --location --request POST 'http://localhost:12222/api/tomato/ops/router/modify' \
+--header 'Content-Type: application/json' \
+--header 'Accept: */*' \
+--header 'Host: localhost:12222' \
+--header 'Connection: keep-alive' \
+--data-raw '{
+    "microServiceId": "demo-rpc-client",
+    "stage": "dev",
+    "routerMicroServiceId": "demo-rpc-service",
+    "exprList": [
+        {
+            "priority": 1,
+            "expr": "userId % 10 == 1 -> group == \"gray\""
+        }
+    ]
+}'
+```
 ## 服务本地API
 
 ### 服务就绪
@@ -553,6 +592,9 @@ curl -X GET http://localhost:9090/api/tomato/invoker/local/ready
 curl -X GET http://localhost:9090/api/tomato/invoker/local/status?microServiceId="demo-rpc-service"
 
 microServiceId: 订阅的微服务ID
+
+### 服务路由
+curl -X GET http://localhost:9090/api/tomato/router/local/list?routerMicroServiceId="demo-rpc-service"
 
 # k8s部署样例
 

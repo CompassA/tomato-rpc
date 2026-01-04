@@ -15,6 +15,8 @@
 package org.tomato.study.rpc.netty.service;
 
 import org.apache.commons.collections4.CollectionUtils;
+import org.tomato.study.rpc.common.utils.Logger;
+import org.tomato.study.rpc.common.utils.NetworkUtil;
 import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.base.BaseRpcCoreService;
 import org.tomato.study.rpc.core.data.RpcConfig;
@@ -28,8 +30,6 @@ import org.tomato.study.rpc.core.server.RpcServer;
 import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.router.NettyMicroServiceSpace;
 import org.tomato.study.rpc.netty.transport.server.NettyRpcServer;
-import org.tomato.study.rpc.utils.Logger;
-import org.tomato.study.rpc.utils.NetworkUtil;
 
 import java.net.URI;
 import java.util.List;
@@ -70,7 +70,7 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
 
     @Override
     protected MicroServiceSpace[] createMicroServiceSpace(RpcConfig rpcConfig) {
-        List<String> subscribedServiceIds = rpcConfig.getSubscribedServiceIds();
+        List<String> subscribedServiceIds = rpcConfig.subscribedServiceIds();
         MicroServiceSpace[] microServices;
         if (CollectionUtils.isNotEmpty(subscribedServiceIds)) {
             microServices = new MicroServiceSpace[subscribedServiceIds.size()];
@@ -87,7 +87,7 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
     }
 
     @Override
-    protected RpcServer createRpcServer(RpcServerConfig rpcServerConfig) {
-        return new NettyRpcServer(rpcServerConfig);
+    protected RpcServer createRpcServer(RpcServerConfig rpcServerConfig, ProviderRegistry providerRegistry) {
+        return new NettyRpcServer(rpcServerConfig, providerRegistry);
     }
 }

@@ -25,8 +25,8 @@ import org.apache.curator.retry.ExponentialBackoffRetry;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
 import org.apache.zookeeper.data.Stat;
+import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.registry.zookeeper.data.ZookeeperConfig;
-import org.tomato.study.rpc.utils.Logger;
 
 import java.io.Closeable;
 import java.io.IOException;
