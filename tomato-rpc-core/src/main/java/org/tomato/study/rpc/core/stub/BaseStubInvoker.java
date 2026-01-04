@@ -15,7 +15,8 @@
 package org.tomato.study.rpc.core.stub;
 
 import lombok.Getter;
-import org.tomato.study.rpc.core.RpcParameterKey;
+import org.slf4j.MDC;
+import org.tomato.study.rpc.core.data.ExtensionHeader;
 import org.tomato.study.rpc.core.data.Invocation;
 import org.tomato.study.rpc.core.data.InvocationContext;
 import org.tomato.study.rpc.core.data.Response;
@@ -80,8 +81,10 @@ public abstract class BaseStubInvoker implements StubInvoker {
 
         // 作为上游的被调用方, 调用下游的接口, 此时需要保留现场
         Map<String, String> originContext = InvocationContext.get();
-        Map<String, String> currentContext = originContext == null ? new HashMap<>() : new HashMap<>(originContext);
+        Map<String, String> mdcContext = MDC.getCopyOfContextMap();
+        Map<String, String> currentContext = originContext == null ? InvocationContext.initContext() : new HashMap<>(originContext);
         InvocationContext.set(currentContext);
+        MDC.put(ExtensionHeader.TRACE_ID.name(), ExtensionHeader.TRACE_ID.getValueFromContext());
         try {
             // 塞参数
             putParameter(currentContext);
@@ -96,6 +99,7 @@ public abstract class BaseStubInvoker implements StubInvoker {
             return response.getData();
         } finally {
             InvocationContext.set(originContext);
+            MDC.setContextMap(mdcContext);
         }
     }
 
@@ -103,8 +107,8 @@ public abstract class BaseStubInvoker implements StubInvoker {
      * 塞一些通用的参数
      */
     private void putParameter(Map<String, String> threadLocalParameter) {
-        threadLocalParameter.put(RpcParameterKey.TIMEOUT, String.valueOf(stubConfig.getTimeoutMs()));
-        threadLocalParameter.put(RpcParameterKey.COMPRESS, String.valueOf(stubConfig.isCompressBody()));
+        threadLocalParameter.put(ExtensionHeader.TIMEOUT.getKeyName(), String.valueOf(stubConfig.getTimeoutMs()));
+        threadLocalParameter.put(ExtensionHeader.COMPRESS.getKeyName(), String.valueOf(stubConfig.isCompressBody()));
     }
 
     protected Invocation createInvocation(Method method, Object[] args) {

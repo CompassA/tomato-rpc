@@ -12,26 +12,17 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core;
+package org.tomato.study.rpc.test;
 
-import org.tomato.study.rpc.core.data.ExtensionHeader;
+import java.util.List;
 
 /**
- * parameter key。
- * 由于parameter的value均为序列化后的String，为规范使用，请表明value类型
  * @author Tomato
- * Created on 2022.02.26
+ * Created on 2026.01.05
  */
-public final class RpcParameterKey {
-    /**
-     * 超时时间
-     * type: {@link Long}
-     */
-    public static final String TIMEOUT = "timeout";
-
-    /**
-     * 压缩
-     * type: {@link Boolean}
-     */
-    public static final String COMPRESS = ExtensionHeader.COMPRESS.getName();
+public class TestServiceImpl implements TestService {
+    @Override
+    public Integer sum(List<Integer> nums) {
+        return nums.stream().reduce(0, Integer::sum);
+    }
 }

@@ -21,10 +21,10 @@ import lombok.Setter;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-import org.tomato.study.rpc.core.RpcParameterKey;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
+import org.tomato.study.rpc.core.data.ExtensionHeader;
 import org.tomato.study.rpc.core.serializer.JsonSerializer;
 import org.tomato.study.rpc.core.serializer.Serializer;
 import org.tomato.study.rpc.core.utils.GzipUtils;
@@ -45,7 +45,7 @@ public class CompressInterceptorTest {
     private final Serializer jsonSerializer = new JsonSerializer();
     private final MockPOJO mockPOJO = new MockPOJO("1", "abc");
     private final Map<String, String> extensionHeaderMap = new HashMap(){{
-        put(RpcParameterKey.COMPRESS, Boolean.TRUE.toString());
+        put(ExtensionHeader.COMPRESS.getKeyName(), Boolean.TRUE.toString());
     }};
     private Command mockRequest = CommandFactory.request(mockPOJO, jsonSerializer, extensionHeaderMap, CommandType.RPC_REQUEST);
     private Command mockResponse = CommandFactory.response(mockRequest.getHeader().getId(), mockPOJO, jsonSerializer, CommandType.RPC_RESPONSE);

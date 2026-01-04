@@ -12,20 +12,14 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.netty;
+package org.tomato.study.rpc.test;
 
 import java.util.List;
 
 /**
  * @author Tomato
- * Created on 2026.01.04
+ * Created on 2021.11.29
  */
-public interface GrayRouterTestFacade {
-
-    /**
-     * 串联节点
-     * @param upstremURLList 上游节点列表
-     * @return 将当前节点加入到响应中并返回
-     */
-    List<String> pass(List<String> upstremURLList);
+public interface TimeoutTest {
+    Integer sum(List<Integer> numbers);
 }

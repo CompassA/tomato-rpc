@@ -12,7 +12,7 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.netty;
+package org.tomato.study.rpc.test;
 
 import java.util.List;
 

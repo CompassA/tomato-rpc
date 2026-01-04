@@ -19,7 +19,9 @@ import org.apache.curator.test.TestingServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.slf4j.MDC;
 import org.tomato.study.rpc.core.RpcCoreService;
+import org.tomato.study.rpc.core.data.ExtensionHeader;
 import org.tomato.study.rpc.core.data.InvocationContext;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RpcConfig;
@@ -30,6 +32,12 @@ import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.router.BaseMicroServiceSpace;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.netty.service.NettyRpcCoreServiceFactory;
+import org.tomato.study.rpc.test.GrayRouterTestFacade;
+import org.tomato.study.rpc.test.GrayRouterTestFacadeImpl;
+import org.tomato.study.rpc.test.TestService;
+import org.tomato.study.rpc.test.TestServiceImpl;
+import org.tomato.study.rpc.test.TimeoutTest;
+import org.tomato.study.rpc.test.TimeoutTestImpl;
 
 import java.io.IOException;
 import java.net.URI;
@@ -57,16 +65,9 @@ public class RpcExecutionChainTest {
     private final String stage = "dev";
     private final String grayGroup = "gray";
     private final String group = "default";
-    private final int sleepMs = 10000;
-    private final TestService testService = numList -> numList.stream().reduce(0, Integer::sum);
-    private final TimeoutTest timeoutTestService = numList -> {
-        try {
-            Thread.sleep(sleepMs);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return testService.sum(numList);
-    };
+    private final long sleepMs = 10000;
+    private final TestService testService = new TestServiceImpl();
+    private final TimeoutTest timeoutTestService = new TimeoutTestImpl(sleepMs, testService);
 
     private final String mockMicroServiceId = "DemoRpcServer";
     private final String mockDownstreamMicroServiceId = "DownstreamRpcServer";
@@ -272,43 +273,56 @@ public class RpcExecutionChainTest {
                 clientRpcCoreService.getNameServer());
         GrayRouterTestFacade stub = clientRpcCoreService.createStub(stubConfig);
 
-        InvocationContext.put("USER_ID", "1");
-
-
         // 未设置灰度规则, 全部走prod-default
-        List<String> request = List.of(MetaData.convert(clientRpcCoreService.getRpcServerMetaData()).get().toASCIIString());
-        List<String> pass = stub.pass(request);
-        List<MetaData> metadata = pass.stream()
-            .map(URI::create)
-            .map(MetaData::convert)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .toList();
-        assertEquals(3, metadata.size());
-        assertTrue(metadata.stream().anyMatch(m -> Objects.equals(m.getPort(), clientPort)));
-        assertTrue(metadata.stream().anyMatch(m -> Objects.equals(m.getPort(), serverPort)));
-        assertTrue(metadata.stream().anyMatch(m -> Objects.equals(m.getPort(), serverDownstreamPort)));
+        InvocationContext.initContext();
+        InvocationContext.put("USER_ID", "1");
+        MDC.put(ExtensionHeader.TRACE_ID.name(), ExtensionHeader.TRACE_ID.getValueFromContext());
+        try {
+            List<String> request = List.of(MetaData.convert(clientRpcCoreService.getRpcServerMetaData()).get().toASCIIString());
+            List<String> pass = stub.pass(request);
+            List<MetaData> metadata = pass.stream()
+                .map(URI::create)
+                .map(MetaData::convert)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .toList();
+            assertEquals(3, metadata.size());
+            assertTrue(metadata.stream().anyMatch(m -> Objects.equals(m.getPort(), clientPort)));
+            assertTrue(metadata.stream().anyMatch(m -> Objects.equals(m.getPort(), serverPort)));
+            assertTrue(metadata.stream().anyMatch(m -> Objects.equals(m.getPort(), serverDownstreamPort)));
+        } finally {
+            InvocationContext.remove();
+            MDC.clear();
+        }
 
 
         // 设置路由规则, client为prod环境, 下游链路全走灰度
-        Optional<MicroServiceSpace> opt = clientRpcCoreService.getNameServer().getMicroService(mockMicroServiceId);
-        assertTrue(opt.isPresent());
+        InvocationContext.initContext();
+        InvocationContext.put("USER_ID", "1");
+        MDC.put(ExtensionHeader.TRACE_ID.name(), ExtensionHeader.TRACE_ID.getValueFromContext());
+        try {
+            Optional<MicroServiceSpace> opt = clientRpcCoreService.getNameServer().getMicroService(mockMicroServiceId);
+            assertTrue(opt.isPresent());
 
-        MicroServiceSpace microServiceSpace = opt.get();
-        microServiceSpace.refreshRouter(BaseMicroServiceSpace.INITIAL_ROUTER_OPS_ID + 1, List.of(String.format("USER_ID %% 10 == 1 -> group == \"%s\"", grayGroup)));
+            MicroServiceSpace microServiceSpace = opt.get();
+            microServiceSpace.refreshRouter(BaseMicroServiceSpace.INITIAL_ROUTER_OPS_ID + 1, List.of(String.format("USER_ID %% 10 == 1 -> group == \"%s\"", grayGroup)));
 
-        List<String> grayPass = stub.pass(List.of(
-            MetaData.convert(clientRpcCoreService.getRpcServerMetaData()).get().toASCIIString()));
-        List<MetaData> grayTestMetadataList = grayPass.stream()
-            .map(URI::create)
-            .map(MetaData::convert)
-            .filter(Optional::isPresent)
-            .map(Optional::get)
-            .toList();
-        assertEquals(3, grayTestMetadataList.size());
-        assertTrue(grayTestMetadataList.stream().anyMatch(m -> Objects.equals(m.getPort(), clientPort)));
-        assertTrue(grayTestMetadataList.stream().anyMatch(m -> Objects.equals(m.getPort(), grayPort)));
-        assertTrue(grayTestMetadataList.stream().anyMatch(m -> Objects.equals(m.getPort(), grayDownstreamPort)));
+            List<String> grayPass = stub.pass(List.of(
+                MetaData.convert(clientRpcCoreService.getRpcServerMetaData()).get().toASCIIString()));
+            List<MetaData> grayTestMetadataList = grayPass.stream()
+                .map(URI::create)
+                .map(MetaData::convert)
+                .filter(Optional::isPresent)
+                .map(Optional::get)
+                .toList();
+            assertEquals(3, grayTestMetadataList.size());
+            assertTrue(grayTestMetadataList.stream().anyMatch(m -> Objects.equals(m.getPort(), clientPort)));
+            assertTrue(grayTestMetadataList.stream().anyMatch(m -> Objects.equals(m.getPort(), grayPort)));
+            assertTrue(grayTestMetadataList.stream().anyMatch(m -> Objects.equals(m.getPort(), grayDownstreamPort)));
+        } finally {
+            InvocationContext.remove();
+            MDC.clear();
+        }
     }
 
     /**

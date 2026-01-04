@@ -20,10 +20,10 @@ import io.netty.util.TimerTask;
 import lombok.RequiredArgsConstructor;
 import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.core.ResponseFuture;
-import org.tomato.study.rpc.core.RpcParameterKey;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
+import org.tomato.study.rpc.core.data.ExtensionHeader;
 import org.tomato.study.rpc.core.data.Invocation;
 import org.tomato.study.rpc.core.data.InvocationContext;
 import org.tomato.study.rpc.core.data.MetaData;
@@ -76,7 +76,7 @@ public class NettyRpcInvoker extends BaseRpcInvoker {
                 CommandType.RPC_REQUEST);
 
         // 进行一些前置处理
-        rpcRequest = beforeSendRequest(rpcRequest, contextMap);
+        rpcRequest = beforeSendRequest(rpcRequest);
 
         // 发送数据
         ResponseFuture<Command> responseFuture = rpcClient.send(rpcRequest);
@@ -86,8 +86,8 @@ public class NettyRpcInvoker extends BaseRpcInvoker {
         return new NettyInvocationResult(responseFuture);
     }
 
-    protected Command beforeSendRequest(Command request, Map<String, String> contextMap) {
-        if (Objects.equals(Boolean.TRUE.toString(), contextMap.get(RpcParameterKey.COMPRESS))) {
+    protected Command beforeSendRequest(Command request) {
+        if (Objects.equals(Boolean.TRUE.toString(), ExtensionHeader.COMPRESS.getValueFromContext())) {
             CommandFactory.changeBody(request, GzipUtils.gzip(request.getBody()));
         }
         return request;
@@ -96,7 +96,7 @@ public class NettyRpcInvoker extends BaseRpcInvoker {
     private void addTimeoutTask(Invocation invocation,
                                 Command request,
                                 ResponseFuture<Command> responseFuture) {
-        Long timeoutMs = Optional.ofNullable(InvocationContext.get(RpcParameterKey.TIMEOUT))
+        Long timeoutMs = Optional.ofNullable(ExtensionHeader.TIMEOUT.getValueFromContext())
                 .map(Long::valueOf)
                 .orElse(getRpcConfig().globalClientTimeoutMilliseconds());
         timer.newTimeout(new RpcTimeoutTask(request, responseFuture, invocation),

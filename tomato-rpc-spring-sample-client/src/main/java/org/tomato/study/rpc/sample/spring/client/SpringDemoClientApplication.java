@@ -16,11 +16,14 @@ package org.tomato.study.rpc.sample.spring.client;
 
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
+import org.slf4j.MDC;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.stereotype.Component;
 import org.tomato.study.rpc.config.annotation.RpcClientStub;
+import org.tomato.study.rpc.core.data.ExtensionHeader;
+import org.tomato.study.rpc.core.data.InvocationContext;
 import org.tomato.study.rpc.sample.api.EchoService;
 import org.tomato.study.rpc.sample.api.SumService;
 import org.tomato.study.rpc.sample.api.data.Constant;
@@ -74,14 +77,18 @@ public class SpringDemoClientApplication {
         for (int i = 0; i < threadNum; ++i) {
             executor.execute(() -> {
                 for (int j = 0; j < messageNum; ++j) {
+                    InvocationContext.initContext();
+                    MDC.put(ExtensionHeader.TRACE_ID.name(), ExtensionHeader.TRACE_ID.getValueFromContext());
                     try {
                         runnable.run();
                     } catch (Throwable e) {
                         log.error("rpc client error", e);
+                    } finally {
+                        InvocationContext.remove();
+                        MDC.clear();
                     }
 
                     try {
-
                         Thread.sleep(Math.round(100 * Math.random() + 1000));
                     } catch (InterruptedException e) {
                         throw new RuntimeException(e);

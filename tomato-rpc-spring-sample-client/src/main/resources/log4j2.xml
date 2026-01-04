@@ -6,9 +6,8 @@
             %d{yyyy-MM-dd HH:mm:ss.SSS} %highlight{-%5p} [%t] %highlight{%logger} : %m%n
         </Property>
 
-        <!-- 日志文件输出格式 -->
-        <Property name="FILE_PATTERN">
-            %d{yyyy-MM-dd HH:mm:ss.SSS} -%5p [%t] %logger : %m%n
+        <Property name="TERMINAL_CONTEXT_PATTERN">
+            %d{yyyy-MM-dd HH:mm:ss.SSS} %highlight{-%5p} [%X{TRACE_ID}][%t] %highlight{%logger} : %m%n
         </Property>
 
         <!-- 日志目录 -->
@@ -21,6 +20,9 @@
         <Console name="CONSOLE">
             <PatternLayout pattern="${TERMINAL_PATTERN}"/>
         </Console>
+        <Console name="CONSOLE2">
+            <PatternLayout pattern="${TERMINAL_CONTEXT_PATTERN}"/>
+        </Console>
 
     </Appenders>
 
@@ -28,5 +30,17 @@
         <AsyncRoot level="INFO">
             <AppenderRef ref="CONSOLE"/>
         </AsyncRoot>
+
+        <AsyncLogger name="org.tomato.study.rpc.sample.spring.client" level="INFO" additivity="false">
+            <AppenderRef ref="CONSOLE2"/>
+        </AsyncLogger>
+
+        <AsyncLogger name="TOMATO-RPC-DIGEST" level="INFO" additivity="false">
+            <AppenderRef ref="CONSOLE2"/>
+        </AsyncLogger>
+
+        <AsyncLogger name="TOMATO-RPC-DEFAULT" level="INFO" additivity="false">
+            <AppenderRef ref="CONSOLE2"/>
+        </AsyncLogger>
     </Loggers>
 </Configuration>

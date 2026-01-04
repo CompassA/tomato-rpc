@@ -16,6 +16,7 @@ package org.tomato.study.rpc.core.data;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.UUID;
 
 /**
  * RPC上下文
@@ -26,11 +27,11 @@ public class InvocationContext {
 
     public static final ThreadLocal<Map<String, String>> CONTEXT = new ThreadLocal<>();
 
-    public static Map<String, String> createIfAbsent() {
-        if (get() == null) {
-            set(new HashMap<>());
-        }
-        return get();
+    public static Map<String, String> initContext() {
+        Map<String, String> context = new HashMap<>();
+        context.put(ExtensionHeader.TRACE_ID.getKeyName(), UUID.randomUUID().toString().replaceAll("-", ""));
+        set(context);
+        return context;
     }
 
     public static void set(Map<String, String> context) {
@@ -38,7 +39,7 @@ public class InvocationContext {
     }
 
     public static void put(String key, String value) {
-        createIfAbsent().put(key, value);
+        get().put(key, value);
     }
 
     public static String get(String key) {

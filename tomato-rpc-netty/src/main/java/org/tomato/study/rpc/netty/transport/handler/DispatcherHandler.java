@@ -19,6 +19,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.Getter;
+import org.slf4j.MDC;
 import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.core.CommandInterceptor;
 import org.tomato.study.rpc.core.ProviderRegistry;
@@ -26,6 +27,7 @@ import org.tomato.study.rpc.core.ServerHandler;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
+import org.tomato.study.rpc.core.data.ExtensionHeader;
 import org.tomato.study.rpc.core.data.ExtensionHeaderBuilder;
 import org.tomato.study.rpc.core.data.Header;
 import org.tomato.study.rpc.core.data.InvocationContext;
@@ -99,6 +101,8 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
 
         // 收到请求后, 将拓展参数塞入thread-local
         InvocationContext.set(extensionHeaders);
+        Map<String, String> copyOfContextMap = MDC.getCopyOfContextMap();
+        MDC.put(ExtensionHeader.TRACE_ID.name(), ExtensionHeader.TRACE_ID.getValueFromContext());
         try {
             Command response = matchHandler.handle(request);
             if (response == null) {
@@ -135,6 +139,7 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
         } finally {
             // 请求处理完成, 清空ThreadLocal
             InvocationContext.remove();
+            MDC.setContextMap(copyOfContextMap);
         }
     }
 

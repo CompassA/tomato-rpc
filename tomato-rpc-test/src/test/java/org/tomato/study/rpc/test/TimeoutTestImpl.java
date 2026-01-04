@@ -12,28 +12,24 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core.data;
+package org.tomato.study.rpc.test;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
+import java.util.List;
 
 /**
- * 拓展头部的key {@link Command#getExtension()}
  * @author Tomato
- * Created on 2022.02.20
+ * Created on 2026.01.05
  */
-@Getter
-@AllArgsConstructor
-public enum ExtensionHeader {
-    TIMEOUT("1", Long.class),
-    COMPRESS("2", Boolean.class),
-    TRACE_ID("3", String.class),
-    ;
+public record TimeoutTestImpl(Long sleepMs,
+                              TestService testService) implements TimeoutTest {
 
-    private final String keyName;
-    private final Class<?> type;
-
-    public String getValueFromContext() {
-        return InvocationContext.get(keyName);
+    @Override
+    public Integer sum(List<Integer> numbers) {
+        try {
+            Thread.sleep(sleepMs);
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+        }
+        return testService.sum(numbers);
     }
 }

@@ -39,7 +39,7 @@ public class SerializerTest {
 
     @Before
     public void setUp() {
-        InvocationContext.createIfAbsent();
+        InvocationContext.initContext();
     }
 
     @After
