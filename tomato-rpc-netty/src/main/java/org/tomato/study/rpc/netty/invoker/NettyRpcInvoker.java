@@ -17,7 +17,6 @@ package org.tomato.study.rpc.netty.invoker;
 import io.netty.util.HashedWheelTimer;
 import io.netty.util.Timeout;
 import io.netty.util.TimerTask;
-import lombok.RequiredArgsConstructor;
 import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.core.ResponseFuture;
 import org.tomato.study.rpc.core.data.Command;
@@ -29,8 +28,7 @@ import org.tomato.study.rpc.core.data.InvocationContext;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.Result;
 import org.tomato.study.rpc.core.data.RpcConfig;
-import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
-import org.tomato.study.rpc.core.error.TomatoRpcErrorInfo;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.invoker.BaseRpcInvoker;
@@ -114,22 +112,19 @@ public class NettyRpcInvoker extends BaseRpcInvoker {
         timer.stop();
     }
 
-    @RequiredArgsConstructor
-    private static class RpcTimeoutTask implements TimerTask {
-
-        private final Command request;
-        private final ResponseFuture<Command> responseFuture;
-        private final Invocation invocation;
+    private record RpcTimeoutTask(Command request,
+                                  ResponseFuture<Command> responseFuture,
+                                  Invocation invocation) implements TimerTask {
 
         @Override
         public void run(Timeout timeout) throws Exception {
             responseFuture.destroy().ifPresent(future -> {
-                TomatoRpcErrorInfo errorInfo = TomatoRpcCoreErrorEnum.RPC_CLIENT_TIMEOUT
-                        .create(String.format("rpc timeout, invocation: %s, request: %s", invocation, request));
-                future.completeExceptionally(new TomatoRpcRuntimeException(errorInfo));
+                future.completeExceptionally(
+                    new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_INVOCATION_TIMEOUT,
+                        String.format("rpc timeout, invocation: %s, request: %s", invocation, request)));
                 Logger.DEFAULT.warn("rpc timeout, message id: {}, invocation: {}",
-                        responseFuture.getMessageId(),
-                        invocation);
+                    responseFuture.getMessageId(),
+                    invocation);
             });
         }
     }

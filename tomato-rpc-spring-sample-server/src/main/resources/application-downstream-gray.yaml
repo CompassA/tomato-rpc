@@ -1,0 +1,7 @@
+tomato-rpc:
+  # 微服务id
+  micro-service-id: "demo-downstream-rpc-service"
+  # 服务环境
+  stage: "prod"
+  # 服务分组
+  group: "gray"

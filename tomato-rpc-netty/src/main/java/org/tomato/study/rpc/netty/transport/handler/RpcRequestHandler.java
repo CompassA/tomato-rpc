@@ -25,11 +25,11 @@ import org.tomato.study.rpc.core.data.Header;
 import org.tomato.study.rpc.core.data.RpcRequestDTO;
 import org.tomato.study.rpc.core.data.RpcRequestModel;
 import org.tomato.study.rpc.core.data.RpcResponse;
-import org.tomato.study.rpc.core.error.TomatoRpcErrorInfo;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.serializer.Serializer;
 import org.tomato.study.rpc.core.serializer.SerializerHolder;
-import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.utils.ConvertUtils;
 
 import java.lang.reflect.InvocationTargetException;
@@ -72,10 +72,12 @@ public class RpcRequestHandler implements ServerHandler {
             Logger.DEFAULT.error("rpc handle failed", exception);
 
             RpcResponse response;
-            if (exception instanceof TomatoRpcException) {
-                response = RpcResponse.fail(((TomatoRpcException) exception).getErrorInfo());
+            if (exception instanceof TomatoRpcException tomatoRpcException) {
+                response = RpcResponse.fail(tomatoRpcException.getErrCode(), tomatoRpcException.getMessage());
+            } else if (exception instanceof TomatoRpcRuntimeException tomatoRpcRuntimeException) {
+                response = RpcResponse.fail(tomatoRpcRuntimeException.getErrCode(), tomatoRpcRuntimeException.getMessage());
             } else {
-                response = RpcResponse.fail("unknown exception");
+                response = RpcResponse.fail(TomatoRpcErrorEnum.UNKNOWN);
             }
 
             return CommandFactory.response(header.getId(), response, serializer, CommandType.RPC_RESPONSE);
@@ -96,17 +98,15 @@ public class RpcRequestHandler implements ServerHandler {
                                 Class<?> providerInterface,
                                 Object provider) throws TomatoRpcException {
         if (provider == null) {
-            throw new TomatoRpcException(
-                NettyRpcErrorEnum.NETTY_HANDLER_PROVIDER_NOT_FOUND.create(
-                    String.format("%s provider not found: %s", request.getMicroServiceId(), providerInterface.getName())));
+            throw new TomatoRpcException(TomatoRpcErrorEnum.NETTY_HANDLER_PROVIDER_NOT_FOUND,
+                String.format("%s provider not found: %s", request.getMicroServiceId(), providerInterface.getName()));
         }
 
         try {
             return providerInterface.getMethod(request.getMethodName(), request.getArgsType());
         } catch (Throwable e) {
-            TomatoRpcErrorInfo errorInfo = NettyRpcErrorEnum.NETTY_HANDLER_PROVIDER_NOT_FOUND.create(
+            throw new TomatoRpcException(e, TomatoRpcErrorEnum.NETTY_HANDLER_PROVIDER_NOT_FOUND,
                 String.format("%s provider method not found: %s", request.getMicroServiceId(), request.getMethodName()));
-            throw new TomatoRpcException(errorInfo, e);
         }
     }
 
@@ -114,7 +114,7 @@ public class RpcRequestHandler implements ServerHandler {
         try {
             return ConvertUtils.convert(serializer.deserialize(command.getBody(), RpcRequestDTO.class));
         } catch (Throwable e) {
-            throw new TomatoRpcException(NettyRpcErrorEnum.MODEL_DTO_CONVERT_ERROR.create(), e);
+            throw new TomatoRpcException(e, TomatoRpcErrorEnum.MODEL_DTO_CONVERT_ERROR);
         }
     }
 
@@ -131,10 +131,8 @@ public class RpcRequestHandler implements ServerHandler {
                     serializer,
                     CommandType.RPC_RESPONSE);
         } catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException exception) {
-            throw new TomatoRpcException(
-                    NettyRpcErrorEnum.NETTY_HANDLER_RPC_INVOKER_ERROR.create("rpc method call failed: " + method.getName()),
-                    exception
-            );
+            throw new TomatoRpcException(exception, TomatoRpcErrorEnum.NETTY_HANDLER_RPC_INVOKER_ERROR,
+                "rpc method call failed: " + method.getName());
         }
     }
 }

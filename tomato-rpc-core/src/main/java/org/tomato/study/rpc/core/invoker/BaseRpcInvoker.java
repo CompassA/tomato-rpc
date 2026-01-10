@@ -19,7 +19,7 @@ import org.tomato.study.rpc.core.data.Invocation;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.Result;
 import org.tomato.study.rpc.core.data.RpcConfig;
-import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.serializer.Serializer;
 import org.tomato.study.rpc.core.spi.SpiLoader;
@@ -75,7 +75,8 @@ public abstract class BaseRpcInvoker implements RpcInvoker {
     @Override
     public Result invoke(Invocation invocation) throws TomatoRpcException {
         if (!isUsable()) {
-            throw new TomatoRpcException(TomatoRpcCoreErrorEnum.RPC_INVOKER_CLOSED.create());
+            throw new TomatoRpcException(TomatoRpcErrorEnum.RPC_INVOKER_CLOSED,
+                String.format("invoker[%s] is not usable", nodeInfo));
         }
         processingCounter.incrementAndGet();
         try {

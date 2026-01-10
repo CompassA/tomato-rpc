@@ -12,24 +12,26 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.config.test;
+package org.tomato.study.rpc.sample.api.data;
 
-import org.tomato.study.rpc.config.annotation.RpcServerStub;
+import java.util.List;
 
 /**
  * @author Tomato
- * Created on 2021.11.30
+ * Created on 2026.01.05
  */
-@RpcServerStub
-public class TestTimeoutServerStub implements TestTimeoutApi {
+public class ExecutionChainRequest {
 
-    @Override
-    public String echo(String s) {
-        try {
-            Thread.sleep(1000000);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-        return s;
+    /**
+     * 接收到请求前的所有服务节点信息
+     */
+    private List<String> serverURLList;
+
+    public List<String> getServerURLList() {
+        return serverURLList;
+    }
+
+    public void setServerURLList(List<String> serverURLList) {
+        this.serverURLList = serverURLList;
     }
 }

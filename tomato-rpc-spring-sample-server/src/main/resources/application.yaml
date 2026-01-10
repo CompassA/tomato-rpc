@@ -4,6 +4,8 @@ server:
 tomato-rpc:
   # 微服务id
   micro-service-id: "demo-rpc-service"
+  subscribed-services:
+    - "demo-downstream-rpc-service"
   # 注册中心地址
   name-service-uri: "127.0.0.1:2181"
   # RPC服务暴露的端口

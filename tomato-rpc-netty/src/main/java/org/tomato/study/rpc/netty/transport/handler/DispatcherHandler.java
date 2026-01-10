@@ -32,8 +32,8 @@ import org.tomato.study.rpc.core.data.ExtensionHeaderBuilder;
 import org.tomato.study.rpc.core.data.Header;
 import org.tomato.study.rpc.core.data.InvocationContext;
 import org.tomato.study.rpc.core.data.RpcResponse;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.serializer.SerializerHolder;
-import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.interceptor.CompressInterceptor;
 
 import java.util.Collections;
@@ -118,7 +118,7 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
                             Logger.DEFAULT.error(cause.getMessage(), cause);
                             Command errorResponse = CommandFactory.response(
                                     header.getId(),
-                                    RpcResponse.fail(NettyRpcErrorEnum.NETTY_REQUEST_HANDLE_ERROR.create()),
+                                    RpcResponse.fail(TomatoRpcErrorEnum.NETTY_REQUEST_HANDLE_ERROR),
                                     SerializerHolder.getSerializer(header.getSerializeType()),
                                     CommandType.RPC_RESPONSE);
                             ctx.writeAndFlush(errorResponse);
@@ -130,7 +130,7 @@ public class DispatcherHandler extends SimpleChannelInboundHandler<Command> {
             ctx.writeAndFlush(
                     CommandFactory.response(
                             header.getId(),
-                            RpcResponse.fail(NettyRpcErrorEnum.NETTY_REQUEST_HANDLE_ERROR.create()),
+                            RpcResponse.fail(TomatoRpcErrorEnum.NETTY_REQUEST_HANDLE_ERROR),
                             SerializerHolder.getSerializer(header.getSerializeType()),
                             CommandType.RPC_RESPONSE
                     )

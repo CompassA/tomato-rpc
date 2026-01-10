@@ -14,7 +14,7 @@
 
 package org.tomato.study.rpc.core.observer;
 
-import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 
@@ -58,8 +58,8 @@ public abstract class BaseLifeCycleComponent implements LifeCycle {
         }
         doInit();
         if (!STATE_UPDATER.compareAndSet(this, INIT, INIT_FINISHED)) {
-            throw new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.RPC_COMPONENT_LIFE_CYCLE_INVALID_STATE.create(
-                "INIT -> INIT_FINISHED failed, current status: " + state));
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_COMPONENT_LIFE_CYCLE_INVALID_STATE,
+                "INIT -> INIT_FINISHED failed, current status: " + state);
         }
     }
 
@@ -70,8 +70,8 @@ public abstract class BaseLifeCycleComponent implements LifeCycle {
         }
         doStart();
         if (!STATE_UPDATER.compareAndSet(this, START, START_FINISHED)) {
-            throw new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.RPC_COMPONENT_LIFE_CYCLE_INVALID_STATE.create(
-                "START -> START_FINISHED failed, current status: " + state));
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_COMPONENT_LIFE_CYCLE_INVALID_STATE,
+                "START -> START_FINISHED failed, current status: " + state);
         }
     }
 
@@ -82,8 +82,8 @@ public abstract class BaseLifeCycleComponent implements LifeCycle {
         }
         doStop();
         if (!STATE_UPDATER.compareAndSet(this, STOP, STOP_FINISHED)) {
-            throw new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.RPC_COMPONENT_LIFE_CYCLE_INVALID_STATE.create(
-                "STOP -> STOP_FINISHED failed, current status: " + state));
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_COMPONENT_LIFE_CYCLE_INVALID_STATE,
+                "STOP -> STOP_FINISHED failed, current status: " + state);
         }
     }
 

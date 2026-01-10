@@ -23,7 +23,7 @@ import org.tomato.study.rpc.core.data.Invocation;
 import org.tomato.study.rpc.core.data.InvocationContext;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RpcConfig;
-import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.invoker.RpcInvoker;
@@ -191,8 +191,10 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
                 }
             }
 
-            // 请求匹配当前路由规则后, 不再往后匹配
-            break;
+            // 请求匹配当前路由规则且有对应的invoker后, 不再往后匹配
+            if (!invokers.isEmpty()) {
+                break;
+            }
         }
 
 
@@ -264,8 +266,8 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
                     ASTNode[] children = node.getChildren();
                     newRouters.add(new ExprRouter(i + 1, expression, children[0], children[1]));
                 } else {
-                    throw new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.RPC_ROUTER_REFRESH_ERROR.create(
-                        String.format("invalid expression: %s", expression)));
+                    throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_ROUTER_REFRESH_ERROR,
+                        String.format("invalid expression: %s", expression));
                 }
             }
 

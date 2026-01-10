@@ -15,6 +15,7 @@
 package org.tomato.study.rpc.config;
 
 import jakarta.annotation.PostConstruct;
+import lombok.extern.slf4j.Slf4j;
 import org.apache.curator.test.TestingServer;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -36,7 +37,7 @@ import org.tomato.study.rpc.config.test.TestClientBean;
 import org.tomato.study.rpc.config.test.TestClientBean2;
 import org.tomato.study.rpc.config.test.TestTimeoutApi;
 import org.tomato.study.rpc.core.RpcCoreService;
-import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 
@@ -48,6 +49,7 @@ import java.util.Optional;
  * @author Tomato
  * Created on 2021.11.19
  */
+@Slf4j
 @SpringBootTest(classes = TomatoRpcConfigurationTest.class)
 @ComponentScan(basePackages = {
         "org.tomato.study.rpc.config.component",
@@ -140,12 +142,12 @@ public class TomatoRpcConfigurationTest {
     public void annotationTimeoutConfigTest() {
         boolean hasTimeout = false;
         try {
-            testClientBean.getTimeoutApi().echo("");
+            String res = testClientBean.getTimeoutApi().echo("");
+            Assert.fail();
         } catch (TomatoRpcRuntimeException e) {
-            hasTimeout = Objects.equals(
-                    e.getErrorInfo().getCode(),
-                    TomatoRpcCoreErrorEnum.RPC_CLIENT_TIMEOUT.getCode());
+            hasTimeout = Objects.equals(e.getErrCode().getCode(), TomatoRpcErrorEnum.RPC_INVOCATION_TIMEOUT.getCode());
         }
         Assert.assertTrue(hasTimeout);
+
     }
 }

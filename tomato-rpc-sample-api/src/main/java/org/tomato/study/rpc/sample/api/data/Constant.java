@@ -21,4 +21,6 @@ package org.tomato.study.rpc.sample.api.data;
 public interface Constant {
 
     String serviceId = "demo-rpc-service";
+
+    String testDownStreamServiceId = "demo-downstream-rpc-service";
 }

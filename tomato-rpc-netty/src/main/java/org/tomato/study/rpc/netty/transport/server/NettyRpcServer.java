@@ -31,13 +31,13 @@ import lombok.Getter;
 import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.data.RpcServerConfig;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.observer.LifeCycle;
 import org.tomato.study.rpc.core.server.BaseRpcServer;
 import org.tomato.study.rpc.netty.codec.NettyFrameDecoder;
 import org.tomato.study.rpc.netty.codec.NettyFrameEncoder;
 import org.tomato.study.rpc.netty.codec.NettyProtoDecoder;
-import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.transport.handler.DispatcherHandler;
 import org.tomato.study.rpc.netty.transport.handler.ServerIdleCheckHandler;
 
@@ -139,10 +139,7 @@ public class NettyRpcServer extends BaseRpcServer {
         try {
             serverBootstrap.bind(getPort()).sync();
         } catch (InterruptedException exception) {
-            throw new TomatoRpcException(
-                NettyRpcErrorEnum.LIFE_CYCLE_START_ERROR.create("thread was interrupted when bind"),
-                exception
-            );
+            throw new TomatoRpcException(exception, TomatoRpcErrorEnum.LIFE_CYCLE_START_ERROR, "thread was interrupted when bind");
         }
     }
 

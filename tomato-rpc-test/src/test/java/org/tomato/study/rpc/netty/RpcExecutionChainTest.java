@@ -26,7 +26,7 @@ import org.tomato.study.rpc.core.data.InvocationContext;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.data.StubConfig;
-import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.router.BaseMicroServiceSpace;
@@ -278,6 +278,12 @@ public class RpcExecutionChainTest {
         InvocationContext.put("USER_ID", "1");
         MDC.put(ExtensionHeader.TRACE_ID.name(), ExtensionHeader.TRACE_ID.getValueFromContext());
         try {
+            Optional<MicroServiceSpace> opt = clientRpcCoreService.getNameServer().getMicroService(mockMicroServiceId);
+            assertTrue(opt.isPresent());
+
+            MicroServiceSpace microServiceSpace = opt.get();
+            microServiceSpace.refreshRouter(BaseMicroServiceSpace.INITIAL_ROUTER_OPS_ID + 1, List.of(String.format("USER_ID %% 10 == 2 -> group == \"%s\"", grayGroup)));
+
             List<String> request = List.of(MetaData.convert(clientRpcCoreService.getRpcServerMetaData()).get().toASCIIString());
             List<String> pass = stub.pass(request);
             List<MetaData> metadata = pass.stream()
@@ -305,7 +311,7 @@ public class RpcExecutionChainTest {
             assertTrue(opt.isPresent());
 
             MicroServiceSpace microServiceSpace = opt.get();
-            microServiceSpace.refreshRouter(BaseMicroServiceSpace.INITIAL_ROUTER_OPS_ID + 1, List.of(String.format("USER_ID %% 10 == 1 -> group == \"%s\"", grayGroup)));
+            microServiceSpace.refreshRouter(BaseMicroServiceSpace.INITIAL_ROUTER_OPS_ID + 2, List.of(String.format("USER_ID %% 10 == 1 -> group == \"%s\"", grayGroup)));
 
             List<String> grayPass = stub.pass(List.of(
                 MetaData.convert(clientRpcCoreService.getRpcServerMetaData()).get().toASCIIString()));
@@ -354,7 +360,7 @@ public class RpcExecutionChainTest {
         try {
             directStub.sum(numbers);
         } catch (TomatoRpcRuntimeException timeout) {
-            hasTimeout = TomatoRpcCoreErrorEnum.RPC_CLIENT_TIMEOUT.getCode() == timeout.getErrorInfo().getCode();
+            hasTimeout = TomatoRpcErrorEnum.RPC_INVOCATION_TIMEOUT.getCode() == timeout.getErrCode().getCode();
         }
         assertTrue(hasTimeout);
 
@@ -379,7 +385,7 @@ public class RpcExecutionChainTest {
         try {
             stub.sum(numbers);
         } catch (TomatoRpcRuntimeException timeout) {
-            hasTimeout = TomatoRpcCoreErrorEnum.RPC_CLIENT_TIMEOUT.getCode() == timeout.getErrorInfo().getCode();
+            hasTimeout = TomatoRpcErrorEnum.RPC_INVOCATION_TIMEOUT.getCode() == timeout.getErrCode().getCode();
         }
         assertTrue(hasTimeout);
 

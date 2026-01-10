@@ -18,6 +18,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 
 /**
  * @author Tomato
@@ -36,14 +37,14 @@ public class RpcResponse implements Response {
     public Object data;
 
     public static RpcResponse success(Object data) {
-        return new RpcResponse(Code.SUCCESS.getCode(), Code.SUCCESS.getMsg(), data);
+        return new RpcResponse(TomatoRpcErrorEnum.SUCCESS.getCode(), null, data);
     }
 
-    public static RpcResponse fail(Object data) {
-        return fail(data, Code.FAIL.getMsg());
+    public static RpcResponse fail(TomatoRpcErrorEnum errCode) {
+        return fail(errCode, errCode.getMessage());
     }
 
-    public static RpcResponse fail(Object data, String message) {
-        return new RpcResponse(Code.FAIL.getCode(), message, data);
+    public static RpcResponse fail(TomatoRpcErrorEnum errCode, String errMsg) {
+        return new RpcResponse(errCode.getCode(), errMsg, null);
     }
 }

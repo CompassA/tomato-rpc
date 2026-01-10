@@ -22,7 +22,7 @@ import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.config.annotation.RpcServerStub;
 import org.tomato.study.rpc.config.data.ClientStubMetadata;
 import org.tomato.study.rpc.core.RpcCoreService;
-import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 
 import java.lang.reflect.Field;
@@ -76,9 +76,8 @@ public class RpcStubPostProcessor implements BeanPostProcessor, BeanFactoryAware
             for (int i = 0; i < interfaceTypes.length; ++i) {
                 Class interfaceType = interfaceTypes[i];
                 if (!interfaceType.isInterface()) {
-                    throw new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.SERVICE_STUB_CREATE_ERROR.create(
-                        interfaceType.getName() + " is not interface"
-                    ));
+                    throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.SERVICE_STUB_CREATE_ERROR,
+                        interfaceType.getName() + " is not interface");
                 }
                 result[i] = interfaceType;
             }
@@ -94,9 +93,8 @@ public class RpcStubPostProcessor implements BeanPostProcessor, BeanFactoryAware
             instanceClass = instanceClass.getSuperclass();
         }
 
-        throw new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.SERVICE_STUB_CREATE_ERROR.create(
-            instanceClass.getName() + "didn't implement any interface"
-        ));
+        throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.SERVICE_STUB_CREATE_ERROR,
+            instanceClass.getName() + " didn't implement any interface");
     }
 
     private void injectClientStub(Object bean) {

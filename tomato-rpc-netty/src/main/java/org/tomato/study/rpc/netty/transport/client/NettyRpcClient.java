@@ -33,14 +33,13 @@ import lombok.AllArgsConstructor;
 import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.core.ResponseFuture;
 import org.tomato.study.rpc.core.data.Command;
-import org.tomato.study.rpc.core.error.TomatoRpcErrorInfo;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.transport.BaseRpcClient;
 import org.tomato.study.rpc.netty.codec.NettyFrameDecoder;
 import org.tomato.study.rpc.netty.codec.NettyFrameEncoder;
 import org.tomato.study.rpc.netty.codec.NettyProtoDecoder;
-import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.transport.handler.ClientIdleCheckHandler;
 import org.tomato.study.rpc.netty.transport.handler.KeepAliveHandler;
 import org.tomato.study.rpc.netty.transport.handler.ResponseHandler;
@@ -112,16 +111,13 @@ public class NettyRpcClient extends BaseRpcClient<Command> {
                             responseHolder.putFeatureResponse(id, future);
                         } else {
                             future.completeExceptionally(
-                                    new TomatoRpcRuntimeException(
-                                            NettyRpcErrorEnum.NETTY_CLIENT_RPC_ERROR.create(),
-                                            futureChannel.cause()));
+                                    new TomatoRpcRuntimeException(futureChannel.cause(), TomatoRpcErrorEnum.NETTY_CLIENT_RPC_ERROR));
                         }
                     });
             return new ClientResponseFuture(id, future, responseHolder);
         } catch (Exception e) {
-            TomatoRpcErrorInfo errorInfo = NettyRpcErrorEnum.NETTY_CLIENT_RPC_ERROR.create(
+            throw new TomatoRpcException(e, TomatoRpcErrorEnum.NETTY_CLIENT_RPC_ERROR,
                 String.format("channel[%s,%d] fetch error", getHost(), getPort()));
-            throw new TomatoRpcException(errorInfo, e);
         }
     }
 
@@ -187,14 +183,16 @@ public class NettyRpcClient extends BaseRpcClient<Command> {
     }
 
     private ChannelWrapper createChannel(String host, int port)
-            throws InterruptedException, TimeoutException {
+            throws InterruptedException {
         ChannelFuture connectFuture = bootstrap.connect(host, port);
         if (!connectFuture.await(CONNECTION_TIMEOUT_MS, TimeUnit.MILLISECONDS)) {
-            throw new TimeoutException("netty connect timeout");
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_CONNECTION_TIMEOUT,
+                String.format("client connect to server[%s,%d] timeout", host, port));
         }
         Channel channel = connectFuture.channel();
         if (channel == null || !channel.isActive()) {
-            throw new IllegalStateException("netty channel is not active");
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_INVOKER_CLOSED,
+                String.format("connection to server[%s,%d] has been closed", host, port));
         }
         return new ChannelWrapper(channel);
     }

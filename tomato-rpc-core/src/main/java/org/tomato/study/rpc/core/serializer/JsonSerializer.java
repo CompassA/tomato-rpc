@@ -24,7 +24,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
-import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 
 import java.io.IOException;
@@ -68,9 +68,8 @@ public class JsonSerializer implements Serializer {
         try {
             return objectMapper.writeValueAsBytes(object);
         } catch (JsonProcessingException e) {
-            throw new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.RPC_SERIALIZE_ERROR.create(
-                String.format("json serialize failed: %s", object.getClass().getSimpleName())
-            ));
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_SERIALIZE_ERROR,
+                String.format("json serialize failed: %s", object.getClass().getSimpleName()));
         }
     }
 
@@ -79,9 +78,8 @@ public class JsonSerializer implements Serializer {
         try {
             return objectMapper.readValue(data, clazz);
         } catch (IOException e) {
-            throw new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.RPC_SERIALIZE_ERROR.create(
-                String.format("json deserialize failed: %s", clazz.getSimpleName())
-            ));
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_SERIALIZE_ERROR,
+                String.format("json deserialize failed: %s", clazz.getSimpleName()));
         }
     }
 
@@ -95,9 +93,8 @@ public class JsonSerializer implements Serializer {
         try {
             return objectMapper.readValue(listData, new TypeReference<List<T>>() {});
         } catch (IOException e) {
-            throw new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.RPC_SERIALIZE_ERROR.create(
-                String.format("json deserializeList failed: %s", memberType.getSimpleName())
-            ));
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_SERIALIZE_ERROR,
+                String.format("json deserializeList failed: %s", memberType.getSimpleName()));
         }
     }
 

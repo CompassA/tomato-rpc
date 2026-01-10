@@ -20,7 +20,7 @@ import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.core.dashboard.data.RpcRouterData;
 import org.tomato.study.rpc.core.data.Invocation;
 import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.invoker.RpcInvoker;
@@ -129,7 +129,7 @@ public class ZookeeperRegistry {
         for (MicroServiceSpace microService : microServices) {
             String microServiceId = microService.getMicroServiceId();
             if (StringUtils.isBlank(microServiceId)) {
-                throw new TomatoRpcRuntimeException(TomatoRpcCoreErrorEnum.RPC_CONFIG_INITIALIZING_ERROR.create("microServiceId is blank"));
+                throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_CONFIG_INITIALIZING_ERROR, "microServiceId is blank");
             }
             // 保存要订阅的微服务对象
             microServiceMap.putIfAbsent(microServiceId, microService);

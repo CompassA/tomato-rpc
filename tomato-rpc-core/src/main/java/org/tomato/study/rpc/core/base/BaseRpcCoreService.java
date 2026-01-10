@@ -25,7 +25,7 @@ import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.NameServerConfig;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.data.RpcServerConfig;
-import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.invoker.RpcInvokerFactory;
 import org.tomato.study.rpc.core.loadbalance.LoadBalance;
@@ -230,7 +230,7 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
             // 订阅其余RPC服务
             nameServer.subscribe(rpcServerMetaData, microServices, getStage());
         } catch (Exception e) {
-            throw new TomatoRpcException(TomatoRpcCoreErrorEnum.RPC_CONFIG_INITIALIZING_ERROR.create(), e);
+            throw new TomatoRpcException(e, TomatoRpcErrorEnum.RPC_CONFIG_INITIALIZING_ERROR);
         }
         ready = true;
         Logger.DEFAULT.info("netty rpc core service started. micro-service-id={},stage={},group={},host={},port={}",

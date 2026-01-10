@@ -3,7 +3,7 @@
  *  you may not use this file except in compliance with the License.
  *  You may obtain a copy of the License at
  *
- *      http://www.apache.org/licenses/LICENSE-2.0
+ *       http://www.apache.org/licenses/LICENSE-2.0
  *
  *  Unless required by applicable law or agreed to in writing, software
  *  distributed under the License is distributed on an "AS IS" BASIS,
@@ -12,34 +12,26 @@
  *  limitations under the License.
  */
 
-package org.tomato.study.rpc.core.error;
+package org.tomato.study.rpc.sample.api.data;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
+import java.util.List;
 
 /**
- * rpc error info
  * @author Tomato
- * Created on 2021.09.23
+ * Created on 2026.01.05
  */
-@Getter
-@NoArgsConstructor
-@AllArgsConstructor
-public class TomatoRpcErrorInfo {
+public class ExecutionChainResponse {
 
     /**
-     * error code
+     * 接收到请求后的所有服务节点信息
      */
-    private int code;
+    private List<String> serverURLList;
 
-    /**
-     * error message
-     */
-    private String message;
+    public List<String> getServerURLList() {
+        return serverURLList;
+    }
 
-    @Override
-    public String toString() {
-        return String.format("error code: %d, error message: %s", code, message);
+    public void setServerURLList(List<String> serverURLList) {
+        this.serverURLList = serverURLList;
     }
 }
