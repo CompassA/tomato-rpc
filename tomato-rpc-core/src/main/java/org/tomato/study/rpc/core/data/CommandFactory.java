@@ -15,7 +15,6 @@
 package org.tomato.study.rpc.core.data;
 
 import org.apache.commons.collections4.MapUtils;
-import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.serializer.Serializer;
 
 import java.util.Map;
@@ -55,12 +54,7 @@ public final class CommandFactory {
         Command command = commandBuilder.build();
         if (MapUtils.isNotEmpty(contextParameters)) {
             ExtensionHeaderBuilder extensionHeaderBuilder = new ExtensionHeaderBuilder(command);
-            for (ExtensionHeader header : ExtensionHeader.values()) {
-                String value = contextParameters.get(header.getName());
-                if (StringUtils.isNotBlank(value)) {
-                    extensionHeaderBuilder.putParam(header.getName(), value);
-                }
-            }
+            contextParameters.forEach((k, v) -> extensionHeaderBuilder.putParam(k, v));
             return extensionHeaderBuilder.build();
         }
         return command;

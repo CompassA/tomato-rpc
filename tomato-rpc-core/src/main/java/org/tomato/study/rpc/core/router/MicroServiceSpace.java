@@ -44,12 +44,17 @@ public interface MicroServiceSpace {
     List<RpcInvoker> getAllInvokers();
 
     /**
+     * 获取所有的路由规则
+     * @return routers
+     */
+    List<Router> getAllRouters();
+
+    /**
      * 根据微服务分组找到匹配的一个微服务调用实例
-     * @param group service group
      * @param invocation rpc request data
      * @return invoker
      */
-    Optional<RpcInvoker> lookUp(String group, Invocation invocation);
+    Optional<RpcInvoker> lookUp(Invocation invocation);
 
     /**
      * 刷新节点信息
@@ -57,6 +62,13 @@ public interface MicroServiceSpace {
      * @throws TomatoRpcException exception during refresh invoker data
      */
     void refresh(Set<MetaData> metadataSet) throws TomatoRpcException;
+
+    /**
+     * 刷新路由规则
+     * @param routerOpsGlobalId 路由规则更新全局ID
+     * @param routers 路由规则
+     */
+    void refreshRouter(Long routerOpsGlobalId, List<String> routers);
 
     /**
      * close micro-service space

@@ -14,95 +14,45 @@
 
 package org.tomato.study.rpc.core.data;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-
 import java.util.Collections;
 import java.util.List;
 
 /**
  * RPC配置
+ *
+ * @param protocol                        RPC协议
+ * @param microServiceId                  当前服务的唯一标识，别的服务通过该标识订阅服务
+ * @param stage                           当前服务所在的环境，用于环境隔离
+ * @param group                           当前服务的分组
+ * @param subscribedServiceIds            当前服务订阅的其他RPC服务
+ * @param nameServiceURI                  注册中心的连接URI
+ * @param port                            RPC服务暴露在哪个端口
+ * @param businessThreadPoolSize          业务线程池配置
+ * @param serverIdleCheckMilliseconds     服务端空闲检测频率, 单位ms
+ * @param clientKeepAliveMilliseconds     客户端心跳发送频率, 单位ms
+ * @param globalClientTimeoutMilliseconds 全局RPC客户端超时时间
+ * @param enableCircuit                   是否开启熔断
+ * @param circuitOpenRate                 错误率超过多少时开启熔断
+ * @param circuitOpenSeconds              断路器开启多久后进入半开模式
+ * @param circuitWindow                   采样窗口
  * @author Tomato
  * Created on 2021.07.11
  */
-@Getter
-@AllArgsConstructor
-public class RpcConfig {
-
-    /**
-     * RPC协议
-     */
-    private final String protocol;
-
-    /**
-     * 当前服务的唯一标识，别的服务通过该标识订阅服务
-     */
-    private final String microServiceId;
-
-    /**
-     * 当前服务所在的环境，用于环境隔离
-     */
-    private final String stage;
-
-    /**
-     * 当前服务的分组
-     */
-    private final String group;
-
-    /**
-     * 当前服务订阅的其他RPC服务
-     */
-    private final List<String> subscribedServiceIds;
-
-    /**
-     * 注册中心的连接URI
-     */
-    private final String nameServiceURI;
-
-    /**
-     * RPC服务暴露在哪个端口
-     */
-    private final int port;
-
-    /**
-     * 业务线程池配置
-     */
-    private final int businessThreadPoolSize;
-
-    /**
-     * 服务端空闲检测频率, 单位ms
-     */
-    private final long serverIdleCheckMilliseconds;
-
-    /**
-     * 客户端心跳发送频率, 单位ms
-     */
-    private final long clientKeepAliveMilliseconds;
-
-    /**
-     * 全局RPC客户端超时时间
-     */
-    private final long globalClientTimeoutMilliseconds;
-
-    /**
-     * 是否开启熔断
-     */
-    private final boolean enableCircuit;
-
-    /**
-     * 错误率超过多少时开启熔断
-     */
-    private final double circuitOpenRate;
-
-    /**
-     * 断路器开启多久后进入半开模式
-     */
-    private final long circuitOpenSeconds;
-
-    /**
-     * 采样窗口
-     */
-    private final int circuitWindow;
+public record RpcConfig(String protocol,
+                        String microServiceId,
+                        String stage,
+                        String group,
+                        List<String> subscribedServiceIds,
+                        String nameServiceURI,
+                        int port,
+                        int businessThreadPoolSize,
+                        long serverIdleCheckMilliseconds,
+                        long clientKeepAliveMilliseconds,
+                        long globalClientTimeoutMilliseconds,
+                        boolean enableCircuit,
+                        double circuitOpenRate,
+                        long circuitOpenSeconds,
+                        int circuitWindow) {
 
     public static Builder builder() {
         return new Builder();
@@ -202,21 +152,21 @@ public class RpcConfig {
 
         public RpcConfig build() {
             return new RpcConfig(
-                    this.protocol,
-                    this.microServiceId,
-                    this.stage,
-                    this.group,
-                    this.subscribedServiceIds,
-                    this.nameServiceURI,
-                    this.port,
-                    this.businessThreadPoolSize,
-                    this.serverIdleCheckMilliseconds,
-                    this.clientKeepAliveMilliseconds,
-                    this.globalClientTimeoutMilliseconds,
-                    this.enableCircuit,
-                    this.circuitOpenRate,
-                    this.circuitOpenSeconds,
-                    this.circuitWindow
+                this.protocol,
+                this.microServiceId,
+                this.stage,
+                this.group,
+                this.subscribedServiceIds,
+                this.nameServiceURI,
+                this.port,
+                this.businessThreadPoolSize,
+                this.serverIdleCheckMilliseconds,
+                this.clientKeepAliveMilliseconds,
+                this.globalClientTimeoutMilliseconds,
+                this.enableCircuit,
+                this.circuitOpenRate,
+                this.circuitOpenSeconds,
+                this.circuitWindow
             );
         }
     }

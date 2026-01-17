@@ -20,9 +20,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-
 /**
  * @author Tomato
  * Created on 2021.07.08
@@ -37,7 +34,5 @@ public class ZookeeperConfig {
     private String connString;
 
     private String namespace = "tomato";
-
-    private Charset charset = StandardCharsets.UTF_8;
 
 }

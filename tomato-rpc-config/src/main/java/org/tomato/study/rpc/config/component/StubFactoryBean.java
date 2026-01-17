@@ -16,12 +16,12 @@ package org.tomato.study.rpc.config.component;
 
 import lombok.Getter;
 import lombok.Setter;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.FactoryBean;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.AbstractBeanDefinition;
 import org.springframework.beans.factory.support.BeanDefinitionBuilder;
+import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.config.data.ClientStubMetadata;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.data.StubConfig;
@@ -31,7 +31,6 @@ import org.tomato.study.rpc.core.data.StubConfig;
  * @author Tomato
  * Created on 2022.11.30
  */
-@Slf4j
 @Getter
 @Setter
 public class StubFactoryBean implements FactoryBean {
@@ -49,13 +48,13 @@ public class StubFactoryBean implements FactoryBean {
                 metaData.getTimeout(),
                 rpcCoreService.getNameServer());
         Object stub = rpcCoreService.createStub(stubConfig);
-        log.info("create stub bean: {}", stubConfig);
+        Logger.DEFAULT.info("create stub bean: {}", stubConfig);
         return stub;
     }
 
     @Override
     public Class<?> getObjectType() {
-        return metaData.getStubClass();
+        return metaData == null ? null : metaData.getStubClass();
     }
 
     public static BeanDefinition createBeanDefinition(ClientStubMetadata<?> metaData) {

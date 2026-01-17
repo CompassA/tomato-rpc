@@ -14,8 +14,6 @@
 
 package org.tomato.study.rpc.sample.api;
 
-import org.tomato.study.rpc.core.api.TomatoApi;
-import org.tomato.study.rpc.sample.api.data.Constant;
 import org.tomato.study.rpc.sample.api.data.DemoRequest;
 import org.tomato.study.rpc.sample.api.data.DemoResponse;
 
@@ -23,7 +21,6 @@ import org.tomato.study.rpc.sample.api.data.DemoResponse;
  * @author Tomato
  * Created on 2021.06.20
  */
-@TomatoApi(microServiceId = Constant.serviceId)
 public interface EchoService {
 
     DemoResponse echo(DemoRequest request);

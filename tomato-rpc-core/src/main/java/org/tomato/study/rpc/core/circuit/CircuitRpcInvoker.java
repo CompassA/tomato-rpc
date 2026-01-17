@@ -20,7 +20,7 @@ import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.Response;
 import org.tomato.study.rpc.core.data.Result;
 import org.tomato.study.rpc.core.data.RpcConfig;
-import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.invoker.RpcInvoker;
 import org.tomato.study.rpc.core.serializer.Serializer;
@@ -73,7 +73,9 @@ public abstract class CircuitRpcInvoker implements RpcInvoker {
                 invocation.getApiId(),
                 (key) -> factory.createBreaker(rpcConfig));
         if (!breaker.allow()) {
-            throw new TomatoRpcException(TomatoRpcCoreErrorEnum.RPC_CIRCUIT_ERROR.create());
+            CircuitStatus status = breaker.getStatus();
+            throw new TomatoRpcException(TomatoRpcErrorEnum.RPC_CIRCUIT_ERROR, String.format(
+                "micro-service=%s, breaker-status=%s, failureRate=%f", invocation.getMicroServiceId(), status.getState(), status.failureRate()));
         }
         try {
             Result result = rpcInvoker.invoke(invocation);

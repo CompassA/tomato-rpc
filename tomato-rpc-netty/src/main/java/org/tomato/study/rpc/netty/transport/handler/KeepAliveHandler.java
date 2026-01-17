@@ -18,10 +18,10 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleStateEvent;
-import lombok.extern.slf4j.Slf4j;
-import org.tomato.study.rpc.core.serializer.Serializer;
+import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.core.data.CommandFactory;
 import org.tomato.study.rpc.core.data.CommandType;
+import org.tomato.study.rpc.core.serializer.Serializer;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 
 import java.util.Collections;
@@ -31,7 +31,6 @@ import java.util.Collections;
  * @author Tomato
  * Created on 2021.10.05
  */
-@Slf4j
 @ChannelHandler.Sharable
 public class KeepAliveHandler extends ChannelDuplexHandler {
 
@@ -46,7 +45,7 @@ public class KeepAliveHandler extends ChannelDuplexHandler {
                             Collections.emptyMap(),
                             CommandType.KEEP_ALIVE_REQUEST)
             );
-            log.info("sent keep alive packet");
+            Logger.DEFAULT.info("sent keep alive packet");
             return;
         }
         super.userEventTriggered(ctx, evt);

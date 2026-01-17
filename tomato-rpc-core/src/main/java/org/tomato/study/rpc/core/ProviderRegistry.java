@@ -14,13 +14,10 @@
 
 package org.tomato.study.rpc.core;
 
-import org.tomato.study.rpc.core.spi.SpiInterface;
-
 /**
  * @author Tomato
  * Created on 2021.04.18
  */
-@SpiInterface("netty-provider-registry")
 public interface ProviderRegistry {
 
     /**

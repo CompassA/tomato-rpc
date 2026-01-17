@@ -14,22 +14,22 @@
 
 package org.tomato.study.rpc.netty.service;
 
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.tomato.study.rpc.common.utils.Logger;
+import org.tomato.study.rpc.common.utils.NetworkUtil;
 import org.tomato.study.rpc.core.ProviderRegistry;
-import org.tomato.study.rpc.core.loadbalance.LoadBalance;
-import org.tomato.study.rpc.core.server.RpcServer;
 import org.tomato.study.rpc.core.base.BaseRpcCoreService;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.data.RpcServerConfig;
 import org.tomato.study.rpc.core.data.StubConfig;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
-import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.core.invoker.RpcInvokerFactory;
-import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
+import org.tomato.study.rpc.core.loadbalance.LoadBalance;
+import org.tomato.study.rpc.core.router.MicroServiceSpace;
+import org.tomato.study.rpc.core.server.RpcServer;
 import org.tomato.study.rpc.netty.router.NettyMicroServiceSpace;
 import org.tomato.study.rpc.netty.transport.server.NettyRpcServer;
-import org.tomato.study.rpc.utils.NetworkUtil;
 
 import java.net.URI;
 import java.util.List;
@@ -39,7 +39,6 @@ import java.util.List;
  * @author Tomato
  * Created on 2021.04.17
  */
-@Slf4j
 public class NettyRpcCoreService extends BaseRpcCoreService {
 
     public NettyRpcCoreService(RpcConfig rpcConfig) {
@@ -48,9 +47,8 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
 
     @Override
     public <T> URI registerProvider(T serviceInstance, Class<T> serviceInterface) {
-        if (serviceInstance == null || serviceInterface == null ||
-                !serviceInterface.isInterface()) {
-            throw new TomatoRpcRuntimeException(NettyRpcErrorEnum.CORE_SERVICE_REGISTER_PROVIDER_ERROR.create());
+        if (serviceInstance == null || serviceInterface == null || !serviceInterface.isInterface()) {
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.CORE_SERVICE_REGISTER_PROVIDER_ERROR);
         }
         ProviderRegistry providerRegistry = getProviderRegistry();
         String microServiceId = getMicroServiceId();
@@ -58,28 +56,29 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
 
         RpcServer rpcServer = getRpcServer();
         URI providerURI = NetworkUtil.createURI(getProtocol(), rpcServer.getHost(), rpcServer.getPort());
-        log.info("provider registered, URI[" + providerURI + "]");
+        Logger.DEFAULT.info("provider[interface={},serviceImpl={}] registered, URI[{}]",
+            serviceInterface.getName(), serviceInstance.getClass().getName(), providerURI);
         return providerURI;
     }
 
     @Override
     public <T> T createStub(StubConfig<T> stubConfig) {
         T stub = getStubFactory().createStub(getRpcConfig(), stubConfig, getRpcInvokerFactory());
-        log.info("stub " + stubConfig.getServiceInterface().getCanonicalName() + " created");
+        Logger.DEFAULT.info("stub[micro-service-id={}, interface={}] created",
+            stubConfig.getMicroServiceId(), stubConfig.getServiceInterface().getName());
         return stub;
     }
 
     @Override
     protected MicroServiceSpace[] createMicroServiceSpace(RpcConfig rpcConfig) {
-        List<String> subscribedServiceIds = rpcConfig.getSubscribedServiceIds();
+        List<String> subscribedServiceIds = rpcConfig.subscribedServiceIds();
         MicroServiceSpace[] microServices;
         if (CollectionUtils.isNotEmpty(subscribedServiceIds)) {
             microServices = new MicroServiceSpace[subscribedServiceIds.size()];
             RpcInvokerFactory rpcInvokerFactory = getRpcInvokerFactory();
             LoadBalance loadBalance = getLoadBalance();
             for (int i = 0; i < subscribedServiceIds.size(); i++) {
-                microServices[i] = new NettyMicroServiceSpace(
-                        subscribedServiceIds.get(i), rpcInvokerFactory, rpcConfig, loadBalance);
+                microServices[i] = new NettyMicroServiceSpace(subscribedServiceIds.get(i), rpcInvokerFactory, rpcConfig, loadBalance);
             }
         } else {
             microServices = new MicroServiceSpace[0];
@@ -88,7 +87,7 @@ public class NettyRpcCoreService extends BaseRpcCoreService {
     }
 
     @Override
-    protected RpcServer createRpcServer(RpcServerConfig rpcServerConfig) {
-        return new NettyRpcServer(rpcServerConfig);
+    protected RpcServer createRpcServer(RpcServerConfig rpcServerConfig, ProviderRegistry providerRegistry) {
+        return new NettyRpcServer(rpcServerConfig, providerRegistry);
     }
 }

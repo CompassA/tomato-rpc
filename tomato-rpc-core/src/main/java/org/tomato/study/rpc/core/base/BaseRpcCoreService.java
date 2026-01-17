@@ -15,7 +15,9 @@
 package org.tomato.study.rpc.core.base;
 
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
+import org.tomato.study.rpc.common.utils.Logger;
+import org.tomato.study.rpc.common.utils.NetworkUtil;
+import org.tomato.study.rpc.core.DefalultProviderRegistry;
 import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.RpcJvmConfigKey;
@@ -23,7 +25,7 @@ import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.NameServerConfig;
 import org.tomato.study.rpc.core.data.RpcConfig;
 import org.tomato.study.rpc.core.data.RpcServerConfig;
-import org.tomato.study.rpc.core.error.TomatoRpcCoreErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.invoker.RpcInvokerFactory;
 import org.tomato.study.rpc.core.loadbalance.LoadBalance;
@@ -34,7 +36,6 @@ import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.core.server.RpcServer;
 import org.tomato.study.rpc.core.spi.SpiLoader;
 import org.tomato.study.rpc.core.stub.StubFactory;
-import org.tomato.study.rpc.utils.NetworkUtil;
 
 import java.util.List;
 
@@ -46,7 +47,6 @@ import java.util.List;
  * @author Tomato
  * Created on 2021.09.27
  */
-@Slf4j
 public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implements RpcCoreService {
 
     /**
@@ -99,6 +99,7 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
     /**
      * rpc configuration
      */
+    @Getter
     private final RpcConfig rpcConfig;
 
     /**
@@ -108,14 +109,14 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
 
     public BaseRpcCoreService(RpcConfig rpcConfig) {
         this.rpcConfig = rpcConfig;
-        this.providerRegistry = SpiLoader.getLoader(ProviderRegistry.class).load();
+        this.providerRegistry = new DefalultProviderRegistry();
         this.invokerFactory = SpiLoader.getLoader(RpcInvokerFactory.class).load();
         this.stubFactory = SpiLoader.getLoader(StubFactory.class).load();
         this.loadBalance = SpiLoader.getLoader(LoadBalance.class).load();
 
         // 创建注册中心
         NameServerConfig nameServerConfig = NameServerConfig.builder()
-                .connString(rpcConfig.getNameServiceURI())
+                .connString(rpcConfig.nameServiceURI())
                 .build();
         this.nameServer = SpiLoader.getLoader(NameServerFactory.class).load()
                 .createNameService(nameServerConfig);
@@ -123,23 +124,23 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
         // 创建rpc服务器
         RpcServerConfig rpcServerConfig = RpcServerConfig.builder()
                 .host(NetworkUtil.getLocalHost())
-                .port(rpcConfig.getPort())
-                .useBusinessThreadPool(rpcConfig.getBusinessThreadPoolSize() > 1)
-                .businessThreadPoolSize(rpcConfig.getBusinessThreadPoolSize())
-                .clientKeepAliveMilliseconds(rpcConfig.getClientKeepAliveMilliseconds())
-                .serverReadIdleCheckMilliseconds(rpcConfig.getServerIdleCheckMilliseconds())
+                .port(rpcConfig.port())
+                .useBusinessThreadPool(rpcConfig.businessThreadPoolSize() > 1)
+                .businessThreadPoolSize(rpcConfig.businessThreadPoolSize())
+                .clientKeepAliveMilliseconds(rpcConfig.clientKeepAliveMilliseconds())
+                .serverReadIdleCheckMilliseconds(rpcConfig.serverIdleCheckMilliseconds())
                 .build();
-        this.rpcServer = createRpcServer(rpcServerConfig);
+        this.rpcServer = createRpcServer(rpcServerConfig, providerRegistry);
         String stage = getStage();
         MetaData.NodeProperty nodeProperty = new MetaData.NodeProperty();
         nodeProperty.weight = 1;
         this.rpcServerMetaData = MetaData.builder()
-                .protocol(rpcConfig.getProtocol())
+                .protocol(rpcConfig.protocol())
                 .host(rpcServer.getHost())
                 .port(rpcServer.getPort())
-                .microServiceId(rpcConfig.getMicroServiceId())
+                .microServiceId(rpcConfig.microServiceId())
                 .stage(stage)
-                .group(rpcConfig.getGroup())
+                .group(rpcConfig.group())
                 .nodeProperty(nodeProperty)
                 .build();
 
@@ -155,12 +156,12 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
 
     @Override
     public String getMicroServiceId() {
-        return rpcConfig.getMicroServiceId();
+        return rpcConfig.microServiceId();
     }
 
     @Override
     public List<String> getSubscribedServices() {
-        return rpcConfig.getSubscribedServiceIds();
+        return rpcConfig.subscribedServiceIds();
     }
 
     @Override
@@ -170,7 +171,7 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
         if (stage != null) {
             return stage;
         }
-        return rpcConfig.getStage();
+        return rpcConfig.stage();
     }
 
     @Override
@@ -180,21 +181,17 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
         if (group != null) {
             return group;
         }
-        return rpcConfig.getGroup();
+        return rpcConfig.group();
     }
 
     @Override
     public int getPort() {
-        return rpcConfig.getPort();
+        return rpcConfig.port();
     }
 
     @Override
     public String getProtocol() {
-        return rpcConfig.getProtocol();
-    }
-
-    public RpcConfig getRpcConfig() {
-        return rpcConfig;
+        return rpcConfig.protocol();
     }
 
     @Override
@@ -215,7 +212,7 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
         // 初始化注册中心
         nameServer.init();
 
-        log.info("netty rpc core service initialized");
+        Logger.DEFAULT.info("netty rpc core service initialized");
     }
 
     @Override
@@ -231,22 +228,17 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
             nameServer.registerService(rpcServerMetaData);
 
             // 订阅其余RPC服务
-            nameServer.subscribe(microServices, getStage());
+            nameServer.subscribe(rpcServerMetaData, microServices, getStage());
         } catch (Exception e) {
-            throw new TomatoRpcException(TomatoRpcCoreErrorEnum.RPC_CONFIG_INITIALIZING_ERROR.create(), e);
+            throw new TomatoRpcException(e, TomatoRpcErrorEnum.RPC_CONFIG_INITIALIZING_ERROR);
         }
         ready = true;
-        log.info("netty rpc core service started.\n" +
-                        "micro-service-id: {}\n" +
-                        "stage: {}\n" +
-                        "group: {}\n" +
-                        "host: {}\n" +
-                        "port: {}",
-                rpcConfig.getMicroServiceId(),
-                rpcConfig.getStage(),
-                rpcConfig.getGroup(),
+        Logger.DEFAULT.info("netty rpc core service started. micro-service-id={},stage={},group={},host={},port={}",
+                rpcConfig.microServiceId(),
+                rpcConfig.stage(),
+                rpcConfig.group(),
                 rpcServerMetaData.getHost(),
-                rpcConfig.getPort());
+                rpcConfig.port());
     }
 
     @Override
@@ -259,11 +251,11 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
                 microService.close();
             }
         } catch (Exception e) {
-            log.error("name server unregister service failed", e);
+            Logger.DEFAULT.error("name server unregister service failed", e);
         }
         rpcServer.stop();
         nameServer.stop();
-        log.info("netty rpc core service stopped");
+        Logger.DEFAULT.info("netty rpc core service stopped");
     }
 
     /**
@@ -276,7 +268,8 @@ public abstract class BaseRpcCoreService extends BaseLifeCycleComponent implemen
     /**
      * 初始化rpc服务器
      * @param rpcServerConfig rpc服务器配置
+     * @param providerRegistry 服务接口实现
      * @return rpc服务器
      */
-    protected abstract RpcServer createRpcServer(RpcServerConfig rpcServerConfig);
+    protected abstract RpcServer createRpcServer(RpcServerConfig rpcServerConfig, ProviderRegistry providerRegistry);
 }

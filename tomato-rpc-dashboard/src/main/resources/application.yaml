@@ -6,4 +6,4 @@ tomato-rpc-dashboard:
   name-server-url: "127.0.0.1:2181"
 
 server:
-  port: 4353
+  port: 12222

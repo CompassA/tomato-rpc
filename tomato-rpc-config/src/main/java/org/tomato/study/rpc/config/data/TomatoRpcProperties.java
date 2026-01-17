@@ -16,7 +16,9 @@ package org.tomato.study.rpc.config.data;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.context.annotation.Role;
 
 import java.util.List;
 
@@ -27,6 +29,7 @@ import java.util.List;
  */
 @Getter
 @Setter
+@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 @ConfigurationProperties(prefix = "tomato-rpc")
 public class TomatoRpcProperties {
 

@@ -14,21 +14,29 @@
 
 package org.tomato.study.rpc.config.controller;
 
-import lombok.extern.slf4j.Slf4j;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.tomato.study.rpc.common.monitor.ApiUrl;
 import org.tomato.study.rpc.config.controller.vo.InvokerMetaVO;
 import org.tomato.study.rpc.config.controller.vo.InvokerStatusVO;
 import org.tomato.study.rpc.core.RpcCoreService;
+import org.tomato.study.rpc.core.dashboard.dto.RouterRefreshDTO;
+import org.tomato.study.rpc.core.dashboard.dto.RpcRouterDTO;
 import org.tomato.study.rpc.core.data.MetaData;
-import org.tomato.study.rpc.core.registry.NameServer;
+import org.tomato.study.rpc.core.router.MicroServiceSpace;
+import org.tomato.study.rpc.core.router.Router;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -36,22 +44,13 @@ import java.util.stream.Collectors;
  * @author Tomato
  * Created on 2022.02.01
  */
-@Slf4j
 @RestController
-public class MonitorController {
+public record MonitorController(RpcCoreService rpcCoreService) {
 
-    private final RpcCoreService rpcCoreService;
-    private final NameServer nameServer;
-
-    public MonitorController(RpcCoreService rpcCoreService) {
-        this.rpcCoreService = rpcCoreService;
-        this.nameServer = rpcCoreService.getNameServer();
-    }
-
-    @GetMapping(ApiUrl.Status.INVOKER_STATUS)
+    @GetMapping(ApiUrl.INVOKER_STATUS)
     public List<InvokerStatusVO> invokerStatus(
-            @RequestParam("service-id") String serviceId) {
-        List<InvokerMetaVO> invokerMetaList = nameServer.listInvokers(serviceId)
+            @RequestParam("microServiceId") String microServiceId) {
+        List<InvokerMetaVO> invokerMetaList = rpcCoreService.getNameServer().listInvokers(microServiceId)
                 .stream()
                 .map(invoker -> {
                     MetaData metadata = invoker.getMetadata();
@@ -80,12 +79,41 @@ public class MonitorController {
         return result;
     }
 
-    @GetMapping(ApiUrl.Status.READY)
+    @GetMapping(ApiUrl.INVOKER_READY)
     public String ready(HttpServletRequest request, HttpServletResponse response) {
         if (rpcCoreService.isReady()) {
-            return "ready";
+            return "";
         }
         response.setStatus(HttpStatus.SERVICE_UNAVAILABLE.value());
         return "not ready";
+    }
+
+    @GetMapping(ApiUrl.ROUTER_LIST)
+    public List<String> routerList(@RequestParam("routerMicroServiceId") String routerMicroServiceId) {
+        return rpcCoreService.getNameServer()
+            .getMicroService(routerMicroServiceId)
+            .map(MicroServiceSpace::getAllRouters)
+            .orElse(Collections.emptyList())
+            .stream()
+            .map(Router::getExpression)
+            .toList();
+    }
+
+    @PostMapping(ApiUrl.ROUTER_REFRESH)
+    public String routerRefresh(@RequestBody RouterRefreshDTO request, HttpServletResponse response) {
+        Optional<MicroServiceSpace> microService = rpcCoreService.getNameServer().getMicroService(request.getRouterMicroServiceId());
+        if (microService.isEmpty()) {
+            response.setStatus(HttpStatus.BAD_REQUEST.value());
+            return "unsubscribed micro service";
+        }
+
+        List<String> expressionList = request.getRpcRouterDTOList()
+            .stream()
+            .sorted(Comparator.comparing(RpcRouterDTO::getPriority))
+            .map(RpcRouterDTO::getExpr)
+            .toList();
+        microService.get().refreshRouter(request.getOpsGlobalId(), expressionList);
+
+        return "";
     }
 }

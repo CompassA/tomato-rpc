@@ -17,9 +17,7 @@ package org.tomato.study.rpc.config.data;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.ToString;
-import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.config.annotation.RpcClientStub;
-import org.tomato.study.rpc.core.api.TomatoApi;
 
 import java.lang.reflect.Field;
 import java.util.Objects;
@@ -109,13 +107,9 @@ public class ClientStubMetadata<T> {
         if (!api.isInterface()) {
             return Optional.empty();
         }
-        TomatoApi tomatoApi = api.getAnnotation(TomatoApi.class);
-        if (tomatoApi == null || StringUtils.isBlank(tomatoApi.microServiceId())) {
-            return Optional.empty();
-        }
         ClientStubMetadata<?> value = new ClientStubMetadata<>(
                 api,
-                tomatoApi.microServiceId(),
+                rpcClientStub.microServiceId(),
                 rpcClientStub.timeout(),
                 rpcClientStub.group(),
                 rpcClientStub.compressBody()

@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration>
+    <Properties>
+        <!-- 终端日志输出格式 -->
+        <Property name="TERMINAL_PATTERN">
+            %d{yyyy-MM-dd HH:mm:ss.SSS} %highlight{-%5p} [%t] %highlight{%logger} : %m%n
+        </Property>
+        <Property name="TERMINAL_WITH_TOMATO_RPC_CONTEXT_PATTERN">
+            %d{yyyy-MM-dd HH:mm:ss.SSS} %highlight{-%5p} [%X{TRACE_ID}][%t] %highlight{%logger} : %m%n
+        </Property>
+
+        <!-- 日志目录 -->
+        <Property name="LOG_HOME">
+            logs
+        </Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="CONSOLE1">
+            <PatternLayout pattern="${TERMINAL_PATTERN}"/>
+        </Console>
+
+        <Console name="CONSOLE2">
+            <PatternLayout pattern="${TERMINAL_WITH_TOMATO_RPC_CONTEXT_PATTERN}"/>
+        </Console>
+
+    </Appenders>
+
+    <Loggers>
+        <AsyncRoot level="INFO">
+            <AppenderRef ref="CONSOLE1"/>
+        </AsyncRoot>
+
+        <AsyncLogger name="org.tomato.study.rpc.test" level="INFO" additivity="false">
+            <AppenderRef ref="CONSOLE2"/>
+        </AsyncLogger>
+
+        <AsyncLogger name="TOMATO-RPC-DIGEST" level="INFO" additivity="false">
+            <AppenderRef ref="CONSOLE2"/>
+        </AsyncLogger>
+
+        <AsyncLogger name="TOMATO-RPC-DEFAULT" level="INFO" additivity="false">
+            <AppenderRef ref="CONSOLE2"/>
+        </AsyncLogger>
+    </Loggers>
+</Configuration>

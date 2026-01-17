@@ -15,14 +15,14 @@
 package org.tomato.study.rpc.registry.zookeeper;
 
 import org.tomato.study.rpc.core.data.Invocation;
-import org.tomato.study.rpc.core.registry.BaseNameServer;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.NameServerConfig;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
-import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.core.invoker.RpcInvoker;
+import org.tomato.study.rpc.core.registry.BaseNameServer;
+import org.tomato.study.rpc.core.router.MicroServiceSpace;
 import org.tomato.study.rpc.registry.zookeeper.data.ZookeeperConfig;
-import org.tomato.study.rpc.registry.zookeeper.error.TomatoRegistryErrorEnum;
 import org.tomato.study.rpc.registry.zookeeper.impl.ZookeeperRegistry;
 
 import java.io.IOException;
@@ -63,8 +63,8 @@ public class ZookeeperNameServer extends BaseNameServer {
     }
 
     @Override
-    public void subscribe(MicroServiceSpace[] microServices, String stage) throws Exception {
-        registry.subscribe(microServices, stage);
+    public void subscribe(MetaData rpcServerMetaData, MicroServiceSpace[] microServices, String stage) throws Exception {
+        registry.subscribe(rpcServerMetaData, microServices, stage);
     }
 
     @Override
@@ -73,10 +73,8 @@ public class ZookeeperNameServer extends BaseNameServer {
     }
 
     @Override
-    public Optional<RpcInvoker> lookupInvoker(String microServiceId, String group, Invocation invocation) {
-        // 如果用户在jvm配置了对应服务的group，优先使用用户配置的group
-        String finalGroup = getJvmConfigGroup(microServiceId).orElse(group);
-        return registry.lookup(microServiceId, finalGroup, invocation);
+    public Optional<RpcInvoker> lookupInvoker(Invocation invocation) {
+        return registry.lookup(invocation);
     }
 
     @Override
@@ -90,7 +88,6 @@ public class ZookeeperNameServer extends BaseNameServer {
         ZookeeperConfig zookeeperConfig = ZookeeperConfig.builder()
                 .namespace(ZK_NAME_SPACE)
                 .connString(getConnString())
-                .charset(getCharset())
                 .build();
         this.registry = new ZookeeperRegistry(zookeeperConfig, this);
     }
@@ -107,8 +104,7 @@ public class ZookeeperNameServer extends BaseNameServer {
         try {
             registry.close();
         } catch (IOException e) {
-            throw new TomatoRpcException(
-                    TomatoRegistryErrorEnum.RPC_REGISTRY_CLOSE_ERROR.create(), e);
+            throw new TomatoRpcException(e, TomatoRpcErrorEnum.RPC_REGISTRY_CLOSE_ERROR);
         }
     }
 }

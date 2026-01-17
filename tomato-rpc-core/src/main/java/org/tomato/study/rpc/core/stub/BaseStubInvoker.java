@@ -15,13 +15,17 @@
 package org.tomato.study.rpc.core.stub;
 
 import lombok.Getter;
+import org.slf4j.MDC;
+import org.tomato.study.rpc.core.data.ExtensionHeader;
 import org.tomato.study.rpc.core.data.Invocation;
+import org.tomato.study.rpc.core.data.InvocationContext;
 import org.tomato.study.rpc.core.data.Response;
-import org.tomato.study.rpc.core.RpcParameterKey;
 import org.tomato.study.rpc.core.data.RpcRequestDTO;
 import org.tomato.study.rpc.core.data.StubConfig;
 
 import java.lang.reflect.Method;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * @author Tomato
@@ -42,6 +46,7 @@ public abstract class BaseStubInvoker implements StubInvoker {
      * 服务分组
      */
     @Getter
+    @Deprecated
     private final String group;
 
     /**
@@ -58,27 +63,52 @@ public abstract class BaseStubInvoker implements StubInvoker {
     }
 
     @Override
-    public Object invoke(Object proxy, Method method, Object[] args) {
-        // 将方法参数转化为可序列化的DTO对象
-        Invocation invocation = createInvocation(method, args);
+    public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+        if (method.getDeclaringClass() == Object.class) {
+            return method.invoke(proxy, args);
+        }
+        String methodName = method.getName();
+        Class<?>[] parameterTypes = method.getParameterTypes();
+        if (parameterTypes.length == 0) {
+            if ("toString".equals(methodName)) {
+                return this.toString();
+            } else if ("hashCode".equals(methodName)) {
+                return this.hashCode();
+            }
+        } else if (parameterTypes.length == 1 && "equals".equals(methodName)) {
+            return proxy.equals(args[0]);
+        }
 
-        // 塞参数
-        putParameter(invocation);
+        // 作为上游的被调用方, 调用下游的接口, 此时需要保留现场
+        Map<String, String> originContext = InvocationContext.get();
+        Map<String, String> mdcContext = MDC.getCopyOfContextMap();
+        Map<String, String> currentContext = originContext == null ? InvocationContext.initContext() : new HashMap<>(originContext);
+        InvocationContext.set(currentContext);
+        MDC.put(ExtensionHeader.TRACE_ID.name(), ExtensionHeader.TRACE_ID.getValueFromContext());
+        try {
+            // 塞参数
+            putParameter(currentContext);
 
-        // 调用
-        Response response = doInvoke(invocation);
+            // 将方法参数转化为可序列化的DTO对象
+            Invocation invocation = createInvocation(method, args);
 
-        // 转化为接口返回对象
-        return response.getData();
+            // 调用
+            Response response = doInvoke(invocation);
+
+            // 转化为接口返回对象
+            return response.getData();
+        } finally {
+            InvocationContext.set(originContext);
+            MDC.setContextMap(mdcContext);
+        }
     }
 
     /**
      * 塞一些通用的参数
-     * @param rpcInvocation rpc请求
      */
-    private void putParameter(Invocation rpcInvocation) {
-        rpcInvocation.putContextParameter(RpcParameterKey.TIMEOUT, String.valueOf(stubConfig.getTimeoutMs()));
-        rpcInvocation.putContextParameter(RpcParameterKey.COMPRESS, String.valueOf(stubConfig.isCompressBody()));
+    private void putParameter(Map<String, String> threadLocalParameter) {
+        threadLocalParameter.put(ExtensionHeader.TIMEOUT.getKeyName(), String.valueOf(stubConfig.getTimeoutMs()));
+        threadLocalParameter.put(ExtensionHeader.COMPRESS.getKeyName(), String.valueOf(stubConfig.isCompressBody()));
     }
 
     protected Invocation createInvocation(Method method, Object[] args) {

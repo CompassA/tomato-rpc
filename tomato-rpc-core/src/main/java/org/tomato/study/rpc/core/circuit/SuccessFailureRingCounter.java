@@ -14,7 +14,7 @@
 
 package org.tomato.study.rpc.core.circuit;
 
-import org.tomato.study.rpc.structure.FenwickTree;
+import org.tomato.study.rpc.common.structure.FenwickTree;
 
 import java.util.BitSet;
 import java.util.concurrent.atomic.AtomicInteger;

@@ -14,8 +14,6 @@
 
 package org.tomato.study.rpc.core.serializer;
 
-import lombok.extern.slf4j.Slf4j;
-
 import java.util.ServiceLoader;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -25,7 +23,6 @@ import java.util.concurrent.ConcurrentMap;
  * @author Tomato
  * Created on 2021.04.01
  */
-@Slf4j
 public final class SerializerHolder {
 
     /**

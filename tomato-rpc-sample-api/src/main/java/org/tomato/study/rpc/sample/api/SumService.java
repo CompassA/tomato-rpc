@@ -14,16 +14,12 @@
 
 package org.tomato.study.rpc.sample.api;
 
-import org.tomato.study.rpc.core.api.TomatoApi;
-import org.tomato.study.rpc.sample.api.data.Constant;
-
 import java.util.List;
 
 /**
  * @author Tomato
  * Created on 2022.02.27
  */
-@TomatoApi(microServiceId = Constant.serviceId)
 public interface SumService {
 
     Integer sum(List<Integer> nums);

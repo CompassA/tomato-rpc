@@ -20,7 +20,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 import java.util.Arrays;
-import java.util.Map;
 
 /**
  * necessary data during a RPC
@@ -71,11 +70,6 @@ public class RpcRequestModel {
      */
     private String apiId;
 
-    /**
-     * context parameter
-     */
-    private Map<String, String> contextParameterMap;
-
     @Builder
     public RpcRequestModel(String microServiceId,
                            Class<?> rpcInterFace,
@@ -83,7 +77,6 @@ public class RpcRequestModel {
                            Class<?>[] argsType,
                            Class<?> returnType,
                            String apiId,
-                           Map<String, String> contextParameterMap,
                            Object... parameters) {
         this.microServiceId = microServiceId;
         this.rpcInterFace = rpcInterFace;
@@ -91,7 +84,6 @@ public class RpcRequestModel {
         this.argsType = argsType;
         this.returnType = returnType;
         this.apiId = apiId;
-        this.contextParameterMap = contextParameterMap;
         if (parameters == null || parameters.length == 0) {
             this.parameters = new Object[0];
         } else {

@@ -14,16 +14,18 @@
 
 package org.tomato.study.rpc.netty.router;
 
-import org.tomato.study.rpc.core.data.Response;
-import org.tomato.study.rpc.core.loadbalance.LoadBalance;
-import org.tomato.study.rpc.core.router.BaseMicroServiceSpace;
 import org.tomato.study.rpc.core.circuit.CircuitBreaker;
 import org.tomato.study.rpc.core.circuit.CircuitRpcInvoker;
 import org.tomato.study.rpc.core.data.MetaData;
+import org.tomato.study.rpc.core.data.Response;
 import org.tomato.study.rpc.core.data.RpcConfig;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.invoker.RpcInvoker;
 import org.tomato.study.rpc.core.invoker.RpcInvokerFactory;
-import org.tomato.study.rpc.core.data.Code;
+import org.tomato.study.rpc.core.loadbalance.LoadBalance;
+import org.tomato.study.rpc.core.router.BaseMicroServiceSpace;
+
+import java.util.Map;
 
 /**
  * 提供基于Netty创建Invoker的方法
@@ -49,8 +51,13 @@ public class NettyMicroServiceSpace extends BaseMicroServiceSpace {
     protected CircuitRpcInvoker doCreateCircuitBreaker(RpcInvoker invoker) {
         return new CircuitRpcInvoker(invoker, getRpcConfig()) {
             @Override
+            public Map<String, String> getInvokerPropertyMap() {
+                return invoker.getInvokerPropertyMap();
+            }
+
+            @Override
             protected void doHandle(Response response, Throwable exception, CircuitBreaker breaker) {
-                if (!Code.SUCCESS.equals(response.getCode()) || exception != null) {
+                if (TomatoRpcErrorEnum.SUCCESS.getCode() != response.getCode() || exception != null) {
                     breaker.addFailure();
                     return;
                 }

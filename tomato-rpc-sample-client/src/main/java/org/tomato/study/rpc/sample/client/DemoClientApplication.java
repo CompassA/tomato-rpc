@@ -104,7 +104,7 @@ public class DemoClientApplication {
                 }
                 mainThreadWait.countDown();
             } catch (TomatoRpcRuntimeException e) {
-                LOGGER.error(e.getErrorInfo().toString(), e);
+                LOGGER.error("tomato rpc exception", e);
             } catch (InterruptedException e) {
                 LOGGER.error(e.getMessage(), e);
             }
@@ -132,7 +132,7 @@ public class DemoClientApplication {
                 }
                 mainThreadWait.countDown();
             } catch (TomatoRpcRuntimeException e) {
-                LOGGER.error(e.getErrorInfo().toString(), e);
+                LOGGER.error("tomato rpc exception", e);
             } catch (InterruptedException e) {
                 LOGGER.error(e.getMessage(), e);
             }

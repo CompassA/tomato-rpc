@@ -16,8 +16,8 @@ package org.tomato.study.rpc.sample.server;
 
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.tomato.study.rpc.common.utils.NetworkUtil;
 import org.tomato.study.rpc.core.RpcCoreService;
-import org.tomato.study.rpc.utils.NetworkUtil;
 import org.tomato.study.rpc.sample.api.EchoService;
 import org.tomato.study.rpc.sample.api.data.DemoRequest;
 import org.tomato.study.rpc.sample.api.data.DemoResponse;

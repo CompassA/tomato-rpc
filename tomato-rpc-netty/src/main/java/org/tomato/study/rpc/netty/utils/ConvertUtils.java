@@ -15,10 +15,10 @@
 package org.tomato.study.rpc.netty.utils;
 
 import org.apache.commons.lang3.StringUtils;
-import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.data.RpcRequestDTO;
 import org.tomato.study.rpc.core.data.RpcRequestModel;
-import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -54,8 +54,7 @@ public final class ConvertUtils {
                     .build();
         }
         if (argsTypes == null || parameters == null || parameters.length != argsTypes.length) {
-            throw new TomatoRpcRuntimeException(
-                    NettyRpcErrorEnum.MODEL_DTO_CONVERT_ERROR.create("parameter error"));
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.MODEL_DTO_CONVERT_ERROR, "parameter error");
         }
         Class<?>[] argsTypeModels = new Class<?>[argsTypes.length];
         for (int i = 0; i < argsTypes.length; ++i) {
@@ -76,7 +75,6 @@ public final class ConvertUtils {
                 .returnType(model.getReturnType() == null
                         ? void.class.getName()
                         : model.getReturnType().getName())
-                .contextParameterMap(model.getContextParameterMap())
                 .methodName(model.getMethodName());
 
         if (args == null && argsType == null) {
@@ -85,8 +83,7 @@ public final class ConvertUtils {
                     .build();
         }
         if (args == null || argsType == null || argsType.length != args.length) {
-            throw new TomatoRpcRuntimeException(
-                    NettyRpcErrorEnum.MODEL_DTO_CONVERT_ERROR.create("parameter error"));
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.MODEL_DTO_CONVERT_ERROR, "parameter error");
         }
         String[] argsNames = new String[args.length];
         for (int i = 0; i < argsType.length; ++i) {

@@ -17,9 +17,9 @@ package org.tomato.study.rpc.core.registry;
 import org.tomato.study.rpc.core.data.Invocation;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RefreshInvokerTask;
+import org.tomato.study.rpc.core.invoker.RpcInvoker;
 import org.tomato.study.rpc.core.observer.LifeCycle;
 import org.tomato.study.rpc.core.router.MicroServiceSpace;
-import org.tomato.study.rpc.core.invoker.RpcInvoker;
 
 import java.util.List;
 import java.util.Optional;
@@ -54,11 +54,12 @@ public interface NameServer extends LifeCycle {
 
     /**
      * subscribe micro service
+     * @param rpcServerMetaData server metadata
      * @param microServices micro services to subscribe
      * @param stage client subscribe the provider invoker which has the same stage
      * @exception Exception subscribe exception
      */
-    void subscribe(MicroServiceSpace[] microServices, String stage) throws Exception;
+    void subscribe(MetaData rpcServerMetaData, MicroServiceSpace[] microServices, String stage) throws Exception;
 
     /**
      * unsubscribe micro service
@@ -70,12 +71,10 @@ public interface NameServer extends LifeCycle {
 
     /**
      * search service invoker
-     * @param microServiceId target micro-service id
-     * @param group target service group
      * @param invocation rpc invocation request data
      * @return provider invoker
      */
-    Optional<RpcInvoker> lookupInvoker(String microServiceId, String group, Invocation invocation);
+    Optional<RpcInvoker> lookupInvoker(Invocation invocation);
 
     /**
      * list rpc invokers of a service

@@ -37,4 +37,10 @@ public interface ServerHandler {
      * @return target command type
      */
     CommandType getType();
+
+    /**
+     * 注入服务接口实例
+     * @param providerRegistry 服务接口实例
+     */
+    void setProviderRegistry(ProviderRegistry providerRegistry);
 }

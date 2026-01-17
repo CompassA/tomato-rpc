@@ -19,8 +19,8 @@ import lombok.NonNull;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.Header;
 import org.tomato.study.rpc.core.data.ProtoConstants;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
-import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 
 /**
  * 对基于Netty实现的RPC数据帧进行编解码
@@ -50,8 +50,7 @@ public final class NettyCommandCodec {
         byte[] extension = command.getExtension();
         if (extensionLength > 0 && extension != null) {
             if (extension.length != extensionLength) {
-                throw new TomatoRpcRuntimeException(
-                        NettyRpcErrorEnum.CODEC_ENCODE_ERROR.create("frame extension length error"));
+                throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.CODEC_ENCODE_ERROR, "frame extension length error");
             }
             byteBuf.writeBytes(extension);
         }
@@ -61,8 +60,7 @@ public final class NettyCommandCodec {
         if (length > 0 && body != null) {
             int bodyLength = length - extensionLength - ProtoConstants.HEAD_FIX_LENGTH;
             if (bodyLength != body.length) {
-                throw new TomatoRpcRuntimeException(
-                        NettyRpcErrorEnum.CODEC_ENCODE_ERROR.create("frame body length error"));
+                throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.CODEC_ENCODE_ERROR, "frame body length error");
             }
             byteBuf.writeBytes(body);
         }

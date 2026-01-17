@@ -29,4 +29,9 @@ public class ExpressionConstant {
      * 逻辑运算或关系运算结果为假
      */
     public static final String FALSE = "0";
+
+    /**
+     * 变量为空
+     */
+    public static final String NULL = "$__NULL__$";
 }

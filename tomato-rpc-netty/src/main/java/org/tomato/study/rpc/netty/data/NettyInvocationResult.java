@@ -15,12 +15,15 @@
 package org.tomato.study.rpc.netty.data;
 
 import lombok.RequiredArgsConstructor;
-import org.tomato.study.rpc.core.data.Response;
+import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.core.ResponseFuture;
-import org.tomato.study.rpc.core.data.Result;
-import org.tomato.study.rpc.core.data.Code;
 import org.tomato.study.rpc.core.data.Command;
+import org.tomato.study.rpc.core.data.Response;
+import org.tomato.study.rpc.core.data.Result;
 import org.tomato.study.rpc.core.data.RpcResponse;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.serializer.SerializerHolder;
 
 import java.util.concurrent.CompletableFuture;
@@ -46,12 +49,12 @@ public class NettyInvocationResult implements Result {
             return new Response() {
                 @Override
                 public int getCode() {
-                    return Code.FAIL.getCode();
+                    return TomatoRpcErrorEnum.RPC_INVOCATION_TIMEOUT.getCode();
                 }
 
                 @Override
                 public Object getData() {
-                    return new Object();
+                    return null;
                 }
 
                 @Override
@@ -67,9 +70,18 @@ public class NettyInvocationResult implements Result {
         return future.getFuture().thenApply(response ->
                 (Response) SerializerHolder.getSerializer(response.getHeader().getSerializeType())
                         .deserialize(response.getBody(), RpcResponse.class)
-        ).exceptionally(exception ->
-                RpcResponse.fail(exception.getCause(), exception.getMessage())
-        );
+        ).exceptionally(e -> {
+            Logger.DEFAULT.error("rpc invocation error, {}", e.getMessage(), e);
+
+            if (e.getCause() instanceof TomatoRpcException tomatoRpcException) {
+                return RpcResponse.fail(tomatoRpcException.getErrCode(), tomatoRpcException.getMessage());
+            }
+            if (e.getCause() instanceof TomatoRpcRuntimeException tomatoRpcRuntimeException) {
+                return RpcResponse.fail(tomatoRpcRuntimeException.getErrCode(), tomatoRpcRuntimeException.getMessage());
+            }
+
+            return RpcResponse.fail(TomatoRpcErrorEnum.UNKNOWN);
+        });
     }
 
 }

@@ -21,22 +21,31 @@ import lombok.Getter;
  * @author Tomato
  * Created on 2021.06.19
  */
+@Getter
 public class TomatoRpcRuntimeException extends RuntimeException {
 
-    @Getter
-    private final TomatoRpcErrorInfo errorInfo;
+    private final TomatoRpcErrorEnum errCode;
+    private final String errMsg;
 
-    public TomatoRpcRuntimeException(TomatoRpcErrorInfo errorInfo) {
-        super(errorInfo.getMessage());
-        this.errorInfo = errorInfo;
-    }
-    public TomatoRpcRuntimeException(TomatoRpcErrorInfo errorInfo, Throwable throwable) {
-        super(errorInfo.getMessage(), throwable);
-        this.errorInfo = errorInfo;
+    public TomatoRpcRuntimeException(TomatoRpcErrorEnum errCode) {
+        this(errCode, errCode.getMessage());
     }
 
-    @Override
-    public String getMessage() {
-        return errorInfo.getMessage();
+    public TomatoRpcRuntimeException(TomatoRpcErrorEnum errCode, String errMsg) {
+        super(errMsg);
+        this.errCode = errCode;
+        this.errMsg = errMsg;
     }
+
+    public TomatoRpcRuntimeException(Throwable e, TomatoRpcErrorEnum errCode) {
+        this(e, errCode, errCode.getMessage());
+    }
+
+    public TomatoRpcRuntimeException(Throwable e, TomatoRpcErrorEnum errCode, String errMsg) {
+        super(errMsg, e);
+        this.errCode = errCode;
+        this.errMsg = errMsg;
+    }
+
+
 }

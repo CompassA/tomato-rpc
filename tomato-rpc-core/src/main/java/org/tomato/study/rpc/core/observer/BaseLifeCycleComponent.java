@@ -14,7 +14,9 @@
 
 package org.tomato.study.rpc.core.observer;
 
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -30,8 +32,11 @@ public abstract class BaseLifeCycleComponent implements LifeCycle {
      * cas updater {@link BaseLifeCycleComponent#state}
      * {@link LifeCycle#CREATED}
      * {@link LifeCycle#INIT}
+     * {@link LifeCycle#INIT_FINISHED}
      * {@link LifeCycle#START}
+     * {@link LifeCycle#START_FINISHED}
      * {@link LifeCycle#STOP}
+     * {@link LifeCycle#STOP_FINISHED}
      */
     private static final AtomicIntegerFieldUpdater<BaseLifeCycleComponent> STATE_UPDATER =
             AtomicIntegerFieldUpdater.newUpdater(BaseLifeCycleComponent.class, "state");
@@ -52,22 +57,34 @@ public abstract class BaseLifeCycleComponent implements LifeCycle {
             return;
         }
         doInit();
+        if (!STATE_UPDATER.compareAndSet(this, INIT, INIT_FINISHED)) {
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_COMPONENT_LIFE_CYCLE_INVALID_STATE,
+                "INIT -> INIT_FINISHED failed, current status: " + state);
+        }
     }
 
     @Override
     public void start() throws TomatoRpcException {
-        if (!STATE_UPDATER.compareAndSet(this, INIT, START)) {
+        if (!STATE_UPDATER.compareAndSet(this, INIT_FINISHED, START)) {
             return;
         }
         doStart();
+        if (!STATE_UPDATER.compareAndSet(this, START, START_FINISHED)) {
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_COMPONENT_LIFE_CYCLE_INVALID_STATE,
+                "START -> START_FINISHED failed, current status: " + state);
+        }
     }
 
     @Override
     public void stop() throws TomatoRpcException{
-        if (!STATE_UPDATER.compareAndSet(this, START, STOP)) {
+        if (!STATE_UPDATER.compareAndSet(this, START_FINISHED, STOP)) {
             return;
         }
         doStop();
+        if (!STATE_UPDATER.compareAndSet(this, STOP, STOP_FINISHED)) {
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_COMPONENT_LIFE_CYCLE_INVALID_STATE,
+                "STOP -> STOP_FINISHED failed, current status: " + state);
+        }
     }
 
     @Override

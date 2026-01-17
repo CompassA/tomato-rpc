@@ -18,7 +18,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.core.CommandInterceptor;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandType;
@@ -34,7 +34,6 @@ import java.util.Map;
  * @author Tomato
  * Created on 2021.04.17
  */
-@Slf4j
 @RequiredArgsConstructor
 @ChannelHandler.Sharable
 public class ResponseHandler extends SimpleChannelInboundHandler<Command> {
@@ -58,7 +57,7 @@ public class ResponseHandler extends SimpleChannelInboundHandler<Command> {
                 handleKeepAliveResponse(request, header);
                 break;
             default:
-                log.warn("received unknown command type: {}", type);
+                Logger.DEFAULT.warn("received unknown command type: {}", type);
         }
     }
 
@@ -67,7 +66,7 @@ public class ResponseHandler extends SimpleChannelInboundHandler<Command> {
             try {
                 request = interceptor.interceptRequest(request, extensionHeaders);
             } catch (Exception e) {
-                log.error("intercept request error", e);
+                Logger.DEFAULT.error("intercept request error", e);
             }
         }
         return request;
@@ -90,13 +89,13 @@ public class ResponseHandler extends SimpleChannelInboundHandler<Command> {
 
     private void handleKeepAliveResponse(Command msg, Header header) {
         // do nothing
-        log.info("keep alive response received");
+        Logger.DEFAULT.info("keep alive response received");
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         super.exceptionCaught(ctx, cause);
-        log.error(cause.getMessage(), cause);
+        Logger.DEFAULT.error(cause.getMessage(), cause);
         if (ctx.channel().isActive()) {
             ctx.close();
         }

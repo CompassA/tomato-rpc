@@ -27,19 +27,19 @@ import io.netty.channel.epoll.EpollServerSocketChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.DefaultThreadFactory;
-import lombok.extern.slf4j.Slf4j;
-import org.tomato.study.rpc.core.server.BaseRpcServer;
+import lombok.Getter;
+import org.tomato.study.rpc.common.utils.Logger;
+import org.tomato.study.rpc.core.ProviderRegistry;
 import org.tomato.study.rpc.core.data.RpcServerConfig;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.observer.LifeCycle;
+import org.tomato.study.rpc.core.server.BaseRpcServer;
 import org.tomato.study.rpc.netty.codec.NettyFrameDecoder;
 import org.tomato.study.rpc.netty.codec.NettyFrameEncoder;
 import org.tomato.study.rpc.netty.codec.NettyProtoDecoder;
-import org.tomato.study.rpc.netty.error.NettyRpcErrorEnum;
 import org.tomato.study.rpc.netty.transport.handler.DispatcherHandler;
-import org.tomato.study.rpc.netty.transport.handler.MetricHandler;
 import org.tomato.study.rpc.netty.transport.handler.ServerIdleCheckHandler;
-import org.tomato.study.rpc.utils.MetricHolder;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.ExecutorService;
@@ -51,7 +51,7 @@ import java.util.concurrent.TimeUnit;
  * @author Tomato
  * Created on 2021.04.18
  */
-@Slf4j
+@Getter
 public class NettyRpcServer extends BaseRpcServer {
 
     private static final String BOSS_GROUP_THREAD_NAME = "rpc-server-boss-thread";
@@ -62,16 +62,6 @@ public class NettyRpcServer extends BaseRpcServer {
      * RPC服务主题业务逻辑
      */
     private DispatcherHandler dispatcherHandler;
-
-    /**
-     * RPC服务监控项管理
-     */
-    private MetricHolder metricHolder;
-
-    /**
-     * 监控一些数据
-     */
-    private MetricHandler metricHandler;
 
     /**
      * 服务端启动引导类
@@ -93,15 +83,13 @@ public class NettyRpcServer extends BaseRpcServer {
      */
     private EventLoopGroup workerGroup;
 
-    public NettyRpcServer(RpcServerConfig rpcServerConfig) {
-        super(rpcServerConfig);
+    public NettyRpcServer(RpcServerConfig rpcServerConfig, ProviderRegistry providerRegistry) {
+        super(rpcServerConfig, providerRegistry);
     }
 
     @Override
-    protected synchronized void doInit() throws TomatoRpcException {
-        this.metricHolder = new MetricHolder();
-        this.metricHandler = new MetricHandler(this.metricHolder);
-        this.dispatcherHandler = new DispatcherHandler();
+    protected void doInit() throws TomatoRpcException {
+
         if (Epoll.isAvailable()) {
             this.bossGroup = new EpollEventLoopGroup(1, new DefaultThreadFactory(BOSS_GROUP_THREAD_NAME));
             this.workerGroup = new EpollEventLoopGroup(new DefaultThreadFactory(WORKER_GROUP_THREAD_NAME));
@@ -119,11 +107,13 @@ public class NettyRpcServer extends BaseRpcServer {
                     new ArrayBlockingQueue<>(5000),
                     new DefaultThreadFactory(BUSINESS_GROUP_THREAD_NAME),
                     (r, executor) -> {
-                        log.error("business thread pool is overload");
+                        Logger.DEFAULT.error("business thread pool is overload");
                         abortPolicy.rejectedExecution(r, executor);
                     }
             );
-            dispatcherHandler.setBusinessExecutor(businessThreadPool);
+            this.dispatcherHandler = new DispatcherHandler(getProviderRegistry(), businessThreadPool);
+        } else {
+            this.dispatcherHandler = new DispatcherHandler(getProviderRegistry(), null);
         }
         this.serverBootstrap = new ServerBootstrap()
                 .group(this.bossGroup, this.workerGroup)
@@ -139,31 +129,24 @@ public class NettyRpcServer extends BaseRpcServer {
                         pipeline.addLast("frame-decoder", new NettyFrameDecoder());
                         pipeline.addLast("proto-decoder", new NettyProtoDecoder());
                         pipeline.addLast("frame-encoder", new NettyFrameEncoder());
-                        pipeline.addLast("metric-handler", NettyRpcServer.this.metricHandler);
                         pipeline.addLast("dispatcher-handler", NettyRpcServer.this.dispatcherHandler);
                     }
                 });
     }
 
     @Override
-    protected synchronized void doStart() throws TomatoRpcException {
+    protected void doStart() throws TomatoRpcException {
         try {
             serverBootstrap.bind(getPort()).sync();
-            metricHolder.startConsoleReporter(10, TimeUnit.SECONDS);
-            metricHolder.startJmxReporter();
         } catch (InterruptedException exception) {
-            throw new TomatoRpcException(NettyRpcErrorEnum.LIFE_CYCLE_START_ERROR.create(
-                    "thread was interrupted when bind"),
-                    exception
-            );
+            throw new TomatoRpcException(exception, TomatoRpcErrorEnum.LIFE_CYCLE_START_ERROR, "thread was interrupted when bind");
         }
     }
 
     @Override
-    protected synchronized void doStop() throws TomatoRpcException {
+    protected void doStop() throws TomatoRpcException {
         bossGroup.shutdownGracefully();
         workerGroup.shutdownGracefully();
-        metricHolder.stop();
         if (businessThreadPool != null) {
             businessThreadPool.shutdown();
         }
@@ -171,6 +154,6 @@ public class NettyRpcServer extends BaseRpcServer {
 
     @Override
     public boolean isClosed() {
-        return getState() == LifeCycle.STOP;
+        return getState() == LifeCycle.STOP_FINISHED;
     }
 }

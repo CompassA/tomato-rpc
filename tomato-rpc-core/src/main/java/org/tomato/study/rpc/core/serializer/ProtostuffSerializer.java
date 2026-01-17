@@ -18,7 +18,7 @@ import io.protostuff.LinkedBuffer;
 import io.protostuff.ProtostuffIOUtil;
 import io.protostuff.Schema;
 import io.protostuff.runtime.RuntimeSchema;
-import lombok.extern.slf4j.Slf4j;
+import org.tomato.study.rpc.common.utils.Logger;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -32,7 +32,6 @@ import java.util.Optional;
  * @author Tomato
  * Created on 2021.04.03
  */
-@Slf4j
 public class ProtostuffSerializer implements Serializer {
 
     private static final ThreadLocal<LinkedBuffer> linkedBufferThreadLocal = new ThreadLocal<>();
@@ -72,7 +71,7 @@ public class ProtostuffSerializer implements Serializer {
             ProtostuffIOUtil.writeListTo(byteStream, list, schema, linkedBuffer);
             return byteStream.toByteArray();
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            Logger.DEFAULT.error(e.getMessage(), e);
             return new byte[0];
         } finally {
             linkedBuffer.clear();
@@ -87,7 +86,7 @@ public class ProtostuffSerializer implements Serializer {
         try {
             return ProtostuffIOUtil.parseListFrom(byteStream, schema);
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
+            Logger.DEFAULT.error(e.getMessage(), e);
             return new ArrayList<>(0);
         } finally {
             linkedBuffer.clear();

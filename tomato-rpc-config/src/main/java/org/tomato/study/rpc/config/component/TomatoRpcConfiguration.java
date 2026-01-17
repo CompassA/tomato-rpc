@@ -15,24 +15,26 @@
 package org.tomato.study.rpc.config.component;
 
 import lombok.AllArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
+import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Role;
 import org.springframework.context.event.ContextClosedEvent;
 import org.springframework.context.event.ContextRefreshedEvent;
 import org.springframework.context.event.EventListener;
+import org.tomato.study.rpc.common.utils.Logger;
 import org.tomato.study.rpc.config.controller.MonitorController;
 import org.tomato.study.rpc.config.data.TomatoRpcProperties;
-import org.tomato.study.rpc.config.error.TomatoRpcConfigurationErrorEnum;
 import org.tomato.study.rpc.core.RpcCoreService;
 import org.tomato.study.rpc.core.RpcCoreServiceFactory;
 import org.tomato.study.rpc.core.RpcJvmConfigKey;
 import org.tomato.study.rpc.core.data.RpcConfig;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
 import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.spi.SpiLoader;
@@ -40,25 +42,27 @@ import org.tomato.study.rpc.core.spi.SpiLoader;
 import java.util.Collections;
 import java.util.Optional;
 
+
 /**
  * Spring配置
  * @author Tomato
  * Created on 2021.11.18
  */
-@Slf4j
 @Configuration
 @AllArgsConstructor
 @Import(RpcFactoryBeanDefinitionPostProcessor.class)
 @EnableConfigurationProperties({TomatoRpcProperties.class})
+@Role(BeanDefinition.ROLE_INFRASTRUCTURE)
 public class TomatoRpcConfiguration {
 
     private TomatoRpcProperties properties;
 
     @Bean
+    @Role(BeanDefinition.ROLE_SUPPORT)
     public RpcCoreService rpcCoreService() throws TomatoRpcException {
         RpcConfig.Builder rpcConfigBuilder = RpcConfig.builder();
         if (StringUtils.isBlank(properties.getMicroServiceId())) {
-            throw new TomatoRpcException(TomatoRpcConfigurationErrorEnum.MICROSERVICE_ID_NOT_FOUND.create());
+            throw new TomatoRpcException(TomatoRpcErrorEnum.MICROSERVICE_ID_NOT_FOUND);
         }
         rpcConfigBuilder.microServiceId(properties.getMicroServiceId());
         rpcConfigBuilder.subscribedServiceIds(CollectionUtils.isNotEmpty(properties.getSubscribedServices())
@@ -102,11 +106,13 @@ public class TomatoRpcConfiguration {
     }
 
     @Bean
+    @Role(BeanDefinition.ROLE_SUPPORT)
     public RpcStubPostProcessor rpcStubPostProcessor(RpcCoreService rpcCoreService) {
         return new RpcStubPostProcessor(rpcCoreService);
     }
 
     @Bean
+    @Role(BeanDefinition.ROLE_SUPPORT)
     public MonitorController monitorController(RpcCoreService rpcCoreService) {
         return new MonitorController(rpcCoreService);
     }
@@ -121,9 +127,8 @@ public class TomatoRpcConfiguration {
             rpcCoreService.init();
             rpcCoreService.start();
         } catch (TomatoRpcException e) {
-            log.error(e.getErrorInfo().toString());
-            throw new TomatoRpcRuntimeException(
-                    TomatoRpcConfigurationErrorEnum.RPC_CORE_SERVICE_BEAN_START_ERROR.create());
+            Logger.DEFAULT.error("tomato rpc ContextRefreshedEvent error", e);
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_CORE_SERVICE_BEAN_START_ERROR);
         }
     }
 
@@ -133,9 +138,8 @@ public class TomatoRpcConfiguration {
         try {
             rpcCoreService.stop();
         } catch (TomatoRpcException e) {
-            log.error(e.getErrorInfo().toString());
-            throw new TomatoRpcRuntimeException(
-                    TomatoRpcConfigurationErrorEnum.RPC_CORE_SERVICE_STOP_ERROR.create());
+            Logger.DEFAULT.error("tomato rpc ContextClosedEvent error", e);
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_CORE_SERVICE_STOP_ERROR);
         }
     }
 }

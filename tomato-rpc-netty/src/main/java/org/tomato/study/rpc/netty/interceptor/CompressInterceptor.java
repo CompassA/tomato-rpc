@@ -18,8 +18,8 @@ import org.apache.commons.lang3.StringUtils;
 import org.tomato.study.rpc.core.CommandInterceptor;
 import org.tomato.study.rpc.core.data.Command;
 import org.tomato.study.rpc.core.data.CommandFactory;
+import org.tomato.study.rpc.core.data.ExtensionHeader;
 import org.tomato.study.rpc.core.data.ExtensionHeaderBuilder;
-import org.tomato.study.rpc.core.RpcParameterKey;
 import org.tomato.study.rpc.core.utils.GzipUtils;
 
 import java.util.Map;
@@ -60,12 +60,12 @@ public class CompressInterceptor implements CommandInterceptor {
         byte[] compressedBody = GzipUtils.gzip(body);
         CommandFactory.changeBody(response, compressedBody);
         return new ExtensionHeaderBuilder(response)
-                .putParam(RpcParameterKey.COMPRESS, Boolean.TRUE.toString())
+                .putParam(ExtensionHeader.COMPRESS.getKeyName(), Boolean.TRUE.toString())
                 .build();
     }
 
     private boolean hasCompressHeader(Map<String, String> extensionHeaders) {
-        String value = extensionHeaders.get(RpcParameterKey.COMPRESS);
+        String value = extensionHeaders.get(ExtensionHeader.COMPRESS.getKeyName());
         return StringUtils.isNotBlank(value) && Boolean.TRUE.toString().equals(value);
     }
 

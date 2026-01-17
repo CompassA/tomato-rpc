@@ -55,22 +55,22 @@ public class MetaData {
     /**
      * micro-service-id parameter key name in the uri
      */
-    private static final String ID_PARAM_NAME = "micro-service-id";
+    public static final String ID_PARAM_NAME = "micro-service-id";
 
     /**
      * stage parameter key name in the uri
      */
-    private static final String STAGE_PARAM_NAME = "stage";
+    public static final String STAGE_PARAM_NAME = "stage";
 
     /**
      * group parameter key name in the uri
      */
-    private static final String GROUP_PARAM_NAME = "group";
+    public static final String GROUP_PARAM_NAME = "group";
 
     /**
      * other dynamic property
      */
-    private static final String PROPERTY_KEY = "property";
+    public static final String PROPERTY_KEY = "property";
 
     /**
      * rpc protocol
@@ -176,6 +176,13 @@ public class MetaData {
         return Optional.of(metaData);
     }
 
+    public Map<String, String> toMap() {
+        Map<String, String> res = new HashMap<>();
+        res.put(GROUP_PARAM_NAME, group);
+        res.put(NodeProperty.WEIGHT_KEY, String.valueOf(nodeProperty.weight));
+        return res;
+    }
+
     @Override
     public boolean equals(Object other) {
         if (!(other instanceof MetaData)) {
@@ -221,6 +228,11 @@ public class MetaData {
 
         public String toUrl() {
             return String.format("%s%s%s", WEIGHT_KEY, DELIMITER, weight);
+        }
+
+        @Override
+        public String toString() {
+            return toUrl();
         }
     }
 

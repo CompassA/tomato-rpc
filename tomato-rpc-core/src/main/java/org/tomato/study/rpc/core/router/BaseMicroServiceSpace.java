@@ -15,71 +15,149 @@
 package org.tomato.study.rpc.core.router;
 
 import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.collections4.CollectionUtils;
+import org.tomato.study.rpc.common.utils.Logger;
+import org.tomato.study.rpc.core.RpcJvmConfigKey;
 import org.tomato.study.rpc.core.circuit.CircuitRpcInvoker;
 import org.tomato.study.rpc.core.data.Invocation;
+import org.tomato.study.rpc.core.data.InvocationContext;
 import org.tomato.study.rpc.core.data.MetaData;
 import org.tomato.study.rpc.core.data.RpcConfig;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
 import org.tomato.study.rpc.core.error.TomatoRpcException;
+import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 import org.tomato.study.rpc.core.invoker.RpcInvoker;
 import org.tomato.study.rpc.core.loadbalance.LoadBalance;
+import org.tomato.study.rpc.expression.ast.ASTNode;
+import org.tomato.study.rpc.expression.ast.AddAndSubParser;
+import org.tomato.study.rpc.expression.ast.CmpParser;
+import org.tomato.study.rpc.expression.ast.ExpressionCalcContext;
+import org.tomato.study.rpc.expression.ast.LogicParser;
+import org.tomato.study.rpc.expression.ast.MulAndDivAndModParser;
+import org.tomato.study.rpc.expression.ast.PrimaryTokenParser;
+import org.tomato.study.rpc.expression.ast.RootExpressionParser;
+import org.tomato.study.rpc.expression.ast.RouterExpressionParser;
+import org.tomato.study.rpc.expression.token.TokenLexer;
+import org.tomato.study.rpc.expression.token.TokenStream;
 
 import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
+import java.util.stream.Collectors;
 
 /**
  * 一个RPC服务，管理服务的多个实例
  * @author Tomato
  * Created on 2021.07.10
  */
-@Slf4j
+@Getter
 public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
 
+    public static final long INITIAL_ROUTER_OPS_ID = 0;
+
     /**
-     * 服务唯一标识 {@link MetaData#getMicroServiceId()}
+     * 路由规则语法分析器
+     */
+    private static final RouterExpressionParser PARSER;
+    static {
+        PrimaryTokenParser primaryTokenParser = new PrimaryTokenParser();
+
+        RootExpressionParser rootExpressionParser =
+            new RootExpressionParser(
+                new LogicParser(
+                    new CmpParser(
+                        new AddAndSubParser(
+                            new MulAndDivAndModParser(primaryTokenParser)))));
+
+        primaryTokenParser.setTopExpressionParser(rootExpressionParser);
+
+        PARSER = new RouterExpressionParser(rootExpressionParser);
+    }
+
+    /**
+     * 订阅的服务的唯一标识 {@link MetaData#getMicroServiceId()}
      */
     private final String microServiceId;
 
     /**
-     * RPC配置
+     * 当前服务RPC配置
      */
-    @Getter
     private final RpcConfig rpcConfig;
-
-    /**
-     * 一个RPC服务的所有实例节点，一个RpcInvoker持有一个与服务实例节点的连接并与其通信
-     * 实例节点ip端口等元数据信息 -> 对应的Invoker
-     */
-    private final ConcurrentMap<MetaData, RpcInvoker> invokerRegistry = new ConcurrentHashMap<>(0);
-
-    /**
-     * 按RPC实例的group对Invoker进行分类
-     * {@link MetaData#getGroup()} -> RpcInvokers with same group
-     */
-    private final ConcurrentMap<String, List<RpcInvoker>> sameGroupInvokerMap = new ConcurrentHashMap<>(0);
 
     /**
      * 均衡负载器
      */
     private final LoadBalance loadBalance;
 
+    /**
+     * 兜底路由规则
+     */
+    private List<FullRequestRouter> defaultRouters;
+
+    /**
+     * 路由规则操作序列号
+     */
+    private volatile long routerOpsGlobalId = INITIAL_ROUTER_OPS_ID-1;
+
+    /**
+     * 路由规则
+     */
+    private volatile List<Router> routers = Collections.emptyList();
+
+    /**
+     * 一个RPC服务的所有实例节点，一个RpcInvoker持有一个与服务实例节点的连接并与其通信
+     * 只读
+     */
+    private volatile List<RpcInvoker> invokers = Collections.emptyList();
+
     public BaseMicroServiceSpace(String microServiceId, RpcConfig rpcConfig, LoadBalance loadBalance) {
         this.microServiceId = microServiceId;
         this.rpcConfig = rpcConfig;
         this.loadBalance = loadBalance;
+        initDefaultRouters(rpcConfig);
+    }
+
+    private void initDefaultRouters(RpcConfig rpcConfig) {
+        // 设置兜底路由规则, 将rpc请求发送给同组的节点
+        String finalGroup = fetchTargetGroup(rpcConfig);
+
+        String defaultExpression = String.format("""
+            %s=="%s"
+            """, MetaData.GROUP_PARAM_NAME, finalGroup);
+        TokenStream tokenize = TokenLexer.tokenize(defaultExpression);
+        ASTNode node = PARSER.getRootExpressionParser().parse(tokenize);
+
+        this.defaultRouters = Collections.singletonList(new FullRequestRouter(defaultExpression, node));
+    }
+
+    protected String fetchTargetGroup(RpcConfig rpcConfig) {
+        // 查看有无指定的分组配置
+        // 若无, 目标分组与自身分组一致
+        return getJvmConfigGroup(microServiceId).orElse(rpcConfig.group());
+    }
+
+    /**
+     * 查找服务有无jvm配置的group
+     * @param serviceId 服务id
+     * @return jvm配置的group
+     */
+    private Optional<String> getJvmConfigGroup(String serviceId) {
+        Map<String, String> jvmConfigGroup = RpcJvmConfigKey.parseMultiKeyValue(
+                System.getProperty(RpcJvmConfigKey.MICRO_SUBSCRIBE_GROUP));
+        return Optional.ofNullable(jvmConfigGroup.get(serviceId));
     }
 
     @Override
     public List<RpcInvoker> getAllInvokers() {
-        return new ArrayList<>(invokerRegistry.values());
+        return invokers;
+    }
+
+    @Override
+    public List<Router> getAllRouters() {
+        return routers;
     }
 
     @Override
@@ -89,14 +167,40 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
 
     /**
      * 根据客户端订阅的该RPC服务的版本，寻找匹配的服务实例节点
-     * @param group service version RPC服务
      * @param invocation rpc request data
      * @return 可与实例节点通信的RpcInvoker
      */
     @Override
-    public Optional<RpcInvoker> lookUp(String group, Invocation invocation) {
-        List<RpcInvoker> invokers = sameGroupInvokerMap.get(group);
+    public Optional<RpcInvoker> lookUp(Invocation invocation) {
+        // 路由筛选
+        List<RpcInvoker> invokers = new ArrayList<>(0);
+        List<Router> routers = this.routers;
+        List<RpcInvoker> allInvokers = getAllInvokers();
+
+        ExpressionCalcContext context = new ExpressionCalcContext();
+        context.setValMap(InvocationContext.get());
+
+        for (Router router : routers) {
+            if (!router.matchRequest(context)) {
+                continue;
+            }
+
+            for (RpcInvoker invoker : allInvokers) {
+                if (router.matchInvoker(invoker)) {
+                    invokers.add(invoker);
+                }
+            }
+
+            // 请求匹配当前路由规则且有对应的invoker后, 不再往后匹配
+            if (!invokers.isEmpty()) {
+                break;
+            }
+        }
+
+
+        // 均衡负载
         RpcInvoker invoker = loadBalance.select(invocation, invokers);
+
         return Optional.ofNullable(invoker);
     }
 
@@ -113,63 +217,83 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
             return;
         }
 
-        // 将实例节点数据按Group分组
-        Map<String, Set<MetaData>> sameGroupMetaMap = new HashMap<>(0);
-        for (MetaData metaData : newRpcInstanceInfoSet) {
-            sameGroupMetaMap.computeIfAbsent(
-                    metaData.getGroup(), group -> new HashSet<>(0)
-            ).add(metaData);
-        }
-
-        // 对同Group的实例节点数据，进行Invoker创建
-        for (Map.Entry<String, Set<MetaData>> entry : sameGroupMetaMap.entrySet()) {
-            // 将创建的Invoker收集到一个新的数组
-            String group = entry.getKey();
-            Set<MetaData> newMetadataSet = entry.getValue();
-            List<RpcInvoker> newInvokers = new ArrayList<>(newMetadataSet.size());
-
-            // 若节点对应的Invoker已经创建过，仍使用旧的Invoker，否则重建一个Invoker
-            for (MetaData metadata : newMetadataSet) {
-                RpcInvoker rpcInvoker = invokerRegistry.computeIfAbsent(
-                        metadata,
-                        // 不改成方法引用形式, 便于debug
-                        metadataKey -> createInvoker(metadataKey)
-                );
-                if (rpcInvoker != null) {
-                    newInvokers.add(rpcInvoker);
-                }
+        // 创建新的Invoker列表, 并替换引用
+        Map<MetaData, RpcInvoker> oldInvokerMap = this.invokers.stream().collect(
+            Collectors.toMap(RpcInvoker::getMetadata, v -> v, (o, n) -> {
+                Logger.DEFAULT.warn("duplicated invoker: {}", n.getMetadata());
+                return n;
+            })
+        );
+        List<RpcInvoker> newInvokers = new ArrayList<>();
+        for (MetaData instanceMeta : newRpcInstanceInfoSet) {
+            // 已有的Invoker直接复用
+            RpcInvoker rpcInvoker = oldInvokerMap.get(instanceMeta);
+            if (rpcInvoker == null) {
+                rpcInvoker = createInvoker(instanceMeta);
             }
+            newInvokers.add(rpcInvoker);
+        }
+        this.invokers = Collections.unmodifiableList(newInvokers);
 
-            // 获取该RPC服务分组的所有旧Invoker
-            List<RpcInvoker> oldInvokers = CollectionUtils.isEmpty(newInvokers)
-                    // 若该分组没有新的节点，直接从groupMap中将对应的Invoker删除
-                    ? sameGroupInvokerMap.remove(group)
-                    // 若该分组有新节点，将旧Invoker从Map中拿出，将新Invoker放入Map
-                    : sameGroupInvokerMap.put(group, newInvokers);
-
-            // 如果没有旧的Invoker，说明没有旧的Invoker需要关闭
-            if (CollectionUtils.isEmpty(oldInvokers)) {
+        // 关闭下线的Invoker
+        for (Map.Entry<MetaData, RpcInvoker> entry : oldInvokerMap.entrySet()) {
+            if (newRpcInstanceInfoSet.contains(entry.getKey())) {
                 continue;
             }
+            doCloseInvoker(entry.getValue());
+        }
+    }
 
-            // 遍历所有的旧Invoker，执行Invoker的关闭操作
-            for (RpcInvoker oldInvoker : oldInvokers) {
-                // 若这个实例已经在新的Invoker列表中存在了，不进行操作
-                if (newInvokers.contains(oldInvoker)) {
-                    continue;
-                }
+    @Override
+    public synchronized void refreshRouter(Long routerOpsGlobalId, List<String> routers) {
+        long start = System.currentTimeMillis();
+        String resMark = Logger.SUCCESS_MARK;
+        try {
+            // 检查版本号
+            if (routerOpsGlobalId <= this.routerOpsGlobalId) {
+                Logger.DEFAULT.warn("routerOpsGlobalId in mem is {}, not less than {}", this.routerOpsGlobalId, routerOpsGlobalId);
+                return;
+            }
+            this.routerOpsGlobalId = routerOpsGlobalId;
 
-                // 从Invoker列表中移除旧的Invoker
-                invokerRegistry.remove(oldInvoker.getMetadata());
-
-                // 关闭invoker
-                try {
-                    oldInvoker.destroy();
-                } catch (TomatoRpcException e) {
-                    // 什么都不做
+            // 执行解析
+            List<Router> newRouters = new ArrayList<>();
+            for (int i = 0; i < routers.size(); ++i) {
+                String expression = routers.get(i);
+                TokenStream tokenStream = TokenLexer.tokenize(expression);
+                ASTNode node = PARSER.parse(tokenStream);
+                if (node != null) {
+                    ASTNode[] children = node.getChildren();
+                    newRouters.add(new ExprRouter(i + 1, expression, children[0], children[1]));
+                } else {
+                    throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_ROUTER_REFRESH_ERROR,
+                        String.format("invalid expression: %s", expression));
                 }
             }
+
+            // 增加兜底规则
+            newRouters.addAll(defaultRouters);
+
+            // 替换引用
+            this.routers = newRouters;
+        } catch (Throwable e) {
+            resMark = Logger.FAILURE_MARK;
+            Logger.DEFAULT.error("router refresh failed", e);
+        } finally {
+            Logger.DIGEST.info("|refresh-router|{}|{}|{}|", resMark, System.currentTimeMillis()-start, routerOpsGlobalId);
         }
+    }
+
+    private void cleanInvoker() throws TomatoRpcException {
+        Logger.DEFAULT.info("clean {} invokers", microServiceId);
+
+        List<RpcInvoker> invokerMapRef = this.invokers;
+        this.invokers = Collections.emptyList();
+
+        for (RpcInvoker invoker : invokerMapRef) {
+            doCloseInvoker(invoker);
+        }
+
     }
 
     @Override
@@ -178,11 +302,27 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
     }
 
     private RpcInvoker createInvoker(MetaData metaData) {
+        Logger.DEFAULT.info("create invoker {}", metaData);
         RpcInvoker rpcInvoker = doCreateInvoker(metaData);
-        if (!rpcConfig.isEnableCircuit()) {
+        if (!rpcConfig.enableCircuit()) {
             return rpcInvoker;
         }
         return doCreateCircuitBreaker(rpcInvoker);
+    }
+
+    protected void doCloseInvoker(RpcInvoker offlineInvoker) {
+        long start = System.currentTimeMillis();
+        MetaData metadata = offlineInvoker.getMetadata();
+        String resMark = Logger.SUCCESS_MARK;
+        try {
+            offlineInvoker.destroy();
+        } catch (Throwable e) {
+            // 仅打日志
+            resMark = Logger.FAILURE_MARK;
+            Logger.DEFAULT.error("close invoker[{}] failed", metadata, e);
+        } finally {
+            Logger.DIGEST.info("|name-server|close-invoker|{}|{}|{}|", resMark, System.currentTimeMillis() - start, metadata);
+        }
     }
 
     /**
@@ -198,14 +338,4 @@ public abstract class BaseMicroServiceSpace implements MicroServiceSpace {
      * @return 可与rpc节点通信的invoker
      */
     protected abstract RpcInvoker doCreateInvoker(MetaData metaData);
-
-    private void cleanInvoker() throws TomatoRpcException {
-        if (CollectionUtils.isNotEmpty(invokerRegistry.values())) {
-            for (RpcInvoker value : invokerRegistry.values()) {
-                value.destroy();
-            }
-        }
-        invokerRegistry.clear();
-        sameGroupInvokerMap.clear();
-    }
 }

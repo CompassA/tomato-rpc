@@ -3,19 +3,16 @@
 项目基于Netty实现了RPC网络通信，并使用Zookeeper作为注册中心实现了简单的服务治理。  
 项目参考了dubbo、feign的一些rpc实现思路。  
 
-# 核心类图
-![04a28c93a2bb83ee0b0e4f946d8a7f201df85d2b7f075652.png](https://www.imageoss.com/images/2022/02/19/04a28c93a2bb83ee0b0e4f946d8a7f201df85d2b7f075652.png "uml")
-
 # 快速开始
 
 ## 依赖检查
-jdk版本:openjdk-11  
+jdk版本:openjdk-17  
+spring-boot: 3.2.12
 默认注册中心: zookeeper 3.5.9
 
 ## 如何使用
 本段以EchoService接口为例，介绍如何通过Tomato-RPC框架，使RPC服务端能够暴露服务接口、 使RPC客户端能够发起RPC调用。  
-具体代码见项目的tomato-rpc-sample-api、tomato-rpc-sample-client、  
-tomato-rpc-sample-server、tomato-rpc-spring-sample-client、tomato-rpc-spring-sample-server
+具体代码见项目的tomato-rpc-sample-api、tomato-rpc-spring-sample-client、tomato-rpc-spring-sample-server
 ### 公共jar包
 Tomato-RPC的RPC通信是基于接口的， 因此RPC的客户端、服务端需保持接口一致。  
 开发RPC程序时，RPC服务端开发者需提供一个公共的jar包，jar包中包含了rpc接口以及接口所需的参数。  
@@ -23,8 +20,6 @@ RPC客户端与RPC服务端需共同引入此jar包，保持接口一致性。
 
 接口及方法参数
 ```java
-// TomatoApi注解为框架自定义注解，发布的接口需带上此注解，目的是告诉客户端，发布该接口的服务端的唯一标识
-@TomatoApi(microServiceId = "demo-rpc-service")
 public interface EchoService {
     String echo(String request);
 }
@@ -142,7 +137,7 @@ public class EchoApiWrapper {
     // 使用此注解时，类必须是一个java bean
     // 可配置客户端接口调用的超时时间，单位为毫秒
     // 可配置rpc消息是否进行压缩，若compressBody为true，rpc请求与响应均会被压缩
-    @RpcClientStub(timeout = 2000, compressBody = true)
+    @RpcClientStub(microServiceId = "demo-rpc-service", timeout = 2000, compressBody = true)
     private EchoService echoService;
 
     public String echo(String msg) {
@@ -189,12 +184,12 @@ Worker线程池负责连接的读写、协议的解析(也许可以把协议的�
 #### 数据结构
 Tomato-RPC的每个[RpcInvoker](./tomato-rpc-netty/src/main/java/org/tomato/study/rpc/netty/invoker/NettyRpcInvoker.java)对象维护了与RPC服务端某个实例的TCP连接。  
 客户端会内存中会维护[MicroServiceId -> List\<RpcInvoker\>]这样的映射关系。假设客户端订阅了1个微服务(id="test-service")，该微服务有5个实例，则内存中会有5个与"test-service"相关联的RpcInvoker对象。  
-每个RpcInvoker对象组合了一个[NettyClient](https://github.com/CompassA/tomato-rpc/blob/285948ca36ca7861cb0223331d30e71ad39c3a66/tomato-rpc-netty/src/main/java/org/tomato/study/rpc/netty/transport/client/NettyRpcClient.java)对象，NettyClient对象封装了客户端的连接通信逻辑。  
+每个RpcInvoker对象组合了一个[NettyClient](./tomato-rpc-netty/src/main/java/org/tomato/study/rpc/netty/transport/client/NettyRpcClient.java)对象，NettyClient对象封装了客户端的连接通信逻辑。  
 #### 心跳机制
 Tomato-RPC的客户端会与RPC服务端的每个实例建立TCP长连接，并根据配置的心跳间隔向服务端发送心跳包(参数: client-keep-alive-ms)。  
 而Tomato-RPC的服务端则有空闲连接检测机制，会关闭不活跃的连接(超过一定时间未发消息的连接即为不活跃连接，阈值配置参数: server-idle-check-ms)。  
 心跳机制是基于Netty的IdleStateHandler实现的，这里就不赘述其具体原理了。  
-#### 优雅关闭
+#### 客户端断开连接
 RpcInvoker内部维护了一个计数器，一个标记位。  
 计数器记录了当前RpcInvoker被多少个线程调用。  
 标记位标记了当前RpcInvoker是否能被调用。 
@@ -505,11 +500,101 @@ Param
 ]
 ```
 ## 路由
-todo
+
+### 路由规则样例
+```text
+1. user_id % 10 == 0 || user_id % 10 == 1   ->    group == "gray"
+2. group == "test" && user_id == 1   ->    group == "link"
+```
+"->"符号左边为请求路由表达式, 右边为机器路由表达式。  
+当请求满足左边的表达式时, Tomato-RPC会将请求路由到符合右边表达式的机器中。  
+可基于路由规则实现灰度。  
+
+### 路由规则配置
+目前通过tomato-rpc-dashboard API(POST /api/tomato/ops/router/modify)下发, 详见API介绍
+
+### 路由表达式语法规则
+```text
+PRIMARY ::= INT_LITERAL | STR_LITERAL | IDENTIFIER | (EXPR)
+MUL_DIV_MOD ::= PRIMARY | MUL_DIV_MOD * PRIMARY | MUL_DIV_MOD / PRIMARY | MUL_DIV_MOD % PRIMARY
+ADD_SUB ::= MUL_DIV_MOD | ADD_SUB + MUL_DIV_MOD | ADD_SUB - MUL_DIV_MOD
+CMP ::= ADD_SUB | CMP > ADD_SUB | CMP >= ADD_SUB | CMP < ADD_SUB | CMP <= ADD_SUB | CMP == ADD_SUB
+LOGIC ::= CMP | LOGIC && CMP | LOGIC || CMP
+EXPR ::= LOGIC
+ROUTER_EXPR ::= EXPR -> EXPR
+```
+当Tomato-RPC接受到一串路由规则字符串时, 会对路由规则进行词法分析\语法分析, 将路由表达式解析为AST语法树。  
+在计算表达式时，会将RPC请求的所有参数带入左表达式的语法树中进行运算，会将RPC服务端机器的所有参数带入右表达式的语法树中进行计算。  
+(表达式解析具体实现在tomato-rpc-expression包中)  
 
 ## 均衡负载
 目前基于Nginx的平滑加权轮询算法实现均衡负载，具体实现见"RoundRobinLoadBalance.java"  
 Tomato-RPC的均衡负载的单位为接口方法
+
+# 系统概览
+## 核心类图
+![04a28c93a2bb83ee0b0e4f946d8a7f201df85d2b7f075652.png](https://www.imageoss.com/images/2022/02/19/04a28c93a2bb83ee0b0e4f946d8a7f201df85d2b7f075652.png "uml")
+
+# API
+## dashboard
+
+### 查询微服务实例
+```bash
+# microServiceId:微服务ID
+# stage: 环境
+curl -X GET http://localhost:12222/api/tomato/stat/invokers?microServiceId="demo-rpc-service"&stage="dev"
+```
+
+### 查询路由规则
+```bash
+# microServiceId: 微服务ID
+# stage: 环境
+# routerMicroServiceId: 路由规则路由目标的微服务ID
+curl -X GET http://localhost:12222/api/tomato/stat/routers?microServiceId="demo-rpc-client"&stage="dev"&routerMicroServiceId="demo-rpc-service"
+#{
+#  "code": 10000,
+#  "data": [
+#    {
+#      "priority": 1,
+#      "expr": "userId % 10 == 1 -> group == \"gray\""
+#    }
+#  ]
+#}
+```
+
+
+### 下发路由规则
+
+```bash
+curl --location --request POST 'http://localhost:12222/api/tomato/ops/router/modify' \
+--header 'Content-Type: application/json' \
+--header 'Accept: */*' \
+--header 'Host: localhost:12222' \
+--header 'Connection: keep-alive' \
+--data-raw '{
+    "microServiceId": "demo-rpc-client",
+    "stage": "dev",
+    "routerMicroServiceId": "demo-rpc-service",
+    "exprList": [
+        {
+            "priority": 1,
+            "expr": "userId % 10 == 1 -> group == \"gray\""
+        }
+    ]
+}'
+```
+## 服务本地API
+
+### 服务就绪
+curl -X GET http://localhost:9090/api/tomato/invoker/local/ready
+
+### 服务订阅信息
+curl -X GET http://localhost:9090/api/tomato/invoker/local/status?microServiceId="demo-rpc-service"
+
+microServiceId: 订阅的微服务ID
+
+### 服务路由
+curl -X GET http://localhost:9090/api/tomato/router/local/list?routerMicroServiceId="demo-rpc-service"
 
 # k8s部署样例
 

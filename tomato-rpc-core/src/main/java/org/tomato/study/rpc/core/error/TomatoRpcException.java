@@ -6,22 +6,30 @@ import lombok.Getter;
  * @author Tomato
  * Created on 2021.09.28
  */
+@Getter
 public class TomatoRpcException extends Exception {
 
-    @Getter
-    private final TomatoRpcErrorInfo errorInfo;
+    private final TomatoRpcErrorEnum errCode;
+    private final String errMsg;
 
-    public TomatoRpcException(TomatoRpcErrorInfo errorInfo) {
-        super(errorInfo.getMessage());
-        this.errorInfo = errorInfo;
-    }
-    public TomatoRpcException(TomatoRpcErrorInfo errorInfo, Throwable throwable) {
-        super(errorInfo.getMessage(), throwable);
-        this.errorInfo = errorInfo;
+
+    public TomatoRpcException(TomatoRpcErrorEnum errCode) {
+        this(errCode, errCode.getMessage());
     }
 
-    @Override
-    public String getMessage() {
-        return errorInfo.getMessage();
+    public TomatoRpcException(TomatoRpcErrorEnum errCode, String errMsg) {
+        super(errMsg);
+        this.errCode = errCode;
+        this.errMsg = errMsg;
+    }
+
+    public TomatoRpcException(Throwable e, TomatoRpcErrorEnum errCode) {
+        this(e, errCode, e.getMessage());
+    }
+
+    public TomatoRpcException(Throwable e, TomatoRpcErrorEnum errCode, String errMsg) {
+        super(errMsg, e);
+        this.errCode = errCode;
+        this.errMsg = errMsg;
     }
 }

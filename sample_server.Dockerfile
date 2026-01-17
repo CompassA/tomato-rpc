@@ -1,3 +1,4 @@
+# deprecated
 # docker build -t compassa/rpc-sample-server:1.0.2 -f ~/code/java/tomato-rpc/sample_server.Dockerfile  .
 # docker run --env JAVA_OPTIONS="-Dtomato-rpc.name-service-uri=172.17.0.3:2181"  -d compassa/rpc-sample-server:1.0.2
 FROM maven:3.8-openjdk-11 as builder

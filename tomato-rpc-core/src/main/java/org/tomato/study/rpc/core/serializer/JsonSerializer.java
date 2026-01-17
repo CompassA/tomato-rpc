@@ -24,7 +24,8 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.jsontype.impl.LaissezFaireSubTypeValidator;
-import lombok.extern.slf4j.Slf4j;
+import org.tomato.study.rpc.core.error.TomatoRpcErrorEnum;
+import org.tomato.study.rpc.core.error.TomatoRpcRuntimeException;
 
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -35,7 +36,6 @@ import java.util.List;
  * @author Tomato
  * Created on 2021.10.03
  */
-@Slf4j
 public class JsonSerializer implements Serializer {
 
     private final ObjectMapper objectMapper;
@@ -50,7 +50,7 @@ public class JsonSerializer implements Serializer {
                 .configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false)
                 // 如果是空对象的时候,不抛异常
                 .configure(SerializationFeature.FAIL_ON_EMPTY_BEANS, false)
-                // 反序列化是忽略null属性
+                // 反序列化时忽略null属性
                 .setSerializationInclusion(JsonInclude.Include.NON_NULL)
                 // 设置可解析字段
                 .setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.ANY)
@@ -68,8 +68,8 @@ public class JsonSerializer implements Serializer {
         try {
             return objectMapper.writeValueAsBytes(object);
         } catch (JsonProcessingException e) {
-            log.error(e.getMessage(), e);
-            return new byte[0];
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_SERIALIZE_ERROR,
+                String.format("json serialize failed: %s", object.getClass().getSimpleName()));
         }
     }
 
@@ -78,8 +78,8 @@ public class JsonSerializer implements Serializer {
         try {
             return objectMapper.readValue(data, clazz);
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            return null;
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_SERIALIZE_ERROR,
+                String.format("json deserialize failed: %s", clazz.getSimpleName()));
         }
     }
 
@@ -93,8 +93,8 @@ public class JsonSerializer implements Serializer {
         try {
             return objectMapper.readValue(listData, new TypeReference<List<T>>() {});
         } catch (IOException e) {
-            log.error(e.getMessage(), e);
-            return null;
+            throw new TomatoRpcRuntimeException(TomatoRpcErrorEnum.RPC_SERIALIZE_ERROR,
+                String.format("json deserializeList failed: %s", memberType.getSimpleName()));
         }
     }
 

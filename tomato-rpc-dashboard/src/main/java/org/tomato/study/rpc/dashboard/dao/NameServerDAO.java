@@ -14,8 +14,8 @@
 
 package org.tomato.study.rpc.dashboard.dao;
 
-import org.tomato.study.rpc.dashboard.dao.data.RpcAppData;
-import org.tomato.study.rpc.dashboard.dao.data.RpcAppProviderData;
+import org.tomato.study.rpc.core.dashboard.data.RpcInvokerData;
+import org.tomato.study.rpc.core.dashboard.data.RpcRouterData;
 
 import java.util.List;
 
@@ -26,18 +26,29 @@ import java.util.List;
 public interface NameServerDAO {
 
     /**
-     * 列举rpc应用信息
-     * @param start 从第几个应用开始列举
-     * @param nums 要列举多少应用
-     * @return 应用数据
-     */
-    List<RpcAppData> listRpcData(int start, int nums) throws Exception;
-
-    /**
-     * 查询应用在某个环境的机器数据
-     * @param appName app应用名
-     * @param stage app环境
+     * 查询服务在某个环境的机器数据
+     * @param microServiceId 微服务ID
+     * @param stage 环境
      * @return 机器数据
      */
-    List<RpcAppProviderData> listProviders(String appName, String stage) throws Exception;
+    List<RpcInvokerData> listInvokers(String microServiceId, String stage) throws Exception;
+
+    /**
+     * 查询服务在某个环境的路由规则数据
+     * @param microServiceId 微服务ID
+     * @param stage 环境
+     * @param routerMicroServiceId 路由规则路由目标的微服务ID
+     * @return 路由规则数据
+     */
+    RpcRouterData listRouters(String microServiceId, String stage, String routerMicroServiceId) throws Exception;
+
+    /**
+     * 保存路由规则
+     * @param microServiceId 微服务ID
+     * @param stage 环境
+     * @param routerMicroServiceId 路由规则路由目标的微服务ID
+     * @param routerData 路由规则数据
+     */
+    void saveRoutersAndNotify(String microServiceId, String stage, String routerMicroServiceId, RpcRouterData routerData) throws Exception;
+
 }

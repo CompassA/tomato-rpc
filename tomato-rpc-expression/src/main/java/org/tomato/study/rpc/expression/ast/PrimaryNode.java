@@ -16,6 +16,7 @@ package org.tomato.study.rpc.expression.ast;
 
 import lombok.NoArgsConstructor;
 import org.tomato.study.rpc.expression.token.Token;
+import org.tomato.study.rpc.expression.token.TokenType;
 
 /**
  * 终结符节点
@@ -31,6 +32,19 @@ public class PrimaryNode extends AbstractASTNode {
 
     @Override
     public String calc(ExpressionCalcContext context) {
-        return getToken().getValue();
+        Token token = getToken();
+        TokenType type = getToken().getType();
+        switch (type) {
+            case IDENTIFIER:
+                return context.getValMap().getOrDefault(token.getValue(), ExpressionConstant.NULL);
+            case INT_LITERAL:
+                return token.getValue();
+            case STR_LITERAL: {
+                String value = token.getValue();
+                return value.substring(1, value.length()-1);
+            }
+            default:
+                throw new IllegalStateException("illegal primary token type: " + type);
+        }
     }
 }

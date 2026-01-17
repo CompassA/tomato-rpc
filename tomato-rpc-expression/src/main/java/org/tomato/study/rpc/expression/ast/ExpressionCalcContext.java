@@ -14,10 +14,23 @@
 
 package org.tomato.study.rpc.expression.ast;
 
+import lombok.Getter;
+import lombok.Setter;
+
+import java.util.Collections;
+import java.util.Map;
+
 /**
  * 表达式求值上下文
  * @author Tomato
  * Created on 2023.02.04
  */
+@Getter
+@Setter
 public class ExpressionCalcContext {
+
+    /**
+     * 表达式变量
+     */
+    private Map<String, String> valMap = Collections.emptyMap();
 }

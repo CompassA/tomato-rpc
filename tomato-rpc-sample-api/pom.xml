@@ -25,23 +25,11 @@
 
     <artifactId>tomato-rpc-sample-api</artifactId>
 
-    <dependencies>
-        <dependency>
-            <groupId>org.tomato.study.rpc</groupId>
-            <artifactId>tomato-rpc-core</artifactId>
-        </dependency>
-    </dependencies>
-
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-            </plugin>
-
-            <plugin>
-                <groupId>org.jacoco</groupId>
-                <artifactId>jacoco-maven-plugin</artifactId>
             </plugin>
         </plugins>
     </build>

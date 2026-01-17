@@ -25,8 +25,15 @@ import lombok.Getter;
 @Getter
 @AllArgsConstructor
 public enum ExtensionHeader {
-    COMPRESS("compress"),
+    TIMEOUT("1", Long.class),
+    COMPRESS("2", Boolean.class),
+    TRACE_ID("3", String.class),
     ;
 
-    private String name;
+    private final String keyName;
+    private final Class<?> type;
+
+    public String getValueFromContext() {
+        return InvocationContext.get(keyName);
+    }
 }

@@ -17,7 +17,7 @@ package org.tomato.study.rpc.netty.transport.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
-import lombok.extern.slf4j.Slf4j;
+import org.tomato.study.rpc.common.utils.Logger;
 
 import java.util.concurrent.TimeUnit;
 
@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
  * @author Tomato
  * Created on 2021.10.03
  */
-@Slf4j
 public class ServerIdleCheckHandler extends IdleStateHandler {
 
     /**
@@ -42,7 +41,7 @@ public class ServerIdleCheckHandler extends IdleStateHandler {
         // 检测到空闲后关闭连接
         if (evt == IdleStateEvent.FIRST_READER_IDLE_STATE_EVENT) {
             ctx.close();
-            log.info("server idle check, close a remote channel");
+            Logger.DEFAULT.info("server idle check, close a remote channel");
             return;
         }
         super.channelIdle(ctx, evt);

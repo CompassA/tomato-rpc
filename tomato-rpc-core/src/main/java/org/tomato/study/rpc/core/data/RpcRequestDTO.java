@@ -22,10 +22,7 @@ import lombok.Setter;
 import lombok.ToString;
 
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 
 /**
  * 一次RPC调用的请求参数
@@ -70,42 +67,6 @@ public class RpcRequestDTO implements Invocation {
      */
     private Object[] args;
 
-    /**
-     * {@link RpcRequestModel#getContextParameterMap()}
-     */
-    private volatile Map<String, String> contextParameterMap;
-
-    @Override
-    public Map<String, String> fetchContextMap() {
-        initContextMap();
-        return this.contextParameterMap;
-    }
-
-    @Override
-    public void putContextParameter(String key, String value) {
-        initContextMap();
-        this.contextParameterMap.put(key, value);
-    }
-
-    public Optional<String> fetchContextParameter(String key) {
-        if (contextParameterMap == null) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(contextParameterMap.get(key));
-    }
-
-    @Override
-    public Invocation cloneInvocationWithoutContext() {
-        return RpcRequestDTO.builder()
-                .microServiceId(microServiceId)
-                .interfaceName(interfaceName)
-                .methodName(methodName)
-                .argsTypes(argsTypes)
-                .returnType(returnType)
-                .args(args)
-                .build();
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -120,25 +81,14 @@ public class RpcRequestDTO implements Invocation {
                 && Objects.equals(methodName, that.methodName)
                 && Arrays.equals(argsTypes, that.argsTypes)
                 && Objects.equals(returnType, that.returnType)
-                && Arrays.equals(args, that.args)
-                && Objects.equals(contextParameterMap, that.contextParameterMap);
+                && Arrays.equals(args, that.args);
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(microServiceId, interfaceName, methodName, returnType, contextParameterMap);
+        int result = Objects.hash(microServiceId, interfaceName, methodName, returnType);
         result = 31 * result + Arrays.hashCode(argsTypes);
         result = 31 * result + Arrays.hashCode(args);
         return result;
-    }
-
-    private void initContextMap() {
-        if (contextParameterMap == null) {
-            synchronized (this) {
-                if (contextParameterMap == null) {
-                    contextParameterMap = new HashMap<>(0);
-                }
-            }
-        }
     }
 }
