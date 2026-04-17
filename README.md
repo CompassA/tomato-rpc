@@ -145,8 +145,44 @@ public class EchoApiWrapper {
     }
 }
 ```
+# 系统设计
 
-# 特性介绍
+## 领域模型
+![tomato_rpc_model.svg](./uml/tomato_rpc_model.svg "uml")
+
+## 数据模型
+RPC服务节点目录结构: /tomato/{micro-service-id}/{stage}/providers/............  
+一级目录: Tomato-RPC namespace, 与Tomato-RPC相关的数据都在这个目录中  
+二级目录: 各微服务信息  
+三级目录: 一个微服务在部署在哪几个环境  
+四级目录: 一个微服务在一个环境下的多个元数据（目前只有服务实例信息）  
+五级目录: RPC服务实例信息  
+![服务树.png](./uml/服务树.png "服务树")
+
+
+## 系统时序
+
+### RPC调用
+![tomato_rpc_invocation.svg](./uml/tomato_rpc_invocation.svg)
+
+### 服务注册与订阅
+
+每个RPC实例都有一个标识自身身份的MicroServiceId。  
+一个MicroServiceId就代表一个微服务，一个微服务可能有多个实例节点，这些实例持有相同的MicroServiceId，作为一个整体对外提供服务。 
+
+RPC服务端启动时，会将自身唯一标识、ip、端口上报给注册中心。  
+注册中心会维护一个服务目录，记录每个微服务有哪几个实例节点。  
+RPC客户端会配置需订阅的RPC服务节点的MicroServiceId，并在启动时向注册中心拉取订阅的微服务的所有的实例节点元数据。  
+下图为向注册中心拉取数据的具体流程(基于zookeeper)  
+
+![zookeeper_subscribe.svg](./uml/zookeeper_subscribe.svg "服务订阅")  
+
+当微服务的实例节点新增/减少时，注册中心会将新增/减少的实例节点的元数据实时下发给订阅该服务的RPC客户端实例。    
+下图为服务更新具体流程(基于zookeeper)   
+
+![zookeeper_notify.svg](/uml/zookeeper_notify.svg "服务实例更新")  
+
+# 详细设计
 
 ## RPC通信
 本段将会介绍Tomato-RPC是如何屏蔽底层通信细节，让用户向调用本地方法一样调用远程方法的。
@@ -174,7 +210,7 @@ Tomato-RPC设计的应用层通信协议如下：
 +-------------+-----------------------+---------+---------------------+---------+-----------+---------+------------+------------+
 ```
 
-#### 服务端线程模型
+### 服务端线程模型
 作为服务端，Tomato-RPC建立了三个线程池：Boss线程池、Worker线程池、业务线程池。  
 Boss线程池负责调用操作系统的select/epoll，监听server socket accept的可读状况，当accept可读时，Boss线程会调用accept，取出连接，并将连接交给一个Worker线程。  
 Worker线程池负责连接的读写、协议的解析(也许可以把协议的解析也放到业务线程池，目前Tomato-RPC没这么做)。   
@@ -200,7 +236,6 @@ RpcInvoker内部维护了一个计数器，一个标记位。
 
 ### 调用模型与超时
 
-![tomato_rpc_invocation.svg](./uml/tomato_rpc_invocation.svg)
 #### 调用模型
 客户端向服务端发送的每个消息对象都有一个唯一的消息id，客户端本地会维护[消息id-> ResponseFuture]的一个消息Map。  
 每当消息发送完成后，客户端会将消息存入Map，并让RPC调用线程阻塞在Future对象的get方法中。  
@@ -291,29 +326,6 @@ public class DirectRpcTest {
 ```
 
 ## 服务治理
-
-### 服务注册与更新
-每个RPC实例都有一个标识自身身份的MicroServiceId。  
-一个MicroServiceId就代表一个微服务，一个微服务可能有多个实例节点，这些实例持有相同的MicroServiceId，作为一个整体对外提供服务。  
-
-RPC服务端启动时，会将自身唯一标识、ip、端口上报给注册中心。  
-注册中心会维护一个服务目录，记录每个微服务有哪几个实例节点。  
-RPC客户端会配置需订阅的RPC服务节点的MicroServiceId，并在启动时向注册中心拉取订阅的微服务的所有的实例节点元数据。  
-下图为向注册中心拉取数据的具体流程(基于zookeeper)  
-![e66c7fbbcb4434b686ec6e8d0141e4b64b99e457cd1fb957.png](https://www.imageoss.com/images/2022/02/19/e66c7fbbcb4434b686ec6e8d0141e4b64b99e457cd1fb957.png "服务订阅")  
-当微服务的实例节点新增/减少时，注册中心会将新增/减少的实例节点的元数据实时下发给订阅该服务的RPC客户端实例。  
-下图为服务更新具体流程(基于zookeeper)  
-![87cd38165bdc54ffa9fdf30d5e33064a6bcf38553e59b35c.png](https://www.imageoss.com/images/2022/02/19/87cd38165bdc54ffa9fdf30d5e33064a6bcf38553e59b35c.png "服务实例更新")  
-
-RPC服务节点目录结构: /tomato/{micro-service-id}/{stage}/providers/............  
-一级目录: Tomato-RPC namespace, 与Tomato-RPC相关的数据都在这个目录中  
-二级目录: 各微服务信息  
-三级目录: 一个微服务在部署在哪几个环境  
-四级目录: 一个微服务在一个环境下的多个元数据（目前只有服务实例信息）  
-五级目录: RPC服务实例信息  
-![1f9e7eb8fc766ad1fac7de3abb281dcfebbcfb2a7f3bd710.png](https://www.imageoss.com/images/2022/02/19/1f9e7eb8fc766ad1fac7de3abb281dcfebbcfb2a7f3bd710.png "服务树")  
-
-注: 开发时没考虑不同服务，MicroServiceId不慎相同而导致冲突的情况，个人认为，另外建立一个微服务创建中心，专门负责新项目MicroServiceId的分配，是个解决方案。
 
 ### 配置stage，实现微服务服务环境隔离
 一个微服务可能会部署在不同的环境中，本项目通过两个方式实现环境隔离。
@@ -500,6 +512,8 @@ Param
   }
 ]
 ```
+
+
 ## 路由
 
 ### 路由规则样例
@@ -531,10 +545,6 @@ ROUTER_EXPR ::= EXPR -> EXPR
 ## 均衡负载
 目前基于Nginx的平滑加权轮询算法实现均衡负载，具体实现见"RoundRobinLoadBalance.java"  
 Tomato-RPC的均衡负载的单位为接口方法
-
-# 系统概览
-## 核心类图
-![tomato_rpc_model.svg](./uml/tomato_rpc_model.svg "uml")
 
 # API
 ## dashboard
@@ -598,7 +608,8 @@ microServiceId: 订阅的微服务ID
 curl -X GET http://localhost:9090/api/tomato/router/local/list?routerMicroServiceId="demo-rpc-service"
 
 
-# docker运行
+# 运行样例
+## docker
 
 ```text
 # 启动zookeeper+五个sample-server镜像
@@ -733,9 +744,9 @@ fd0ff4061dfe
 2026-01-01 14:01:48.372 - INFO [pool-9-thread-4] pring.client.SpringDemoClientApplication : host=172.17.0.3|port=4567|micro-service-id=demo-rpc-service|no.1687|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
 
 ```
-# k8s部署样例
+## k8s
 
-## 搭建zookeeper
+### 搭建zookeeper
 首先，在k8s集群搭建单节点的zookeeper。  
 ```yaml
 apiVersion: v1
@@ -794,7 +805,7 @@ spec:
 上面的代码创建了一个stateful-set, 配合headless-service使得集群其他节点可使用dns的方式,  
 用"zookeeper-set-0.zookeeper.tomato.svc.cluster.local"来访问zookeeper。  
 
-## 部署demo-server服务
+### 部署demo-server服务
 demo-server是一个样例服务，会将任何客户端发送的rpc请求数据echo回去，并将服务节点的ip、stage、group等数据信息也发送会客户端。  
 (代码见repo的tomato-rpc-spring-sample-server)
 将tomato-rpc-spring-sample-server制作成镜像，并部署至k8s。
@@ -856,7 +867,7 @@ root@zookeeper-set-0:/apache-zookeeper-3.5.9-bin# zkCli.sh
 [tomato%3A%2F%2F10.42.219.80%3A4567%2F%3Fmicro-service-id%3Ddemo-rpc-service%26stage%3Ddev%26group%3Dmain]
 ```
 
-## 部署demo client
+### 部署demo client
 
 tomato-rpc-spring-sample-client会不停的向demo-service发送rpc请求。(代码见repo的tomato-rpc-spring-sample-client)  
 将tomato-rpc-spring-sample-client制作成镜像，并部署至k8s。
