@@ -200,6 +200,7 @@ RpcInvoker内部维护了一个计数器，一个标记位。
 
 ### 调用模型与超时
 
+![tomato_rpc_invocation.svg](./uml/tomato_rpc_invocation.svg)
 #### 调用模型
 客户端向服务端发送的每个消息对象都有一个唯一的消息id，客户端本地会维护[消息id-> ResponseFuture]的一个消息Map。  
 每当消息发送完成后，客户端会将消息存入Map，并让RPC调用线程阻塞在Future对象的get方法中。  
@@ -533,7 +534,7 @@ Tomato-RPC的均衡负载的单位为接口方法
 
 # 系统概览
 ## 核心类图
-![04a28c93a2bb83ee0b0e4f946d8a7f201df85d2b7f075652.png](https://www.imageoss.com/images/2022/02/19/04a28c93a2bb83ee0b0e4f946d8a7f201df85d2b7f075652.png "uml")
+![tomato_rpc_model.svg](./uml/tomato_rpc_model.svg "uml")
 
 # API
 ## dashboard
@@ -596,6 +597,142 @@ microServiceId: 订阅的微服务ID
 ### 服务路由
 curl -X GET http://localhost:9090/api/tomato/router/local/list?routerMicroServiceId="demo-rpc-service"
 
+
+# docker运行
+
+```text
+# 启动zookeeper+五个sample-server镜像
+rootroot@rootroot-VMware-Virtual-Platform:~/code/tomato-rpc$ docker run --env JAVA_OPTIONS="-Dtomato-rpc.name-service-uri=172.17.0.2:2181"  -d compassa/rpc-sample-server:1.0.3
+1211878fcc814a485309afff82374293b3084cd17b1c3c40c86652ac15b1d569
+rootroot@rootroot-VMware-Virtual-Platform:~/code/tomato-rpc$ docker ps
+CONTAINER ID   IMAGE                              COMMAND                   CREATED              STATUS              PORTS                                    NAMES
+fd0ff4061dfe   compassa/rpc-sample-server:1.0.3   "/bin/sh -c 'java -j…"   3 seconds ago        Up 2 seconds        1535/tcp                                 optimistic_elion
+1211878fcc81   compassa/rpc-sample-server:1.0.3   "/bin/sh -c 'java -j…"   3 seconds ago        Up 2 seconds        1535/tcp                                 cranky_wright
+1022d775ac56   compassa/rpc-sample-server:1.0.3   "/bin/sh -c 'java -j…"   4 seconds ago        Up 3 seconds        1535/tcp                                 lucid_cannon
+319e6307d7cf   compassa/rpc-sample-server:1.0.3   "/bin/sh -c 'java -j…"   6 seconds ago        Up 5 seconds        1535/tcp                                 gracious_elgamal
+2076f6e43f14   compassa/rpc-sample-server:1.0.3   "/bin/sh -c 'java -j…"   About a minute ago   Up About a minute   1535/tcp                                 xenodochial_bhabha
+b350e6bd97f2   zookeeper:3.5.9                    "/docker-entrypoint.…"   21 minutes ago       Up 21 minutes       2181/tcp, 2888/tcp, 3888/tcp, 8080/tcp   recursing_shockley
+
+# 启动sample-client镜像, 开始向sample-server请求, 在五个sample-server间均衡负载
+rootroot@rootroot-VMware-Virtual-Platform:~/code/tomato-rpc$ docker run --env JAVA_OPTIONS="-Dtomato-rpc.name-service-uri=172.17.0.2:2181" compassa/rpc-sample-client:1.0.3
+
+  .   ____          _            __ _ _
+ /\\ / ___'_ __ _ _(_)_ __  __ _ \ \ \ \
+( ( )\___ | '_ | '_| | '_ \/ _` | \ \ \ \
+ \\/  ___)| |_)| | | | | || (_| |  ) ) ) )
+  '  |____| .__|_| |_|_| |_\__, | / / / /
+ =========|_|==============|___/=/_/_/_/
+ :: Spring Boot ::        (v2.2.2.RELEASE)
+
+2026-01-01 13:56:26.510 - INFO [           main] pring.client.SpringDemoClientApplication : Starting SpringDemoClientApplication on 10b82d7d17ce with PID 7 (/usr/src/myapp/tomato-rpc-spring-sample-client-1.0-SNAPSHOT.jar started by root in /usr/src/myapp)
+2026-01-01 13:56:26.516 - INFO [           main] pring.client.SpringDemoClientApplication : No active profile set, falling back to default profiles: default
+2026-01-01 13:56:26.865 - INFO [           main] trationDelegate$BeanPostProcessorChecker : Bean 'tomato-rpc-org.tomato.study.rpc.config.data.TomatoRpcProperties' of type [org.tomato.study.rpc.config.data.TomatoRpcProperties] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2026-01-01 13:56:26.865 - INFO [           main] trationDelegate$BeanPostProcessorChecker : Bean 'org.tomato.study.rpc.config.component.TomatoRpcConfiguration' of type [org.tomato.study.rpc.config.component.TomatoRpcConfiguration$$EnhancerBySpringCGLIB$$98001b26] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2026-01-01 13:56:26.897 - INFO [           main] trationDelegate$BeanPostProcessorChecker : Bean 'rpcCoreService' of type [org.tomato.study.rpc.netty.service.NettyRpcCoreService] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2026-01-01 13:56:26.899 - INFO [           main] trationDelegate$BeanPostProcessorChecker : Bean 'org.tomato.study.rpc.sample.api.SumService_demo-rpc-service_5000__true' of type [org.tomato.study.rpc.config.component.StubFactoryBean] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2026-01-01 13:56:26.899 - INFO [           main] trationDelegate$BeanPostProcessorChecker : Bean 'org.tomato.study.rpc.sample.api.EchoService_demo-rpc-service_1000__true' of type [org.tomato.study.rpc.config.component.StubFactoryBean] is not eligible for getting processed by all BeanPostProcessors (for example: not eligible for auto-proxying)
+2026-01-01 13:56:26.999 - INFO [           main] boot.web.embedded.tomcat.TomcatWebServer : Tomcat initialized with port(s): 5678 (http)
+2026-01-01 13:56:27.004 - INFO [           main] g.apache.coyote.http11.Http11NioProtocol : Initializing ProtocolHandler ["http-nio-5678"]
+2026-01-01 13:56:27.005 - INFO [           main] org.apache.catalina.core.StandardService : Starting service [Tomcat]
+2026-01-01 13:56:27.005 - INFO [           main] org.apache.catalina.core.StandardEngine  : Starting Servlet engine: [Apache Tomcat/9.0.29]
+2026-01-01 13:56:27.036 - INFO [           main] e.ContainerBase.[Tomcat].[localhost].[/] : Initializing Spring embedded WebApplicationContext
+2026-01-01 13:56:27.036 - INFO [           main] pringframework.web.context.ContextLoader : Root WebApplicationContext: initialization completed in 477 ms
+2026-01-01 13:56:27.064 - INFO [           main] TOMATO-RPC-DEFAULT                       : stub of [org.tomato.study.rpc.sample.api.EchoService] created
+2026-01-01 13:56:27.064 - INFO [           main] TOMATO-RPC-DEFAULT                       : create stub bean: StubConfig(serviceInterface=interface org.tomato.study.rpc.sample.api.EchoService, microServiceId=demo-rpc-service, group=main, compressBody=true, timeoutMs=1000, nodeInfo=null, nameServer=org.tomato.study.rpc.registry.zookeeper.ZookeeperNameServer@13cf7d52)
+2026-01-01 13:56:27.073 - INFO [           main] TOMATO-RPC-DEFAULT                       : stub of [org.tomato.study.rpc.sample.api.SumService] created
+2026-01-01 13:56:27.074 - INFO [           main] TOMATO-RPC-DEFAULT                       : create stub bean: StubConfig(serviceInterface=interface org.tomato.study.rpc.sample.api.SumService, microServiceId=demo-rpc-service, group=main, compressBody=true, timeoutMs=5000, nodeInfo=null, nameServer=org.tomato.study.rpc.registry.zookeeper.ZookeeperNameServer@13cf7d52)
+2026-01-01 13:56:27.137 - INFO [           main] duling.concurrent.ThreadPoolTaskExecutor : Initializing ExecutorService 'applicationTaskExecutor'
+2026-01-01 13:56:27.336 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:zookeeper.version=3.5.9-83df9301aa5c2a5d284a9940177808c01bc35cef, built on 01/06/2021 20:03 GMT
+2026-01-01 13:56:27.336 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:host.name=10b82d7d17ce
+2026-01-01 13:56:27.336 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:java.version=11.0.11
+2026-01-01 13:56:27.336 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:java.vendor=Oracle Corporation
+2026-01-01 13:56:27.336 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:java.home=/usr/local/openjdk-11
+2026-01-01 13:56:27.336 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:java.class.path=tomato-rpc-spring-sample-client-1.0-SNAPSHOT.jar
+2026-01-01 13:56:27.336 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:java.library.path=/usr/java/packages/lib:/usr/lib64:/lib64:/lib:/usr/lib
+2026-01-01 13:56:27.336 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:java.io.tmpdir=/tmp
+2026-01-01 13:56:27.336 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:java.compiler=<NA>
+2026-01-01 13:56:27.336 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:os.name=Linux
+2026-01-01 13:56:27.336 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:os.arch=amd64
+2026-01-01 13:56:27.336 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:os.version=6.14.0-37-generic
+2026-01-01 13:56:27.336 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:user.name=root
+2026-01-01 13:56:27.336 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:user.home=/root
+2026-01-01 13:56:27.336 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:user.dir=/usr/src/myapp
+2026-01-01 13:56:27.337 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:os.memory.free=324MB
+2026-01-01 13:56:27.337 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:os.memory.max=5998MB
+2026-01-01 13:56:27.337 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Client environment:os.memory.total=378MB
+2026-01-01 13:56:27.354 - INFO [           main] TOMATO-RPC-DEFAULT                       : netty rpc core service initialized
+2026-01-01 13:56:27.379 - INFO [           main] ator.framework.imps.CuratorFrameworkImpl : Starting
+2026-01-01 13:56:27.383 - INFO [           main] org.apache.zookeeper.ZooKeeper           : Initiating client connection, connectString=172.17.0.2:2181 sessionTimeout=60000 watcher=org.apache.curator.ConnectionState@585811a4
+2026-01-01 13:56:27.385 - INFO [           main] org.apache.zookeeper.common.X509Util     : Setting -D jdk.tls.rejectClientInitiatedRenegotiation=true to disable client-initiated TLS renegotiation
+2026-01-01 13:56:27.388 - INFO [           main] org.apache.zookeeper.ClientCnxnSocket    : jute.maxbuffer value is 4194304 Bytes
+2026-01-01 13:56:27.391 - INFO [           main] org.apache.zookeeper.ClientCnxn          : zookeeper.request.timeout value is 0. feature enabled=
+2026-01-01 13:56:27.400 - INFO [           main] ator.framework.imps.CuratorFrameworkImpl : Default schema
+2026-01-01 13:56:27.862 - INFO [main-SendThread(172.17.0.2:2181)] org.apache.zookeeper.ClientCnxn          : Opening socket connection to server 172.17.0.2/172.17.0.2:2181. Will not attempt to authenticate using SASL (unknown error)
+2026-01-01 13:56:27.865 - INFO [main-SendThread(172.17.0.2:2181)] org.apache.zookeeper.ClientCnxn          : Socket connection established, initiating session, client: /172.17.0.8:36778, server: 172.17.0.2/172.17.0.2:2181
+2026-01-01 13:56:27.870 - INFO [main-SendThread(172.17.0.2:2181)] org.apache.zookeeper.ClientCnxn          : Session establishment complete on server 172.17.0.2/172.17.0.2:2181, sessionid = 0x1000072775a0008, negotiated timeout = 40000
+2026-01-01 13:56:27.875 - INFO [main-EventThread] r.framework.state.ConnectionStateManager : State change: CONNECTED
+2026-01-01 13:56:27.881 - INFO [main-EventThread] e.curator.framework.imps.EnsembleTracker : New config event received: {}
+2026-01-01 13:56:27.971 - INFO [           main] TOMATO-RPC-DEFAULT                       : netty rpc core service started. micro-service-id=demo-rpc-client,stage=dev,group=main,host=172.17.0.8,port=3456
+2026-01-01 13:56:27.976 - INFO [           main] g.apache.coyote.http11.Http11NioProtocol : Starting ProtocolHandler ["http-nio-5678"]
+2026-01-01 13:56:27.985 - INFO [           main] boot.web.embedded.tomcat.TomcatWebServer : Tomcat started on port(s): 5678 (http) with context path ''
+2026-01-01 13:56:27.987 - INFO [           main] pring.client.SpringDemoClientApplication : Started SpringDemoClientApplication in 1.707 seconds (JVM running for 2.206)
+2026-01-01 13:56:27.987 - INFO [           main] pring.client.SpringDemoClientApplication : client run mode: null
+2026-01-01 13:56:28.166 - INFO [pool-9-thread-8] pring.client.SpringDemoClientApplication : host=172.17.0.6|port=4567|micro-service-id=demo-rpc-service|no.1128|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.166 - INFO [pool-9-thread-2] pring.client.SpringDemoClientApplication : host=172.17.0.4|port=4567|micro-service-id=demo-rpc-service|no.1129|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.166 - INFO [pool-9-thread-6] pring.client.SpringDemoClientApplication : host=172.17.0.3|port=4567|micro-service-id=demo-rpc-service|no.1130|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.166 - INFO [pool-9-thread-5] pring.client.SpringDemoClientApplication : host=172.17.0.7|port=4567|micro-service-id=demo-rpc-service|no.1128|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.166 - INFO [pool-9-thread-7] pring.client.SpringDemoClientApplication : host=172.17.0.5|port=4567|micro-service-id=demo-rpc-service|no.1129|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.167 - INFO [pool-9-thread-4] pring.client.SpringDemoClientApplication : host=172.17.0.6|port=4567|micro-service-id=demo-rpc-service|no.1129|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.167 - INFO [pool-9-thread-3] pring.client.SpringDemoClientApplication : host=172.17.0.5|port=4567|micro-service-id=demo-rpc-service|no.1130|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.167 - INFO [pool-9-thread-9] pring.client.SpringDemoClientApplication : host=172.17.0.4|port=4567|micro-service-id=demo-rpc-service|no.1128|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.168 - INFO [pool-9-thread-1] pring.client.SpringDemoClientApplication : host=172.17.0.7|port=4567|micro-service-id=demo-rpc-service|no.1129|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.169 - INFO [pool-9-thread-10] pring.client.SpringDemoClientApplication : host=172.17.0.3|port=4567|micro-service-id=demo-rpc-service|no.1129|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.212 - INFO [pool-9-thread-7] pring.client.SpringDemoClientApplication : host=172.17.0.5|port=4567|micro-service-id=demo-rpc-service|no.1131|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.340 - INFO [pool-9-thread-10] pring.client.SpringDemoClientApplication : host=172.17.0.3|port=4567|micro-service-id=demo-rpc-service|no.1131|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.363 - INFO [pool-9-thread-3] pring.client.SpringDemoClientApplication : host=172.17.0.4|port=4567|micro-service-id=demo-rpc-service|no.1130|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.403 - INFO [main-EventThread] e.curator.framework.imps.EnsembleTracker : New config event received: {}
+2026-01-01 13:56:28.545 - INFO [pool-9-thread-5] pring.client.SpringDemoClientApplication : host=172.17.0.6|port=4567|micro-service-id=demo-rpc-service|no.1130|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.558 - INFO [pool-9-thread-2] pring.client.SpringDemoClientApplication : host=172.17.0.7|port=4567|micro-service-id=demo-rpc-service|no.1130|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.611 - INFO [pool-9-thread-10] pring.client.SpringDemoClientApplication : host=172.17.0.5|port=4567|micro-service-id=demo-rpc-service|no.1132|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.623 - INFO [pool-9-thread-7] pring.client.SpringDemoClientApplication : host=172.17.0.3|port=4567|micro-service-id=demo-rpc-service|no.1132|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.630 - INFO [pool-9-thread-2] pring.client.SpringDemoClientApplication : host=172.17.0.4|port=4567|micro-service-id=demo-rpc-service|no.1131|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.645 - INFO [pool-9-thread-5] pring.client.SpringDemoClientApplication : host=172.17.0.6|port=4567|micro-service-id=demo-rpc-service|no.1131|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.661 - INFO [pool-9-thread-3] pring.client.SpringDemoClientApplication : host=172.17.0.7|port=4567|micro-service-id=demo-rpc-service|no.1131|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.662 - INFO [pool-9-thread-1] pring.client.SpringDemoClientApplication : host=172.17.0.5|port=4567|micro-service-id=demo-rpc-service|no.1133|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 13:56:28.821 - INFO [pool-9-thread-8] pring.client.SpringDemoClientApplication : host=172.17.0.3|port=4567|micro-service-id=demo-rpc-service|no.1133|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+
+
+
+# 下线三个服务
+rootroot@rootroot-VMware-Virtual-Platform:~$ docker stop fd0ff4061dfe 1211878fcc81  1022d775ac56
+fd0ff4061dfe
+1211878fcc81
+1022d775ac56
+
+# 只在剩余的机器中发起请求
+2026-01-01 14:01:47.422 - INFO [pool-9-thread-7] pring.client.SpringDemoClientApplication : host=172.17.0.3|port=4567|micro-service-id=demo-rpc-service|no.1677|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:47.452 - INFO [pool-9-thread-3] pring.client.SpringDemoClientApplication : host=172.17.0.4|port=4567|micro-service-id=demo-rpc-service|no.1677|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:47.466 - INFO [pool-9-thread-2] pring.client.SpringDemoClientApplication : host=172.17.0.3|port=4567|micro-service-id=demo-rpc-service|no.1678|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:47.469 - INFO [pool-9-thread-1] pring.client.SpringDemoClientApplication : host=172.17.0.4|port=4567|micro-service-id=demo-rpc-service|no.1678|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:47.525 - INFO [pool-9-thread-7] pring.client.SpringDemoClientApplication : host=172.17.0.3|port=4567|micro-service-id=demo-rpc-service|no.1679|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:47.564 - INFO [pool-9-thread-3] pring.client.SpringDemoClientApplication : host=172.17.0.4|port=4567|micro-service-id=demo-rpc-service|no.1679|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:47.753 - INFO [pool-9-thread-10] pring.client.SpringDemoClientApplication : host=172.17.0.3|port=4567|micro-service-id=demo-rpc-service|no.1680|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:47.792 - INFO [pool-9-thread-2] pring.client.SpringDemoClientApplication : host=172.17.0.4|port=4567|micro-service-id=demo-rpc-service|no.1680|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:47.800 - INFO [pool-9-thread-8] pring.client.SpringDemoClientApplication : host=172.17.0.3|port=4567|micro-service-id=demo-rpc-service|no.1681|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:47.877 - INFO [pool-9-thread-2] pring.client.SpringDemoClientApplication : host=172.17.0.4|port=4567|micro-service-id=demo-rpc-service|no.1681|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:47.914 - INFO [pool-9-thread-4] pring.client.SpringDemoClientApplication : host=172.17.0.3|port=4567|micro-service-id=demo-rpc-service|no.1682|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:47.928 - INFO [pool-9-thread-3] pring.client.SpringDemoClientApplication : host=172.17.0.4|port=4567|micro-service-id=demo-rpc-service|no.1682|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:47.985 - INFO [pool-9-thread-3] pring.client.SpringDemoClientApplication : host=172.17.0.3|port=4567|micro-service-id=demo-rpc-service|no.1683|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:48.069 - INFO [pool-9-thread-5] pring.client.SpringDemoClientApplication : host=172.17.0.4|port=4567|micro-service-id=demo-rpc-service|no.1683|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:48.092 - INFO [pool-9-thread-8] pring.client.SpringDemoClientApplication : host=172.17.0.3|port=4567|micro-service-id=demo-rpc-service|no.1684|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:48.171 - INFO [pool-9-thread-6] pring.client.SpringDemoClientApplication : host=172.17.0.4|port=4567|micro-service-id=demo-rpc-service|no.1684|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:48.197 - INFO [pool-9-thread-8] pring.client.SpringDemoClientApplication : host=172.17.0.3|port=4567|micro-service-id=demo-rpc-service|no.1685|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:48.212 - INFO [pool-9-thread-7] pring.client.SpringDemoClientApplication : host=172.17.0.4|port=4567|micro-service-id=demo-rpc-service|no.1685|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:48.222 - INFO [pool-9-thread-7] pring.client.SpringDemoClientApplication : host=172.17.0.3|port=4567|micro-service-id=demo-rpc-service|no.1686|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:48.248 - INFO [pool-9-thread-9] pring.client.SpringDemoClientApplication : host=172.17.0.4|port=4567|micro-service-id=demo-rpc-service|no.1686|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+2026-01-01 14:01:48.372 - INFO [pool-9-thread-4] pring.client.SpringDemoClientApplication : host=172.17.0.3|port=4567|micro-service-id=demo-rpc-service|no.1687|stage=dev|group=main|message=DemoRequest{data='hello world', testMap=[{a=1, b=2, c=3}, {c=4, d=5, e=6}, {e=7, f=8, g=9}], testList=[1, 2, 3, 4]}
+
+```
 # k8s部署样例
 
 ## 搭建zookeeper
