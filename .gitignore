@@ -1,0 +1,13 @@
+.idea/.gitignore
+.idea/compiler.xml
+.idea/encodings.xml
+.idea/jarRepositories.xml
+.idea/misc.xml
+.idea/vcs.xml
+.idea/codeStyles/codeStyleConfig.xml
+.idea/copyright/apache.xml
+.idea/copyright/profiles_settings.xml
+.idea/inspectionProfiles/Project_Default.xml
+# Maven 构建产物：忽略任意层级下的 target 目录
+target/
+logs/
